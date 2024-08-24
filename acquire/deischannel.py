@@ -26,3 +26,7 @@ class DEISchannel(Channel):
                          
         self.pico = piscoscope,
         self.awg = awg
+
+    def run(self):
+        self.start()
+        pico.run_streaming_non_blocking()
