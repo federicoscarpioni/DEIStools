@@ -1,32 +1,22 @@
-from pybiologic import Channel
-
-class DEISchannel(Channel):
+class DEISchannel():
     def __init__(self, 
-                 bio_device : BiologicDevice, 
-                 channel_num : int, 
-                 saving_dir : str,
-                 channel_options : namedtuple,
-                 do_live_plot : bool = True, # ? Deside which naming convention to use for booleans
-                 do_record_Ece : bool = False,
-                 do_record_analog_in1 : bool = False,
-                 do_record_analog_in2 : bool = False,
-                 do_print_values : bool  = False,
-                 picoscope = None, 
-                 awg = None):
+                 potentiostat_channel : Channel,
+                 picoscope,
+                 trueform_awg=None):
+        self.pot = potentiostat_channel
+        self.pico = picoscope,
+        self.pot.callbacks.append(self.save_pico_intermediate())
+        if trueform_awg != None:
+            self.awg = trueform_awg
+            # !!! Add the callback to change wave in the awg
 
-        super().__init__(bio_device, 
-                         channel_num,
-                         saving_dir,
-                         channel_options,
-                         do_live_plot,
-                         do_record_Ece,
-                         do_record_analog_in1,
-                         do_record_analog_in2,
-                         )
-                         
-        self.pico = piscoscope,
-        self.awg = awg
 
     def run(self):
-        self.start()
-        pico.run_streaming_non_blocking()
+        self.awg.turn_on()
+        self.pot.start()
+        self.pico.run_streaming_non_blocking()
+
+    def save_pico_intermediate(self):
+        self.pico.convert_all_channels()
+        self.pico.save_signals(f'cycle{self.pot.data_info.loop - 1}/sequence_{self.pot.current_tech_index}_tech_{self.pot.current_tech_id}')
+        self.pico.reset_buffer()

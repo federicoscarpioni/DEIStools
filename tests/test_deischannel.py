@@ -1,4 +1,4 @@
-from deischannel import DEISchannel
-from pypicostreaming.pico5000 import PicoScope5000
-from trueformawg import TrueFormAWG
+from acquire.deischannel import DEISchannel
+
+deisch1 = DEISchannel(channel1, pico1, awg1)
 
