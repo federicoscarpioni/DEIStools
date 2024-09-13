@@ -3,22 +3,22 @@ from pyeclab.device import BiologicDevice
 from pyeclab.channel import Channel, ChannelOptions
 import pyeclab.techniques as tech
 from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a
-
+import os
 
 # Saving 
 saving_dir = 'E:/Experimental_data/Federico/2024/python_software_test'
-experiment_name = '2409131243_test_DEISchannel_class'
+experiment_name = '2409031430_test_DEISchannel_class'
 
 # Setting up piscoscope
 # Measurment paramters
 capture_size = 10000
-samples_total = 10000000 
+samples_total = 5000000 
 sampling_time = 2
 sampling_time_scale = 'PS5000A_US'
 
 # Connect i nstrument and perform the acquisiton
 pico = Picoscope5000a('PS5000A_DR_14BIT')
-saving_path = f'{saving_dir}/{experiment_name}'
+saving_path = os.path.join(saving_dir,experiment_name)
 pico.set_pico(capture_size, samples_total, sampling_time, sampling_time_scale, saving_path)
 pico.set_channel('PS5000A_CHANNEL_A', 'PS5000A_500MV')
 pico.set_channel('PS5000A_CHANNEL_B', 'PS5000A_2V', 0.1)
@@ -67,7 +67,7 @@ tech_index_start   = 0
 LOOP_user_params = tech.LOOP_params(number_repetition, tech_index_start)
 LOOP_tech    = tech.loop_tech(device, device.is_VMP3, LOOP_user_params)
 # Make sequence
-sequence = [CP_tech,LOOP_tech]
+sequence = [CP_tech]
 # Istantiate channel
 test_options = ChannelOptions(experiment_name)
 channel1=Channel(device,
@@ -79,7 +79,6 @@ channel1=Channel(device,
 channel1.load_sequence(sequence, ask_ok=False)
 
 deisch1 = DEISchannel(channel1, pico)
-
 
 # %%
 deisch1.run()
