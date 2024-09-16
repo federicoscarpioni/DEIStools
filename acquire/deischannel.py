@@ -18,11 +18,9 @@ class DEISchannel():
 
 
     def save_pico_intermediate(self):
-        self.pico.convert_all_channels()
-        self.pico.save_signals(f'/cycle_{self.pot.current_loop-1}/sequence_{self.pot.current_tech_index}')
-        self.pico.reset_buffer()
+        self.pico.save_intermediate_signals(f'/cycle_{self.pot.current_loop-1}/sequence_{self.pot.current_tech_index}')
 
-    
+
 def stop(self):
         self.pot.stop()
         self.pico.stop()
