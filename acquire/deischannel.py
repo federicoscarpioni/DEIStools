@@ -16,12 +16,15 @@ class DEISchannel():
         self.pot.start()
         self.pot.callbacks.append(self.save_pico_intermediate)
 
+    # def _control_loop(self):
+    #     while self.pot.is_running():
+    #         if self.pot.current_loop != self.pot.data_info.loop:
+                
+        
 
     def save_pico_intermediate(self):
-        self.pico.save_intermediate_signals(f'/cycle_{self.pot.current_loop-1}/sequence_{self.pot.current_tech_index}')
+        self.pico.save_intermediate_signals(f'/cycle_{self.pot.current_loop}/sequence_{self.pot.current_tech_index}')
 
 
 def stop(self):
         self.pot.stop()
-        self.pico.stop()
-        self.save_pico_intermediate()

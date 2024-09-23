@@ -7,7 +7,7 @@ from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a
 
 # Saving 
 saving_dir = 'E:/Experimental_data/Federico/2024/python_software_test'
-experiment_name = '2409131243_test_DEISchannel_class'
+experiment_name = '2409161415_test_DEISchannel_class'
 
 # Setting up piscoscope
 # Measurment paramters
