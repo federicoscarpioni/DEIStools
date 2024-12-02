@@ -7,7 +7,7 @@ from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a
 
 # Saving 
 saving_dir = 'E:/Experimental_data/Federico/2024/python_software_test'
-experiment_name = '2409161415_test_DEISchannel_class'
+experiment_name = '2412020915_test_DEISchannel_class'
 
 # Setting up piscoscope
 # Measurment paramters
@@ -22,7 +22,7 @@ saving_path = f'{saving_dir}/{experiment_name}'
 pico.set_pico(capture_size, samples_total, sampling_time, sampling_time_scale, saving_path)
 pico.set_channel('PS5000A_CHANNEL_A', 'PS5000A_500MV')
 pico.set_channel('PS5000A_CHANNEL_B', 'PS5000A_2V', 0.1)
-pico.set_channel('PS5000A_CHANNEL_C', 'PS5000A_500MV')
+# pico.set_channel('PS5000A_CHANNEL_C', 'PS5000A_500MV')
 
 # IP address of the instrument
 ip_address = '172.28.26.11'
@@ -67,7 +67,7 @@ tech_index_start   = 0
 LOOP_user_params = tech.LOOP_params(number_repetition, tech_index_start)
 LOOP_tech    = tech.loop_tech(device, device.is_VMP3, LOOP_user_params)
 # Make sequence
-sequence = [CP_tech,LOOP_tech]
+sequence = [CP_tech,CP_tech,LOOP_tech]
 # Istantiate channel
 test_options = ChannelOptions(experiment_name)
 channel1=Channel(device,

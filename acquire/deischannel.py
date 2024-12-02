@@ -9,12 +9,15 @@ class DEISchannel():
                  trueform_awg = None):
         self.pot = potentiostat_channel
         self.pico = picoscope
+        number_techniques = len([item for item in self.pot.sequence if item != "LOOP_tech"])
+        self.sequence_counter = SequenceCounter(number_techniques)
 
 
     def run(self):
         self.pico.run_streaming_non_blocking()
+        self.pot.callbacks.append(self.sequence_counter.update())
+        self.pot.callbacks.append(self.save_pico_intermediate())
         self.pot.start()
-        self.pot.callbacks.append(self.save_pico_intermediate)
 
     # def _control_loop(self):
     #     while self.pot.is_running():
@@ -23,7 +26,7 @@ class DEISchannel():
         
 
     def save_pico_intermediate(self):
-        self.pico.save_intermediate_signals(f'/cycle_{self.pot.current_loop}/sequence_{self.pot.current_tech_index}')
+        self.pico.save_intermediate_signals(f'/cycle_{self.sequence_counter.loop}/sequence_{self.sequence_counter.technique_index}')
 
 
     def stop(self):
