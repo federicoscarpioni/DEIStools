@@ -29,6 +29,7 @@ class DEISchannel():
         self.pico.save_intermediate_signals(f'/cycle_{self.sequence_counter.loop}/sequence_{self.sequence_counter.technique_index}')
 
 
+
     def stop(self):
             self.pot.stop()
 

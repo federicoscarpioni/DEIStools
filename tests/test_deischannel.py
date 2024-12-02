@@ -9,6 +9,7 @@ from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a
 saving_dir = 'E:/Experimental_data/Federico/2024/python_software_test'
 experiment_name = '2412020915_test_DEISchannel_class'
 
+
 # Setting up piscoscope
 # Measurment paramters
 capture_size = 10000
@@ -74,9 +75,10 @@ channel1=Channel(device,
                  1,
                  saving_dir,
                  test_options,
-                 is_live_plotting= False
+                 is_live_plotting= False,
+                 is_printing_values = False
                  )
-channel1.load_sequence(sequence, ask_ok=False)
+channel1.load_sequence(sequence, ask_ok=False, )
 
 deisch1 = DEISchannel(channel1, pico)
 
