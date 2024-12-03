@@ -1,5 +1,8 @@
 from pyeclab.channel import Channel
-from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a    
+from pyeclab.device import BiologicDevice
+from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a  
+from collections import namedtuple  
+from threading import Thread
 
 
 # class DEISchannel():
@@ -52,6 +55,7 @@ class DEISchannel(Channel):
                  channel_num: int,
                  saving_dir: str,
                  channel_options: namedtuple,
+                 picoscope: Picoscope5000a,
                  is_live_plotting: bool = True,  # ? Deside which naming convention to use for booleans
                  is_recording_Ece: bool = False,
                  is_external_controlled: bool = False,
@@ -60,24 +64,44 @@ class DEISchannel(Channel):
                  is_charge_recorded: bool = False,
                  is_printing_values: bool = False,
                  callbacks=[],
-                 picoscope: Picoscope5000a,
                  trueform_awg = None
                  ):
-        super().__init__(bio_device: BiologicDevice,
-                 channel_num: int,
-                 saving_dir: str,
-                 channel_options: namedtuple,
-                 is_live_plotting: bool = True,  # ? Deside which naming convention to use for booleans
-                 is_recording_Ece: bool = False,
-                 is_external_controlled: bool = False,
-                 is_recording_analog_In1: bool = False,
-                 is_recording_analog_In2: bool = False,
-                 is_charge_recorded: bool = False,
-                 is_printing_values: bool = False,
+        super().__init__(bio_device,
+                 channel_num,
+                 saving_dir,
+                 channel_options,
+                 is_live_plotting,  
+                 is_recording_Ece,
+                 is_external_controlled,
+                 is_recording_analog_In1,
+                 is_recording_analog_In2,
+                 is_charge_recorded,
+                 is_printing_values,
                  callbacks=[])
         self.pico = picoscope
         self.awg = trueform_awg
 
     def end_technique(self):
+        save_intermediate_pico  = Thread(target=self.pico.save_intermediate_signals, args=(f'/loop_{self.current_loop}/technique_{self.current_techn_index}',))
+        save_intermediate_pico.start()
         super().end_technique()
-        self.pico.save_intermediate(f'/cycle_{self.loop}/sequence_{self.technique_index}')
+        # self.pico.save_intermediate(f'/cycle_{self.loop}/sequence_{self.technique_index}')
+    
+    def _update_sequence_trakers(self):
+        save_intermediate_pico  = Thread(target=self.pico.save_intermediate_signals, args=(f'/loop_{self.current_loop}/technique_{self.current_tech_index}',))
+        save_intermediate_pico.start()
+        super()._update_sequence_trakers()
+        
+    def _final_actions(self):
+        super()._final_actions()
+        self.pico.save_intermediate_signals(f'/loop_{self.current_loop}/technique_{self.current_tech_index}')
+        self.pico.stop()
+        
+    
+    def start(self):
+        self.pico.run_streaming_non_blocking()
+        super().start()
+    
+    def stop(self):
+        super().stop()
+        self.pico.stop()

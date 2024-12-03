@@ -7,13 +7,13 @@ from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a
 
 # Saving 
 saving_dir = 'E:/Experimental_data/Federico/2024/python_software_test'
-experiment_name = '2412020915_test_DEISchannel_class'
+experiment_name = '2412031653_test_nasted_loop'
 
 
 # Setting up piscoscope
 # Measurment paramters
 capture_size = 10000
-samples_total = 10000000 
+samples_total = 100000000 
 sampling_time = 2
 sampling_time_scale = 'PS5000A_US'
 
@@ -68,23 +68,24 @@ tech_index_start   = 0
 LOOP_user_params = tech.LOOP_params(number_repetition, tech_index_start)
 LOOP_tech    = tech.loop_tech(device, device.is_VMP3, LOOP_user_params)
 # Make sequence
-sequence = [CP_tech,CP_tech,LOOP_tech]
+sequence = [CP_tech,LOOP_tech,CP_tech,LOOP_tech]
 # Istantiate channel
 test_options = ChannelOptions(experiment_name)
-channel1=Channel(device,
+channel1=DEISchannel(device,
                  1,
                  saving_dir,
                  test_options,
+                 pico,
                  is_live_plotting= False,
                  is_printing_values = False
                  )
 channel1.load_sequence(sequence, ask_ok=False, )
 
-deisch1 = DEISchannel(channel1, pico)
+# deisch1 = DEISchannel(channel1, pico)
 
 
 # %%
-deisch1.run()
+channel1.start()
 
 # %%
-deisch1.stop()
+channel1.stop()
