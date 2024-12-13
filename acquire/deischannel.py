@@ -64,7 +64,7 @@ class DEISchannel(Channel):
                  is_charge_recorded: bool = False,
                  is_printing_values: bool = False,
                  callbacks=[],
-                 trueform_awg = None
+                 multisine_generator = None
                  ):
         super().__init__(bio_device,
                  channel_num,
@@ -79,7 +79,7 @@ class DEISchannel(Channel):
                  is_printing_values,
                  callbacks=[])
         self.pico = picoscope
-        self.awg = trueform_awg
+        self.msgen = multisine_generator
 
     def end_technique(self):
         save_intermediate_pico  = Thread(target=self.pico.save_intermediate_signals, args=(f'/loop_{self.current_loop}/technique_{self.current_techn_index}',))
@@ -87,10 +87,10 @@ class DEISchannel(Channel):
         super().end_technique()
         # self.pico.save_intermediate(f'/cycle_{self.loop}/sequence_{self.technique_index}')
     
-    def _update_sequence_trakers(self):
+    def _update_sequence_trackers(self):
         save_intermediate_pico  = Thread(target=self.pico.save_intermediate_signals, args=(f'/loop_{self.current_loop}/technique_{self.current_tech_index}',))
         save_intermediate_pico.start()
-        super()._update_sequence_trakers()
+        super()._update_sequence_trackers()
         
     def _final_actions(self):
         super()._final_actions()
