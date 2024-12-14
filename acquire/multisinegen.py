@@ -1,16 +1,16 @@
-from trueformawg.trueformawg import TrueFormAWG
+from TrueFormAWG.trueformawg.trueformawg import TrueFormAWG
 
-class MultisineGenerator:
+class MultisineGenerator(TrueFormAWG):
     def __init__(self,
-                 awg:TrueFormAWG,
+                 address,
+                 channel,
                  sequence:list[str],
                  amplitudes:list[str]):
         self.sequence = sequence
         self.amplitudes = amplitudes
-        # Import all attributes from the awg instance
-        for attr, value in vars(awg).items():
-            setattr(self, attr, value)
+        super().__init__(address, channel)
 
+    
     def update(self, index):
         if self.sequence[index] is None:
             self.turn_off()
@@ -18,3 +18,4 @@ class MultisineGenerator:
             self.select_awf(self.sequence[index])
             self.turn_on()
         self.set_amplitude(self.amplitudes[index])
+        print('AWG updated')

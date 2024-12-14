@@ -1,4 +1,5 @@
-from acquire.deischannel import DEISchannel
+from DEIStool.acquire.deischannel import DEISchannel
+from DEIStool.acquire.multisinegen import MultisineGenerator
 from pyeclab.device import BiologicDevice
 from pyeclab.channel import Channel, ChannelOptions
 import pyeclab.techniques as tech
@@ -7,7 +8,7 @@ from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a
 
 # Saving 
 saving_dir = 'E:/Experimental_data/Federico/2024/python_software_test'
-experiment_name = '2412031653_test_nasted_loop'
+experiment_name = '2412131348_test_waveform_switch_with_sequence'
 
 
 # Setting up piscoscope

@@ -55,7 +55,8 @@ class DEISchannel(Channel):
                  channel_num: int,
                  saving_dir: str,
                  channel_options: namedtuple,
-                 picoscope: Picoscope5000a,
+                 picoscope: Picoscope5000a = None,
+                 trueformawg = None,
                  is_live_plotting: bool = True,  # ? Deside which naming convention to use for booleans
                  is_recording_Ece: bool = False,
                  is_external_controlled: bool = False,
@@ -64,7 +65,7 @@ class DEISchannel(Channel):
                  is_charge_recorded: bool = False,
                  is_printing_values: bool = False,
                  callbacks=[],
-                 multisine_generator = None
+                 
                  ):
         super().__init__(bio_device,
                  channel_num,
@@ -79,29 +80,41 @@ class DEISchannel(Channel):
                  is_printing_values,
                  callbacks=[])
         self.pico = picoscope
-        self.msgen = multisine_generator
+        self.awg = trueformawg
 
     def end_technique(self):
-        save_intermediate_pico  = Thread(target=self.pico.save_intermediate_signals, args=(f'/loop_{self.current_loop}/technique_{self.current_techn_index}',))
-        save_intermediate_pico.start()
+        if self.pico is not None:
+            save_intermediate_pico  = Thread(target=self.pico.save_intermediate_signals, args=(f'/loop_{self.current_loop}/technique_{self.current_techn_index}',))
+            save_intermediate_pico.start()
         super().end_technique()
-        # self.pico.save_intermediate(f'/cycle_{self.loop}/sequence_{self.technique_index}')
+        
+
     
     def _update_sequence_trackers(self):
-        save_intermediate_pico  = Thread(target=self.pico.save_intermediate_signals, args=(f'/loop_{self.current_loop}/technique_{self.current_tech_index}',))
-        save_intermediate_pico.start()
+        if self.pico is not None:
+            save_intermediate_pico  = Thread(target=self.pico.save_intermediate_signals, args=(f'/loop_{self.current_loop}/technique_{self.current_tech_index}',))
+            save_intermediate_pico.start()
         super()._update_sequence_trackers()
+        if self.awg is not None: self.awg.update(self.current_tech_index)
+
         
     def _final_actions(self):
         super()._final_actions()
-        self.pico.save_intermediate_signals(f'/loop_{self.current_loop}/technique_{self.current_tech_index}')
-        self.pico.stop()
+        if self.pico is not None:
+            self.pico.save_intermediate_signals(f'/loop_{self.current_loop}/technique_{self.current_tech_index}')
+            self.pico.stop()
+        if self.awg is not None: self.awg.turn_off()
         
     
     def start(self):
-        self.pico.run_streaming_non_blocking()
+        if self.awg is not None: 
+            self.awg.update(self.current_tech_index)
+            self.awg.turn_on()
+        if self.pico is not None: self.pico.run_streaming_non_blocking()
         super().start()
+        
     
     def stop(self):
         super().stop()
-        self.pico.stop()
+        if self.pico is not None: self.pico.stop()
+        if self.awg is not None: self.awg.turn_off()
