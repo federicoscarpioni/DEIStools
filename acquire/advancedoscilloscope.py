@@ -9,7 +9,7 @@ from threading import Thread
 class ZPico5000a(Picoscope5000a):
     '''
     A class to perform on-line short-time Fourier Transform EIS on data streamed by a PicoScope. Performs also filtering
-    and downsampling.
+    and downsampling on the sampled signal.
     '''
     def __init__(self,
                  sample_size,
