@@ -1,5 +1,6 @@
 from numpy.fft import fft, fftshift, fftfreq
 import numpy as np
+import matplotlib.pyplot as plt
 
 class MultiFrequencyAnalysis:
     
@@ -14,7 +15,8 @@ class MultiFrequencyAnalysis:
         self.ft_current = fftshift(fft(self.current)) / self.current.size
         self.freq_axis = fftshift(fftfreq(self.voltage.size, self.sampling_time))
         indexes = self.find_freq_indexes(self.ft_current)
-        self.impedance = np.divide(self.ft_voltage[indexes],self.ft_current[indexes])
+        self.impedance = self.ft_voltage[indexes] / self.ft_current[indexes]
+
 
 
     def find_freq_indexes(self, input_signal):

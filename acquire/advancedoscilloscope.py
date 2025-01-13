@@ -41,32 +41,36 @@ class ZPico5000a(Picoscope5000a):
 
 
     def create_lp_filter(self):
-        self.filt_b, self.filt_a = bessel(self.order, self.cutoff, btype='low', analog=False, norm='phase')
+        self.filt_b, self.filt_a = bessel(self.order, self.cutoff, btype='lowpass', analog=False, norm='phase')
         self.initial_cond = lfilter_zi(self.filt_b, self.filt_a)
+    
 
+    
 
     def compute_high_freq_z(self):
         # Convert the signals
-        voltage_original = self.convert_ADC_numbers(self.channels['A'].buffer_total.read(self.sample_size),
+        self.voltage_original = self.convert_ADC_numbers(self.channels['A'].buffer_total.read(self.sample_size)[:,0], # Note: it is foundamental to add the [:,0] slicing to make the array 1D otherwise np.fft.fft will considere it 2D!!!
                                            self.channels['A'].vrange,
                                            self.channels['A'].irange)
-        current_original = self.convert_ADC_numbers(self.channels['B'].buffer_total.read(self.sample_size),
+        self.current_original = self.convert_ADC_numbers(self.channels['B'].buffer_total.read(self.sample_size)[:,0],
                                            self.channels['B'].vrange,
                                            self.channels['B'].irange)
         # Compute the impedance at high frequency
         self.high_freqs_analysis = MultiFrequencyAnalysis(self.frequencies,
-                                            voltage_original,
-                                            current_original,
+                                            self.voltage_original,
+                                            self.current_original,
                                             self.time_step)
         self.high_freqs_analysis.fft_eis()
         # Save the high impedance
-        self.impedance[:,self.impedance_index] = self.high_freqs_analysis.impedance[:,0]
-        self.impedance_index =+ 1
+        self.impedance[:,self.impedance_index] = self.high_freqs_analysis.impedance
+        self.impedance_index += 1
         # # Filter the signal
-        voltage_filt, _ = lfilter(self.filt_b, self.filt_a, voltage_original[:,0], zi=self.initial_cond * voltage_original[0])
-        current_filt, _ = lfilter(self.filt_b, self.filt_a, current_original[:,0], zi=self.initial_cond * current_original[0])
-        self.voltage.write(voltage_filt[::self.ds_factor])
-        self.current.write(current_filt[::self.ds_factor])
+        self.voltage_filt= lfilter(self.filt_b, self.filt_a, self.voltage_original, zi=self.initial_cond * self.voltage_original[0])
+        self.current_filt = lfilter(self.filt_b, self.filt_a, self.current_original, zi=self.initial_cond * self.current_original[0])
+        # self.voltage.write(self.voltage_filt[0][::self.ds_factor])
+        # self.current.write(self.current_filt[0][::self.ds_factor])
+        self.voltage.write(self.voltage_original)
+        self.current.write(self.current_original)
         print('pico msg: completed z calculation and downsampling')
 
     def _online_computation(self):
@@ -78,16 +82,16 @@ class ZPico5000a(Picoscope5000a):
 
 
     def save_signals(self):
-        np.save(self.saving_dir + f'/voltage.npy', self.voltage)
-        np.save(self.saving_dir + f'/current.npy', self.current)
+        np.save(self.saving_dir + '/voltage.npy', self.voltage)
+        np.save(self.saving_dir + '/current.npy', self.current)
 
     def save_intermediate_signals(self, subfolder_name):
         self.computation_thread.join()
         saving_file_path = self.saving_dir + subfolder_name
         Path(saving_file_path).mkdir(parents=True, exist_ok=True)
-        np.save(saving_file_path + f'/voltage.npy', self.voltage.read())
-        np.save(saving_file_path + f'/current.npy', self.current.read())
-        np.save(saving_file_path + f'/impedance.npy', self.impedance[:,:self.impedance_index])
+        np.save(saving_file_path + '/voltage.npy', self.voltage.read())
+        np.save(saving_file_path + '/current.npy', self.current.read())
+        np.savetxt(saving_file_path + '/fftEISimpedance.txt', self.impedance[:,0:self.impedance_index])
         
         # Reset the variables
         self.impedance = np.zeros((self.frequencies.size, int(self.buffer_size / self.ds_factor)))
