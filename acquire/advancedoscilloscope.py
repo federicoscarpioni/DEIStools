@@ -6,6 +6,19 @@ from np_rw_buffer import RingBuffer
 from pathlib import Path
 from threading import Thread
 
+
+class LowPassFilter:
+    def __init__(self,order, cutoff):
+        self.order = order
+        self.cutoff = cutoff
+        self.b, self.a = bessel(self.order,
+                               self.cutoff,
+                               btype='lowpass',
+                               analog=False,
+                               norm='phase')
+        self.initial_cond = lfilter_zi(self.filt_b, self.filt_a)
+
+
 class ZPico5000a(Picoscope5000a):
     '''
     A class to perform on-line short-time Fourier Transform EIS on data streamed by a PicoScope. Performs also filtering
@@ -15,9 +28,12 @@ class ZPico5000a(Picoscope5000a):
                  sample_size,
                  frequencies,
                  irange,
-                 filter_order,
-                 cutoff,
-                 ds_factor,
+                 filter_order1,
+                 cutoff1,
+                 ds_factor1,
+                 filter_order2,
+                 cutoff2,
+                 ds_factor2,
                  buffer_size,
                  resolution,
                  serial = None,
@@ -26,11 +42,11 @@ class ZPico5000a(Picoscope5000a):
         self.frequencies = frequencies
         self.irange = irange
         super().__init__(resolution, serial = None)
-        # Downsampling filter
-        self.order = filter_order
-        self.cutoff = cutoff
-        self.filter = self.create_lp_filter()
-        self.ds_factor = ds_factor
+        # Create filters
+        self.filter1 = LowPassFilter(filter_order1, cutoff1)
+        self.filter2 = LowPassFilter(filter_order2, cutoff2)
+        self.ds_factor1 = ds_factor1
+        self.ds_factor2 = ds_factor2
         # Storage of the downsampled signals
         self.buffer_size = buffer_size
         self.voltage = RingBuffer(self.buffer_size, dtype=np.float32)
@@ -39,13 +55,6 @@ class ZPico5000a(Picoscope5000a):
         self.impedance = np.zeros((frequencies.size,int(self.buffer_size/ds_factor)), dtype = np.complex64)
         self.impedance_index = 0
 
-
-    def create_lp_filter(self):
-        self.filt_b, self.filt_a = bessel(self.order, self.cutoff, btype='lowpass', analog=False, norm='phase')
-        self.initial_cond = lfilter_zi(self.filt_b, self.filt_a)
-    
-
-    
 
     def compute_high_freq_z(self):
         # Convert the signals
@@ -64,13 +73,20 @@ class ZPico5000a(Picoscope5000a):
         # Save the high impedance
         self.impedance[:,self.impedance_index] = self.high_freqs_analysis.impedance
         self.impedance_index += 1
-        # # Filter the signal
-        self.voltage_filt= lfilter(self.filt_b, self.filt_a, self.voltage_original, zi=self.initial_cond * self.voltage_original[0])
-        self.current_filt = lfilter(self.filt_b, self.filt_a, self.current_original, zi=self.initial_cond * self.current_original[0])
-        # self.voltage.write(self.voltage_filt[0][::self.ds_factor])
-        # self.current.write(self.current_filt[0][::self.ds_factor])
-        self.voltage.write(self.voltage_original)
-        self.current.write(self.current_original)
+        ## Filter the signal and decimate in two stages
+        self.voltage_filt= lfilter(self.filt1.b, self.filt1.a, self.voltage_original,
+                                   zi=self.filt1.initial_cond * self.voltage_original[0])
+        self.current_filt = lfilter(self.filt1.b, self.filt1.a, self.current_original,
+                                    zi=self.filt1.initial_cond * self.current_original[0])
+        self.voltage_filt = self.voltage_filt[0][::self.ds_factor1]
+        self.current_filt = self.current_filt[0][::self.ds_factor1]
+        self.voltage_filt = lfilter(self.filt2.b, self.filt2.a, self.voltage_filt,
+                                    zi=self.filt2.initial_cond * self.voltage_filt[0])
+        self.current_filt = lfilter(self.filt2.b, self.filt2.a, self.current_original,
+                                    zi=self.filt2.initial_cond * self.current_original[0])
+        self.voltage.write(self.voltage_filt[0][::self.ds_factor2])
+        self.current.write(self.current_filt[0][::self.ds_factor2])
+
         print('pico msg: completed z calculation and downsampling')
 
     def _online_computation(self):
