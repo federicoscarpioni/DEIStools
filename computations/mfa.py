@@ -18,7 +18,6 @@ class MultiFrequencyAnalysis:
         self.impedance = self.ft_voltage[indexes] / self.ft_current[indexes]
 
 
-
     def find_freq_indexes(self, input_signal):
         index_f0 = np.where(self.freq_axis == 0)[0][0]
         n_samples = input_signal.size
@@ -40,3 +39,19 @@ class MultiFrequencyAnalysis:
             index_multisine_freq[f] = min_searching + int(np.argmax((np.abs(input_signal[(searching_freq_rng)])),axis = 0))
               
         return index_multisine_freq
+
+    def fermi_dirac_filter(self,fr, fc, bw, n):
+        """
+        Create a digital filter shaped as a symmetric Fermi-Dirac function.
+        """
+        X = (fr - fc) / bw
+        Y = np.cosh(n) / (np.cosh(n * X) + np.cosh(n))
+        return Y
+
+    def lp_filter(self, cutoff):
+        """
+        Apply a low-pass filter to the signal
+        """
+        filter = self.fermi_dirac_filter(self.freq_axis,0,2*cutoff, 8)
+        self.voltage = self.voltage * filter
+        self.current = self.current * filter
