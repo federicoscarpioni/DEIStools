@@ -1,6 +1,14 @@
-from numpy.fft import fft, fftshift, fftfreq
+from numpy.fft import fft, fftshift, fftfreq, ifft, ifftshift
 import numpy as np
 import matplotlib.pyplot as plt
+
+def fermi_dirac_filter(fr, fc, bw, n):
+    """
+    Create a digital filter shaped as a symmetric Fermi-Dirac function.
+    """
+    X = (fr - fc) / bw
+    Y = np.cosh(n) / (np.cosh(n * X) + np.cosh(n))
+    return Y
 
 class MultiFrequencyAnalysis:
     
@@ -9,11 +17,13 @@ class MultiFrequencyAnalysis:
         self.voltage = voltage
         self.current = current
         self.sampling_time = sampling_time
-
+    
+    def compute_freq_axis(self):
+        self.freq_axis = fftshift(fftfreq(self.voltage.size, self.sampling_time))
+    
     def fft_eis(self):
         self.ft_voltage = fftshift(fft(self.voltage)) / self.voltage.size
         self.ft_current = fftshift(fft(self.current)) / self.current.size
-        self.freq_axis = fftshift(fftfreq(self.voltage.size, self.sampling_time))
         indexes = self.find_freq_indexes(self.ft_current)
         self.impedance = self.ft_voltage[indexes] / self.ft_current[indexes]
 
@@ -40,18 +50,10 @@ class MultiFrequencyAnalysis:
               
         return index_multisine_freq
 
-    def fermi_dirac_filter(self,fr, fc, bw, n):
-        """
-        Create a digital filter shaped as a symmetric Fermi-Dirac function.
-        """
-        X = (fr - fc) / bw
-        Y = np.cosh(n) / (np.cosh(n * X) + np.cosh(n))
-        return Y
-
-    def lp_filter(self, cutoff):
+    def lp_filter(self, cutoff, order):
         """
         Apply a low-pass filter to the signal
         """
-        filter = self.fermi_dirac_filter(self.freq_axis,0,2*cutoff, 8)
-        self.voltage = self.voltage * filter
-        self.current = self.current * filter
+        filter = fermi_dirac_filter(self.freq_axis,0,2*cutoff, order)
+        self.voltage_filt = self.voltage.size * ifft(ifftshift(self.voltage * filter)).real
+        self.current_filt = self.current.size * ifft(ifftshift(self.current * filter)).real

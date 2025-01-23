@@ -110,7 +110,7 @@ class DEISchannel(Channel):
         if self.awg is not None: 
             self.awg.update(self.current_tech_index)
             self.awg.turn_on()
-        if self.pico is not None: self.pico.run_streaming_non_blocking()
+        if self.pico is not None: self.pico.run_streaming_non_blocking(autoStop=False)
         super().start()
         
     

@@ -1,6 +1,7 @@
 import numpy as np
+from numpy.fft import ifft,ifftshift
 from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a
-from computations.mfa import MultiFrequencyAnalysis
+from computations.mfa import MultiFrequencyAnalysis, fermi_dirac_filter
 from scipy.signal import bessel, lfilter, lfilter_zi
 from np_rw_buffer import RingBuffer
 from pathlib import Path
@@ -16,7 +17,7 @@ class LowPassFilter:
                                btype='lowpass',
                                analog=False,
                                norm='phase')
-        self.initial_cond = lfilter_zi(self.filt_b, self.filt_a)
+        self.initial_cond = lfilter_zi(self.b, self.a)
 
 
 class ZPico5000a(Picoscope5000a):
@@ -28,12 +29,9 @@ class ZPico5000a(Picoscope5000a):
                  sample_size,
                  frequencies,
                  irange,
-                 filter_order1,
-                 cutoff1,
-                 ds_factor1,
-                 filter_order2,
-                 cutoff2,
-                 ds_factor2,
+                 filter_order,
+                 cutoff,
+                 ds_factor,
                  buffer_size,
                  resolution,
                  serial = None,
@@ -41,20 +39,33 @@ class ZPico5000a(Picoscope5000a):
         self.sample_size = sample_size
         self.frequencies = frequencies
         self.irange = irange
-        super().__init__(resolution, serial = None)
-        # Create filters
-        self.filter1 = LowPassFilter(filter_order1, cutoff1)
-        self.filter2 = LowPassFilter(filter_order2, cutoff2)
-        self.ds_factor1 = ds_factor1
-        self.ds_factor2 = ds_factor2
-        # Storage of the downsampled signals
+        # Low-pass filter paramters
         self.buffer_size = buffer_size
+        self.ds_factor = ds_factor
+        self.cutoff = cutoff
+        self.filter_order = filter_order
+        super().__init__(resolution, serial = None)
+        
+
+    def allocate_memory(self):
+        # Prepare high frequency analysis object
+        self.high_freqs_analysis = MultiFrequencyAnalysis(self.frequencies,
+                                            np.zeros(self.sample_size),
+                                            np.zeros(self.sample_size),
+                                            self.time_step)
+        self.high_freqs_analysis.compute_freq_axis()
+        self.fd_filter = fermi_dirac_filter(self.high_freqs_analysis.freq_axis,0,2*self.cutoff, self.filter_order)
+        # Allocate ring buffer fot th storage of the downsampled signals
+    
         self.voltage = RingBuffer(self.buffer_size, dtype=np.float32)
         self.current = RingBuffer(self.buffer_size, dtype=np.float32)
         # Allocate array for impedance
-        self.impedance = np.zeros((frequencies.size,int(self.buffer_size/ds_factor)), dtype = np.complex64)
+        self.impedance = np.zeros((self.frequencies.size,int(self.buffer_size/self.ds_factor)), dtype = np.complex64)
         self.impedance_index = 0
-
+    
+    def set_pico(self, capture_size, samples_total, sampling_time, time_unit, saving_path):
+        super().set_pico(capture_size, samples_total, sampling_time, time_unit, saving_path)
+        self.allocate_memory()
 
     def compute_high_freq_z(self):
         # Convert the signals
@@ -65,27 +76,23 @@ class ZPico5000a(Picoscope5000a):
                                            self.channels['B'].vrange,
                                            self.channels['B'].irange)
         # Compute the impedance at high frequency
-        self.high_freqs_analysis = MultiFrequencyAnalysis(self.frequencies,
-                                            self.voltage_original,
-                                            self.current_original,
-                                            self.time_step)
+        # self.high_freqs_analysis = MultiFrequencyAnalysis(self.frequencies,
+        #                                     self.voltage_original,
+        #                                     self.current_original,
+        #                                     self.time_step)
+        # Overwrite the new data into the analysis object
+        self.high_freqs_analysis.voltage = self.voltage_original
+        self.high_freqs_analysis.current = self.current_original
         self.high_freqs_analysis.fft_eis()
         # Save the high impedance
         self.impedance[:,self.impedance_index] = self.high_freqs_analysis.impedance
         self.impedance_index += 1
-        ## Filter the signal and decimate in two stages
-        self.voltage_filt= lfilter(self.filt1.b, self.filt1.a, self.voltage_original,
-                                   zi=self.filt1.initial_cond * self.voltage_original[0])
-        self.current_filt = lfilter(self.filt1.b, self.filt1.a, self.current_original,
-                                    zi=self.filt1.initial_cond * self.current_original[0])
-        self.voltage_filt = self.voltage_filt[0][::self.ds_factor1]
-        self.current_filt = self.current_filt[0][::self.ds_factor1]
-        self.voltage_filt = lfilter(self.filt2.b, self.filt2.a, self.voltage_filt,
-                                    zi=self.filt2.initial_cond * self.voltage_filt[0])
-        self.current_filt = lfilter(self.filt2.b, self.filt2.a, self.current_original,
-                                    zi=self.filt2.initial_cond * self.current_original[0])
-        self.voltage.write(self.voltage_filt[0][::self.ds_factor2])
-        self.current.write(self.current_filt[0][::self.ds_factor2])
+        
+        ## Filter the signal and decimate 
+        self.voltage_filt = self.sample_size * ifft(ifftshift(self.high_freqs_analysis.ft_voltage * self.fd_filter)).real
+        self.current_filt = self.sample_size * ifft(ifftshift(self.high_freqs_analysis.ft_current * self.fd_filter)).real
+        self.voltage.write(self.voltage_filt[::self.ds_factor])
+        self.current.write(self.current_filt[::self.ds_factor])
 
         print('pico msg: completed z calculation and downsampling')
 
@@ -105,10 +112,10 @@ class ZPico5000a(Picoscope5000a):
         self.computation_thread.join()
         saving_file_path = self.saving_dir + subfolder_name
         Path(saving_file_path).mkdir(parents=True, exist_ok=True)
-        np.save(saving_file_path + '/voltage.npy', self.voltage.read())
-        np.save(saving_file_path + '/current.npy', self.current.read())
+        np.save(saving_file_path + '/voltage.npy', self.voltage.read()[:,0])
+        np.save(saving_file_path + '/current.npy', self.current.read()[:,0])
         np.savetxt(saving_file_path + '/fftEISimpedance.txt', self.impedance[:,0:self.impedance_index])
         
         # Reset the variables
-        self.impedance = np.zeros((self.frequencies.size, int(self.buffer_size / self.ds_factor)))
+        self.impedance = np.zeros((self.frequencies.size, int(self.buffer_size))) # da correggere, buffer size è molto più grande
         self.impedance_index = 0

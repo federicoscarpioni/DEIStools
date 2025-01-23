@@ -2,6 +2,7 @@ import json
 import numpy as np
 from DEIStools.acquire.deischannel import DEISchannel
 from DEIStools.acquire.advancedoscilloscope import ZPico5000a
+from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a
 from DEIStools.acquire.multisinegen import MultisineGenerator
 from pyeclab.device import BiologicDevice
 from pyeclab.channel import Channel, ChannelOptions
@@ -12,7 +13,7 @@ from TrueFormAWG.trueformawg.trueformawg import TrueFormAWG, VISAdevices, import
 # %% Set up saving path
 # =============================================================================
 saving_dir = 'E:/Experimental_data/Federico/2025/python_software_test/'
-experiment_name = '2501130949_test_filtering_automation'
+experiment_name = '2501231332_test_fermi_dirc_low_pas_advanceoscilloscope_10periods_CP_4500uA'
 
 
 # =============================================================================
@@ -43,8 +44,10 @@ awg_ch2.set_sample_rate(1000)
 
 # Combine channels
 awg_ch1.combine_channels()
-awg_ch1.set_amplitude(0.1)
+awg_ch1.set_amplitude(0.2)
 awg_ch1.set_offset(0)
+awg_ch2.set_amplitude(0.2)
+awg_ch2.set_offset(0)
 
 # Define frequencies for online computation of impedance
 json_file = open('E:/multisine_collection/2412111607multisine_splitted_100kHz-10mHz_8ptd_fgen1MHz_flat_norm_random_phases/high_freqs/waveform_metadata.json')
@@ -61,18 +64,19 @@ high_freqs = multisine_freqs[28:]
 # %% Set up oscilloscope
 # =============================================================================
 # Measurment paramters
-capture_size =  400000000
-samples_total =  400000000
+capture_size =  1100000000
+samples_total =  1100000000
 sampling_time =  1
 sampling_time_scale = 'PS5000A_US'
 # STFFT-EIS parameters
-sample_size = int(100/1e-6) # low freq period / sampling rate
-irange = 0.0001
-filter_order = 5
-cutoff = 100/500000
-ds_factor = int(1e-4/1e-6) # new time step / original time step
-buffer_size = int(1e4 * 60 * 60 * 1) # one hour of aqusition / seconds per spectra
+sample_size = int(1e6*100) # sampling frequency * analysis time
+irange = 0.1
+filter_order = 8
+cutoff = 90
+ds_factor = int(2e-3/1e-6) # new time step / original time step
+buffer_size = int(capture_size/ds_factor) # sampling time / acquisition time  (in s)
 # Connect instrument and perform the acquisiton
+# pico = Picoscope5000a('PS5000A_DR_14BIT')
 pico = ZPico5000a(sample_size,
                   high_freqs,
                   irange,
@@ -83,9 +87,8 @@ pico = ZPico5000a(sample_size,
                   'PS5000A_DR_14BIT')
 saving_path = saving_dir + experiment_name
 pico.set_pico(capture_size, samples_total, sampling_time, sampling_time_scale, saving_path)
-pico.set_channel('PS5000A_CHANNEL_A', 'PS5000A_500MV')
-pico.set_channel('PS5000A_CHANNEL_B', 'PS5000A_1V', irange)
-# Activate low pass filter
+pico.set_channel('PS5000A_CHANNEL_A', 'PS5000A_5V')
+pico.set_channel('PS5000A_CHANNEL_B', 'PS5000A_200MV', irange)
 
 
 # =============================================================================
@@ -100,59 +103,59 @@ binary_path = "C:/EC-Lab Development Package/EC-Lab Development Package/"
 device = BiologicDevice(ip_address, binary_path = binary_path)
 
 # Create CP technique
-# E_range        = 0
-# bw             = 8
-# repeat_count   = 0
-# record_dt      = 1
-# record_dE      = 10    # Volts
-# current        = 0    # Ampers
-# duration_CP    = 100        # Seconds (sec * min * hours)
-# limit_E_crg    = 0b11111
-# E_lim_high     = 5        # Volts
-# E_lim_low      = -5         # Volts
-# i_range        = 8
-# exit_cond      = 1
-# xctr           = 0b00001000
-# CP_user_params = tech.CPLIM_params(current, 
-#                                       duration_CP, 
-#                                       False, 
-#                                       0, 
-#                                       record_dt, 
-#                                       record_dE, 
-#                                       repeat_count, 
-#                                       i_range,
-#                                       E_range,
-#                                       exit_cond,
-#                                       xctr,
-#                                       E_lim_high,
-#                                       limit_E_crg, 
-#                                       bw)
-# CP_tech = tech.CPLIM_tech(device, device.is_VMP3, CP_user_params)
-
-# Create CA technique
-E_range        = 0
+E_range        = 1
 bw             = 8
 repeat_count   = 0
 record_dt      = 1
-record_dI      = 10   # Ampers
-voltage        = 0   # Volts
-i_range        = 6
-duration_CA    = 100     # Seconds (sec * min * hours)
-exit_cond      = 10
+record_dE      = 10    # Volts
+current        = 0.0045    # Ampers
+duration_CP    = 1010        # Seconds (sec * min * hours)
+limit_E_crg    = 0b11111
+E_lim_high     = 5        # Volts
+E_lim_low      = -5         # Volts
+i_range        = 9
+exit_cond      = 1
 xctr           = 0b00001000
-CA_user_params    = tech.CA_params(voltage, 
-                                  duration_CA, 
-                                  False, 
-                                  0, 
-                                  record_dt, 
-                                  record_dI, 
-                                  repeat_count,
-                                  i_range,
-                                  E_range,
-                                  exit_cond, 
-                                  xctr,
-                                  bw)
-CA_tech = tech.CA_tech(device, device.is_VMP3, CA_user_params)
+CP_user_params = tech.CPLIM_params(current, 
+                                      duration_CP, 
+                                      False, 
+                                      0, 
+                                      record_dt, 
+                                      record_dE, 
+                                      repeat_count, 
+                                      i_range,
+                                      E_range,
+                                      exit_cond,
+                                      xctr,
+                                      E_lim_high,
+                                      limit_E_crg, 
+                                      bw)
+CP_tech = tech.CPLIM_tech(device, device.is_VMP3, CP_user_params)
+
+# Create CA technique
+# E_range        = 1
+# bw             = 8
+# repeat_count   = 0
+# record_dt      = 1
+# record_dI      = 10   # Ampers
+# voltage        = 2.6   # Volts
+# i_range        = 8
+# duration_CA    = 100     # Seconds (sec * min * hours)
+# exit_cond      = 10
+# xctr           = 0b00001000
+# CA_user_params    = tech.CA_params(voltage, 
+#                                   duration_CA, 
+#                                   False, 
+#                                   0, 
+#                                   record_dt, 
+#                                   record_dI, 
+#                                   repeat_count,
+#                                   i_range,
+#                                   E_range,
+#                                   exit_cond, 
+#                                   xctr,
+#                                   bw)
+# CA_tech = tech.CA_tech(device, device.is_VMP3, CA_user_params)
 
 # Istantiate channel
 test_options = ChannelOptions(experiment_name)
@@ -165,7 +168,7 @@ deisch1=DEISchannel(device,
                  )
 
 # Make sequence
-sequence = [CA_tech]
+sequence = [CP_tech]
 deisch1.load_sequence(sequence, ask_ok=False)
 
 # =============================================================================
@@ -173,10 +176,17 @@ deisch1.load_sequence(sequence, ask_ok=False)
 # =============================================================================
 awg_ch1.turn_on()
 deisch1.start()
+# pico.run_streaming_non_blocking(autoStop= True)
 
 
 # =============================================================================
 # %% End measurement
 # =============================================================================
 deisch1.stop()
+
+
+# =============================================================================
+# %% Disconnect devices
+# =============================================================================
 pico.disconnect()
+device.disconnect()
