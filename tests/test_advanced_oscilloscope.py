@@ -12,8 +12,8 @@ from TrueFormAWG.trueformawg.trueformawg import TrueFormAWG, VISAdevices, import
 # =============================================================================
 # %% Set up saving path
 # =============================================================================
-saving_dir = 'E:/Experimental_data/Federico/2025/python_software_test/'
-experiment_name = '2501231332_test_fermi_dirc_low_pas_advanceoscilloscope_10periods_CP_4500uA'
+saving_dir = 'E:/Experimental_data/Federico/2025/multisine_amplitued_coin/'
+experiment_name = '2501241550_20mV_IRange100mA_CP_0A_10_periods'
 
 
 # =============================================================================
@@ -44,9 +44,9 @@ awg_ch2.set_sample_rate(1000)
 
 # Combine channels
 awg_ch1.combine_channels()
-awg_ch1.set_amplitude(0.2)
+awg_ch1.set_amplitude(0.02)
 awg_ch1.set_offset(0)
-awg_ch2.set_amplitude(0.2)
+awg_ch2.set_amplitude(0.02)
 awg_ch2.set_offset(0)
 
 # Define frequencies for online computation of impedance
@@ -108,7 +108,7 @@ bw             = 8
 repeat_count   = 0
 record_dt      = 1
 record_dE      = 10    # Volts
-current        = 0.0045    # Ampers
+current        = 0    # Ampers
 duration_CP    = 1010        # Seconds (sec * min * hours)
 limit_E_crg    = 0b11111
 E_lim_high     = 5        # Volts
@@ -138,14 +138,15 @@ CP_tech = tech.CPLIM_tech(device, device.is_VMP3, CP_user_params)
 # repeat_count   = 0
 # record_dt      = 1
 # record_dI      = 10   # Ampers
-# voltage        = 2.6   # Volts
+# voltage        = 0   # Volts
+# vs_init        = True
 # i_range        = 8
-# duration_CA    = 100     # Seconds (sec * min * hours)
+# duration_CA    = 210     # Seconds (sec * min * hours)
 # exit_cond      = 10
 # xctr           = 0b00001000
 # CA_user_params    = tech.CA_params(voltage, 
 #                                   duration_CA, 
-#                                   False, 
+#                                   vs_init, 
 #                                   0, 
 #                                   record_dt, 
 #                                   record_dI, 
@@ -156,6 +157,12 @@ CP_tech = tech.CPLIM_tech(device, device.is_VMP3, CP_user_params)
 #                                   xctr,
 #                                   bw)
 # CA_tech = tech.CA_tech(device, device.is_VMP3, CA_user_params)
+
+# Create loop technique
+# number_repetition  = 1
+# tech_index_start   = 0
+# LOOP_user_params = tech.LOOP_params(number_repetition, tech_index_start)
+# LOOP_tech    = tech.loop_tech(device, device.is_VMP3, LOOP_user_params)
 
 # Istantiate channel
 test_options = ChannelOptions(experiment_name)
