@@ -117,5 +117,5 @@ class ZPico5000a(Picoscope5000a):
         np.savetxt(saving_file_path + '/fftEISimpedance.txt', self.impedance[:,0:self.impedance_index])
         
         # Reset the variables
-        self.impedance = np.zeros((self.frequencies.size, int(self.buffer_size))) # da correggere, buffer size è molto più grande
+        self.impedance = np.zeros((self.frequencies.size, int(self.buffer_size)), dtype = np.complex64) # da correggere, buffer size è molto più grande
         self.impedance_index = 0
