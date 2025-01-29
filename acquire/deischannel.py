@@ -84,7 +84,7 @@ class DEISchannel(Channel):
 
     def end_technique(self):
         if self.pico is not None:
-            save_intermediate_pico  = Thread(target=self.pico.save_intermediate_signals, args=(f'/loop_{self.current_loop}/technique_{self.current_techn_index}',))
+            save_intermediate_pico  = Thread(target=self.pico.save_intermediate_signals, args=(f'/loop_{self.current_loop}/technique_{self.current_tech_index}',))
             save_intermediate_pico.start()
         super().end_technique()
         
@@ -109,7 +109,6 @@ class DEISchannel(Channel):
     def start(self):
         if self.awg is not None: 
             self.awg.update(self.current_tech_index)
-            self.awg.turn_on()
         if self.pico is not None: self.pico.run_streaming_non_blocking(autoStop=False)
         super().start()
         
