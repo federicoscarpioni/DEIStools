@@ -13,7 +13,7 @@ from TrueFormAWG.trueformawg.trueformawg import TrueFormAWG, VISAdevices, import
 # %% Set up saving path
 # =============================================================================
 saving_dir = 'E:/Experimental_data/Federico/2025/multisine_amplitued_coin/'
-experiment_name = '2501281237_short_test_device_connection'
+experiment_name = '2501291551_test_pico_save_cycling_0V_0A_IRange100mA_multisine20mV'
 
 
 # =============================================================================
@@ -44,9 +44,9 @@ awg_ch2.set_sample_rate(1000)
 
 # Combine channels
 awg_ch1.combine_channels()
-awg_ch1.set_amplitude(0.02)
+awg_ch1.set_amplitude(0.05)
 awg_ch1.set_offset(0)
-awg_ch2.set_amplitude(0.02)
+awg_ch2.set_amplitude(0.05)
 awg_ch2.set_offset(0)
 
 # Define frequencies for online computation of impedance
@@ -102,20 +102,20 @@ binary_path = "C:/EC-Lab Development Package/EC-Lab Development Package/"
 # Istantiate device class
 device = BiologicDevice(ip_address, binary_path = binary_path)
 
-# Create CP technique
+# Create CP technique for charging
 E_range        = 1
 bw             = 8
 repeat_count   = 0
 record_dt      = 1
 record_dE      = 10    # Volts
-current        = 0    # Ampers
-duration_CP    = 1010        # Seconds (sec * min * hours)
+current        = 0#.0045    # Ampers
+duration_CP    = 205        # Seconds (sec * min * hours)
 limit_E_crg    = 0b11111
 E_lim_high     = 5        # Volts
 E_lim_low      = -5         # Volts
 i_range        = 9
 exit_cond      = 1
-xctr           = 0b00001000
+xctr           = 0b01001000
 CP_user_params = tech.CPLIM_params(current, 
                                       duration_CP, 
                                       False, 
@@ -130,39 +130,69 @@ CP_user_params = tech.CPLIM_params(current,
                                       E_lim_high,
                                       limit_E_crg, 
                                       bw)
-CP_tech = tech.CPLIM_tech(device, device.is_VMP3, CP_user_params)
+CP_charge_tech = tech.CPLIM_tech(device, device.is_VMP3, CP_user_params)
 
 # Create CA technique
-# E_range        = 1
-# bw             = 8
-# repeat_count   = 0
-# record_dt      = 1
-# record_dI      = 10   # Ampers
-# voltage        = 0   # Volts
-# vs_init        = True
-# i_range        = 8
-# duration_CA    = 210     # Seconds (sec * min * hours)
-# exit_cond      = 10
-# xctr           = 0b00001000
-# CA_user_params    = tech.CA_params(voltage, 
-#                                   duration_CA, 
-#                                   vs_init, 
-#                                   0, 
-#                                   record_dt, 
-#                                   record_dI, 
-#                                   repeat_count,
-#                                   i_range,
-#                                   E_range,
-#                                   exit_cond, 
-#                                   xctr,
-#                                   bw)
-# CA_tech = tech.CA_tech(device, device.is_VMP3, CA_user_params)
+E_range        = 1
+bw             = 8
+repeat_count   = 0
+record_dt      = 1
+record_dI      = 10   # Ampers
+voltage        = 0   # Volts
+vs_init        = True
+i_range        = 9
+duration_CA    = 205     # Seconds (sec * min * hours)
+exit_cond      = 10
+xctr           = 0b01001000
+CA_user_params    = tech.CA_params(voltage, 
+                                  duration_CA, 
+                                  vs_init, 
+                                  0, 
+                                  record_dt, 
+                                  record_dI, 
+                                  repeat_count,
+                                  i_range,
+                                  E_range,
+                                  exit_cond, 
+                                  xctr,
+                                  bw)
+CA_tech = tech.CA_tech(device, device.is_VMP3, CA_user_params)
+
+# Create CP technique for discharging
+E_range        = 1
+bw             = 8
+repeat_count   = 0
+record_dt      = 1
+record_dE      = 10    # Volts
+current        = 0#-0.0045    # Ampers
+duration_CP    = 205        # Seconds (sec * min * hours)
+limit_E_crg    = 0b11111
+E_lim_high     = 5        # Volts
+E_lim_low      = -5         # Volts
+i_range        = 9
+exit_cond      = 1
+xctr           = 0b01001000
+CP_user_params = tech.CPLIM_params(current, 
+                                      duration_CP, 
+                                      False, 
+                                      0, 
+                                      record_dt, 
+                                      record_dE, 
+                                      repeat_count, 
+                                      i_range,
+                                      E_range,
+                                      exit_cond,
+                                      xctr,
+                                      E_lim_high,
+                                      limit_E_crg, 
+                                      bw)
+CP_discharge_tech = tech.CPLIM_tech(device, device.is_VMP3, CP_user_params)
 
 # Create loop technique
-# number_repetition  = 1
-# tech_index_start   = 0
-# LOOP_user_params = tech.LOOP_params(number_repetition, tech_index_start)
-# LOOP_tech    = tech.loop_tech(device, device.is_VMP3, LOOP_user_params)
+number_repetition  = 1
+tech_index_start   = 0
+LOOP_user_params = tech.LOOP_params(number_repetition, tech_index_start)
+LOOP_tech    = tech.loop_tech(device, device.is_VMP3, LOOP_user_params)
 
 # Istantiate channel
 test_options = ChannelOptions(experiment_name)
@@ -170,13 +200,19 @@ deisch1=DEISchannel(device,
                  1,
                  saving_dir,
                  test_options,
-                 # picoscope= pico,
+                 picoscope= pico,
                  is_live_plotting= True,
+                 is_charge_recorded=True
                  )
 
 # Make sequence
-sequence = [CP_tech]
+sequence = [CP_charge_tech, CA_tech, CP_discharge_tech, LOOP_tech]
 deisch1.load_sequence(sequence, ask_ok=False)
+# Impose software conditions
+deisch1.set_condition_avarage(0,'Ewe', '>', 2.85, 50)
+deisch1.set_condition_avarage(1,'I', '<', 0.003, 50)
+deisch1.set_condition_avarage(2,'Ewe', '<', 2.55, 50)
+
 
 # =============================================================================
 # %% Start the measurement
