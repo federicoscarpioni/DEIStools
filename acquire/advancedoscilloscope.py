@@ -119,4 +119,3 @@ class ZPico5000a(Picoscope5000a):
         # Reset the variables
         self.impedance = np.zeros((self.frequencies.size, int(self.buffer_size)), dtype = np.complex64) # da correggere, buffer size è molto più grande
         self.impedance_index = 0
-        self.reset_buffers()
