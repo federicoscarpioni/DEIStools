@@ -1,0 +1,1 @@
+from deistools.processing.mfa import MultiFrequencyAnalysis
