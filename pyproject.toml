@@ -1,0 +1,38 @@
+[project]
+name = "deistools"
+version = "0.1.0"
+description = "Collecation of tools for non-stationary (dynamic) impedance mesurment."
+authors = [
+    {name = "Federico Scarpioni", email = "federicoscarpioni@gmail.com"},
+]
+maintainers = [
+    {name = "Federico Scarpioni", email = "federicoscarpioni@gmail.com"},
+]
+readme = "README.md"
+requires-python = ""
+dependencies = [
+    "numpy",
+    "matpotlib",
+    "pyeclab",
+    "pypicostreaming",
+    "trueformawg"
+]
+license = "MIT"
+license-files = ["LICENSE"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.urls]
+Repository = "https://github.com/federicoscarpioni/deistools.git"
+Issues = "https://github.com/federicoscarpioni/deistools/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "S", "UP"]
