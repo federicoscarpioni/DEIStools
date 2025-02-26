@@ -1,9 +1,8 @@
-from DEIStool.acquire.deischannel import DEISchannel
-from DEIStool.acquire.multisinegen import MultisineGenerator
+from DEIStool.acquisition import DEISchannel, MultisineGenerator
 from pyeclab.device import BiologicDevice
 from pyeclab.channel import Channel, ChannelOptions
 import pyeclab.techniques as tech
-from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a
+from pypicostreaming import Picoscope5000a
 
 
 # Saving 
