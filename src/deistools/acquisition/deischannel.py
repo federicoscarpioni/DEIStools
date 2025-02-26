@@ -1,40 +1,27 @@
 from pyeclab.channel import Channel
-from pyeclab.device import BiologicDevice
-from pypicostreaming import Picoscope5000a  
-from collections import namedtuple  
+from pyeclab.device import BiologicDevice 
+from collections import namedtuple
 from threading import Thread
 
 
 class DEISchannel(Channel):
-    def __init__(self,
-                 bio_device: BiologicDevice,
-                 channel_num: int,
-                 saving_dir: str,
-                 channel_options: namedtuple,
-                 picoscope: Picoscope5000a = None,
-                 trueformawg = None,
-                 is_live_plotting: bool = True,  # ? Deside which naming convention to use for booleans
-                 is_recording_Ece: bool = False,
-                 is_external_controlled: bool = False,
-                 is_recording_analog_In1: bool = False,
-                 is_recording_analog_In2: bool = False,
-                 is_charge_recorded: bool = False,
-                 is_printing_values: bool = False,
-                 callbacks=[],
-                 
-                 ):
-        super().__init__(bio_device,
-                 channel_num,
-                 saving_dir,
-                 channel_options,
-                 is_live_plotting,  
-                 is_recording_Ece,
-                 is_external_controlled,
-                 is_recording_analog_In1,
-                 is_recording_analog_In2,
-                 is_charge_recorded,
-                 is_printing_values,
-                 callbacks=[])
+    def __init__(
+        self,
+        bio_device: BiologicDevice,
+        channel_num: int,
+        writer: AbstractWriter,
+        config: ChannelConfig,
+        picoscope,
+        trueformawg,
+        callbacks: list | None = None,
+    ):
+        super().__init__(
+            bio_device,
+            channel_num,
+            writer,
+            config,
+            callbacks,
+        )
         self.pico = picoscope
         self.awg = trueformawg
 
