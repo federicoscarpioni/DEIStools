@@ -1,6 +1,6 @@
 from pyeclab.channel import Channel
 from pyeclab.device import BiologicDevice
-from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a  
+from pypicostreaming import Picoscope5000a  
 from collections import namedtuple  
 from threading import Thread
 
