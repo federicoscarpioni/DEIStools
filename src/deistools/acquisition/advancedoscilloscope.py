@@ -79,10 +79,10 @@ class ZPico5000a(Picoscope5000a):
                                            self.channels['B'].vrange,
                                            self.channels['B'].irange)
         # Compute the impedance at high frequency
-        # self.high_freqs_analysis = MultiFrequencyAnalysis(self.frequencies,
-        #                                     self.voltage_original,
-        #                                     self.current_original,
-        #                                     self.time_step)
+        self.high_freqs_analysis = MultiFrequencyAnalysis(self.frequencies,
+                                            self.voltage_original,
+                                            self.current_original,
+                                            self.time_step)
         # Overwrite the new data into the analysis object
         self.high_freqs_analysis.voltage = self.voltage_original
         self.high_freqs_analysis.current = self.current_original
@@ -102,6 +102,42 @@ class ZPico5000a(Picoscope5000a):
     def _online_computation(self):
         super()._online_computation()
         if len(self.channels['A'].buffer_total) > self.sample_size:
+            self.computation_thread = Thread(target = self.compute_high_freq_z)
+            self.computation_thread.start()
+            print('pico msg: starting online z calculation...')
+
+# Newer version
+    def compute_high_freq_z(self, voltage_block, current_block):
+        # Compute the impedance at high frequency
+        self.high_freqs_analysis = MultiFrequencyAnalysis(self.frequencies,
+                                            self.voltage_original,
+                                            self.current_original,
+                                            self.time_step)
+        # Overwrite the new data into the analysis object
+        self.high_freqs_analysis.voltage = self.voltage_original
+        self.high_freqs_analysis.current = self.current_original
+        self.high_freqs_analysis.fft_eis()
+        # Save the high impedance
+        self.impedance[:,self.impedance_index] = self.high_freqs_analysis.impedance
+        self.impedance_index += 1
+        
+        ## Filter the signal and decimate 
+        self.voltage_filt = self.sample_size * ifft(ifftshift(self.high_freqs_analysis.ft_voltage * self.fd_filter)).real
+        self.current_filt = self.sample_size * ifft(ifftshift(self.high_freqs_analysis.ft_current * self.fd_filter)).real
+        self.voltage.write(self.voltage_filt[::self.ds_factor])
+        self.current.write(self.current_filt[::self.ds_factor])
+
+        print('pico msg: completed z calculation and downsampling')
+
+    def _online_computation(self):
+        super()._online_computation()
+        if len(self.channels['A'].buffer_total) > self.sample_size:
+            self.voltage_block = self.convert_ADC_numbers(self.channels['A'].buffer_total.pop(self.sample_size), 
+                                           self.channels['A'].vrange,
+                                           self.channels['A'].irange)
+            self.current_block = self.convert_ADC_numbers(self.channels['B'].buffer_total.pop(self.sample_size),
+                                           self.channels['B'].vrange,
+                                           self.channels['B'].irange)
             self.computation_thread = Thread(target = self.compute_high_freq_z)
             self.computation_thread.start()
             print('pico msg: starting online z calculation...')
