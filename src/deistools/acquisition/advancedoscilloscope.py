@@ -1,9 +1,9 @@
 import numpy as np
 from numpy.fft import ifft,ifftshift
-from pypicostreaming.pypicostreaming.series5000.series5000 import Picoscope5000a
-from computations.mfa import MultiFrequencyAnalysis, fermi_dirac_filter
+from pypicostreaming import Picoscope5000a
+from deistools.computations import MultiFrequencyAnalysis, fermi_dirac_filter
 from scipy.signal import bessel, lfilter, lfilter_zi
-from np_rw_buffer import RingBuffer
+from NumpyCircularBuffer import NumpyCircularBuffer
 from pathlib import Path
 from threading import Thread
 
@@ -44,10 +44,12 @@ class ZPico5000a(Picoscope5000a):
         self.ds_factor = ds_factor
         self.cutoff = cutoff
         self.filter_order = filter_order
+        self.block_calculator = None
         super().__init__(resolution, serial = None)
         
 
     def allocate_memory(self):
+        #!!! This attributes should be defined in the initialization
         # Prepare high frequency analysis object
         self.high_freqs_analysis = MultiFrequencyAnalysis(self.frequencies,
                                             np.zeros(self.sample_size),
@@ -57,8 +59,8 @@ class ZPico5000a(Picoscope5000a):
         self.fd_filter = fermi_dirac_filter(self.high_freqs_analysis.freq_axis,0,2*self.cutoff, self.filter_order)
         # Allocate ring buffer fot th storage of the downsampled signals
     
-        self.voltage = RingBuffer(self.buffer_size, dtype=np.float32)
-        self.current = RingBuffer(self.buffer_size, dtype=np.float32)
+        self.voltage = NumpyCircularBuffer(self.buffer_size, np.float32)
+        self.current = NumpyCircularBuffer(self.buffer_size, np.float32)
         # Allocate array for impedance
         self.impedance = np.zeros((self.frequencies.size,int(self.buffer_size/self.ds_factor)), dtype = np.complex64)
         self.impedance_index = 0
@@ -67,12 +69,13 @@ class ZPico5000a(Picoscope5000a):
         super().set_pico(capture_size, samples_total, sampling_time, time_unit, saving_path)
         self.allocate_memory()
 
+# Older version
     def compute_high_freq_z(self):
         # Convert the signals
-        self.voltage_original = self.convert_ADC_numbers(self.channels['A'].buffer_total.read(self.sample_size)[:,0], # Note: it is foundamental to add the [:,0] slicing to make the array 1D otherwise np.fft.fft will considere it 2D!!!
+        self.voltage_original = self.convert_ADC_numbers(self.channels['A'].buffer_total.pop(self.sample_size), 
                                            self.channels['A'].vrange,
                                            self.channels['A'].irange)
-        self.current_original = self.convert_ADC_numbers(self.channels['B'].buffer_total.read(self.sample_size)[:,0],
+        self.current_original = self.convert_ADC_numbers(self.channels['B'].buffer_total.pop(self.sample_size),
                                            self.channels['B'].vrange,
                                            self.channels['B'].irange)
         # Compute the impedance at high frequency
