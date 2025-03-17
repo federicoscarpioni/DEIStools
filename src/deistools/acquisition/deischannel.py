@@ -46,7 +46,39 @@ class DEISchannel(Channel):
             save_intermediate_pico.start()
         super().end_technique()
 
-    
+    def set_condition(self, technique_index: int, quantity: str, operator: str, threshold: float, num_samples:int):
+        buffer = NumpyCircularBuffer(num_samples, np.float32)
+        self.conditions.append((technique_index, quantity, operator, threshold, buffer))
+
+    def _check_software_limits(self):
+        """
+        Check if a certain condition (< or > of a trashold value) is met for a
+        value of the sampled data over a certain number of points.
+        """
+        for (
+            technique_index,
+            quantity,
+            operator,
+            threshold,
+            buffer
+        ) in (
+            self.conditions
+        ):  # ? Can I manually add other attributes to current_values for the quantities that are missing?
+            if self.data_info.TechniqueIndex == technique_index:
+                quantity_value = getattr(
+                    self.current_values, quantity, None
+                )  # ! It works only for attributes of current_data. I need onther trick to make it work also for capacity or power
+                if quantity_value is None:
+                    continue
+                else:
+                    buffer.push(quantity_value)
+                if operator == ">" and np.mean(buffer.get_data()) >= threshold:
+                    return True
+                elif operator == "<" and np.mean(buffer.get_data()) <= threshold:
+                    return True
+        return False
+
+        
     def _update_sequence_trackers(self):
         if self.pico is not None:
             save_intermediate_pico  = Thread(target=self.pico.save_intermediate_signals, args=(f'/loop_{self.current_loop}/technique_{self.current_tech_index}',))
