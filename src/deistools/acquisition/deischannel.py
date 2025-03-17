@@ -27,12 +27,24 @@ class DEISchannel(Channel):
         self.pico = picoscope
         self.awg = trueformawg
 
+    def start(self):
+        if self.awg is not None: 
+            self.awg.update(self.current_tech_index)
+            self.awg.turn_on()
+        if self.pico is not None: self.pico.run_streaming_non_blocking(autoStop=False)
+        super().start()
+        
+    
+    def stop(self):
+        super().stop()
+        if self.pico is not None: self.pico.stop()
+        if self.awg is not None: self.awg.turn_off()
+
     def end_technique(self):
         if self.pico is not None:
             save_intermediate_pico  = Thread(target=self.pico.save_intermediate_signals, args=(f'/loop_{self.current_loop}/technique_{self.current_techn_index}',))
             save_intermediate_pico.start()
         super().end_technique()
-        
 
     
     def _update_sequence_trackers(self):
@@ -51,15 +63,3 @@ class DEISchannel(Channel):
         if self.awg is not None: self.awg.turn_off()
         
     
-    def start(self):
-        if self.awg is not None: 
-            self.awg.update(self.current_tech_index)
-            self.awg.turn_on()
-        if self.pico is not None: self.pico.run_streaming_non_blocking(autoStop=False)
-        super().start()
-        
-    
-    def stop(self):
-        super().stop()
-        if self.pico is not None: self.pico.stop()
-        if self.awg is not None: self.awg.turn_off()
