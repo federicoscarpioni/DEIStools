@@ -1,7 +1,9 @@
-from pyeclab.channel import Channel
-from pyeclab.device import BiologicDevice 
-from collections import namedtuple
+from pyeclab import Channel
+from pyeclab import BiologicDevice 
 from threading import Thread
+from NumpyCircularBuffer import NumpyCircularBuffer
+import numpy as np
+
 
 
 class DEISchannel(Channel):
