@@ -1,9 +1,8 @@
-from pyeclab import Channel
-from pyeclab import BiologicDevice 
-from threading import Thread
-from NumpyCircularBuffer import NumpyCircularBuffer
 import numpy as np
+from threading import Thread
 
+from pyeclab import BiologicDevice, Channel, FileWriter, ChannelConfig 
+from NumpyCircularBuffer import NumpyCircularBuffer
 
 
 class DEISchannel(Channel):
@@ -13,8 +12,8 @@ class DEISchannel(Channel):
         channel_num: int,
         writer: AbstractWriter,
         config: ChannelConfig,
-        picoscope,
-        trueformawg,
+        picoscope = None,
+        trueformawg = None,
         callbacks: list | None = None,
     ):
         super().__init__(
