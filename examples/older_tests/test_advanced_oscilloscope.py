@@ -71,6 +71,7 @@ sampling_time_scale = 'PS5000A_US'
 # STFFT-EIS parameters
 sample_size = int(1e6*100) # sampling frequency * analysis time
 irange = 0.1
+# Downsampling parameters
 filter_order = 8
 cutoff = 90
 ds_factor = int(2e-3/1e-6) # new time step / original time step
