@@ -10,7 +10,7 @@ class DEISchannel(Channel):
         self,
         bio_device: BiologicDevice,
         channel_num: int,
-        writer: AbstractWriter,
+        writer: FileWriter,
         config: ChannelConfig,
         picoscope = None,
         trueformawg = None,
