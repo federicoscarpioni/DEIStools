@@ -127,8 +127,7 @@ class ZPico5000a(Picoscope5000a):
 
     def _online_computation(self):
         super()._online_computation()
-        if self.channels['A'].buffer_total.get_data().size > self.sample_size:
-            print(self.channels['A'].buffer_total.get_length())
+        if self.channels['A'].buffer_total.get_length() > self.sample_size:
             self.voltage_block = self.convert_ADC_numbers(self.channels['A'].buffer_total.pop(self.sample_size), 
                                            self.channels['A'].vrange,
                                            self.channels['A'].irange)
