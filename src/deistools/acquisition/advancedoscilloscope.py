@@ -108,11 +108,10 @@ class ZPico5000a(Picoscope5000a):
 
 # Newer version
     def compute_high_freq_z(self, voltage_block, current_block):
+        # Assign the new block of data to the object already initialized
+        self.high_freqs_analysis.voltage = voltage_block
+        self.high_freqs_analysis.current = current_block
         # Compute the impedance at high frequency
-        self.high_freqs_analysis = MultiFrequencyAnalysis(self.frequencies,
-                                            voltage_block,
-                                            current_block,
-                                            self.time_step)
         self.high_freqs_analysis.fft_eis()
         # Save the high impedance
         self.impedance[:,self.impedance_index] = self.high_freqs_analysis.impedance
@@ -121,14 +120,15 @@ class ZPico5000a(Picoscope5000a):
         ## Filter the signal and decimate 
         self.voltage_filt = self.sample_size * ifft(ifftshift(self.high_freqs_analysis.ft_voltage * self.fd_filter)).real
         self.current_filt = self.sample_size * ifft(ifftshift(self.high_freqs_analysis.ft_current * self.fd_filter)).real
-        self.voltage.write(self.voltage_filt[::self.ds_factor])
-        self.current.write(self.current_filt[::self.ds_factor])
+        self.voltage.push(self.voltage_filt[::self.ds_factor])
+        self.current.push(self.current_filt[::self.ds_factor])
 
         print('pico msg: completed z calculation and downsampling')
 
     def _online_computation(self):
         super()._online_computation()
-        if self.channels['A'].buffer_total.get_length() > self.sample_size:
+        if self.channels['A'].buffer_total.get_data().size > self.sample_size:
+            print(self.channels['A'].buffer_total.get_length())
             self.voltage_block = self.convert_ADC_numbers(self.channels['A'].buffer_total.pop(self.sample_size), 
                                            self.channels['A'].vrange,
                                            self.channels['A'].irange)
