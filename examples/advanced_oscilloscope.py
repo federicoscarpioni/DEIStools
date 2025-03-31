@@ -7,19 +7,19 @@ from pyeclab.techniques import ChronoPotentiometry, Loop, generate_xctr_param
 
 from trueformawg import import_awg_txt
 
-# User parameters
+# ==== User parameters =====
 # Result saves
 saving_dir = 'E:/Experimental_data/Federico/2025/python_software_test'
-experiment_name = '2503181527_deischannel_ca_with_advancedpico'
+experiment_name = '2503181649_deischannel_ca_with_advancedpico'
 # Measurment paramters
 capture_size = 300000000
 samples_total = 300000000
 sampling_time = 1
 sampling_time_scale = 'PS5000A_US'
 # STFFT-EIS parameters
-sample_size = int(1e6*10) # sampling frequency * analysis time
+sample_size = int(1e6*100) # sampling frequency * analysis time
 frequencies = np.array([1000,100000])
-irange = 0.1
+irange = 1e-5
 # Downsampling parameters
 filter_order = 8
 cutoff = 90
@@ -28,6 +28,7 @@ buffer_size = int(capture_size/ds_factor) # sampling time / acquisition time  (i
 # Potentiostat and EC-lab SDK
 ip_address = '172.28.26.10'
 binary_path = "C:/EC-Lab Development Package/EC-Lab Development Package/"
+# ===========================
 device = BiologicDevice(ip_address, binary_path = binary_path)
 config = ChannelConfig(
     record_ece=False,
@@ -73,7 +74,7 @@ pico = ZPico5000a(sample_size,
 saving_path = saving_dir +  '/' +  experiment_name
 pico.set_pico(capture_size, samples_total, sampling_time, sampling_time_scale, saving_path)
 pico.set_channel('PS5000A_CHANNEL_A', 'PS5000A_5V')
-pico.set_channel('PS5000A_CHANNEL_B', 'PS5000A_200MV',irange=1e-5)
+pico.set_channel('PS5000A_CHANNEL_B', 'PS5000A_200MV',irange=irange)
 # Set up potentiostat
 writer = FileWriter(
     file_dir=Path(saving_dir),
@@ -89,5 +90,9 @@ channel1=DEISchannel(
 channel1.load_sequence(sequence, ask_ok=False, )
 # Start devices separately
 channel1.start()
+
+channel1.stop()
+pico.stop()
+pico.disconnect()
 
 
