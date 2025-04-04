@@ -21,11 +21,12 @@ class MultiFrequencyAnalysis:
     def compute_freq_axis(self):
         self.freq_axis = fftshift(fftfreq(self.voltage.size, self.sampling_time))
     
-    def fft_eis(self):
+    def run_fft_eis(self):
         self.ft_voltage = fftshift(fft(self.voltage)) / self.voltage.size
         self.ft_current = fftshift(fft(self.current)) / self.current.size
         indexes = self.find_freq_indexes(self.ft_current)
         self.impedance = self.ft_voltage[indexes] / self.ft_current[indexes]
+        return self.impedance
 
 
     def find_freq_indexes(self, input_signal):
