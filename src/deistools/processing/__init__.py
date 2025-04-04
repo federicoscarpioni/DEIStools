@@ -1,1 +1,3 @@
 from deistools.processing.mfa import MultiFrequencyAnalysis
+from deistools.processing.mfa import fermi_dirac_filter
+from deistools.processing.blockcalculator import BlockCalculator
