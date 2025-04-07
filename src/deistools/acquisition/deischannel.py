@@ -4,27 +4,28 @@ from threading import Thread
 from dataclasses import dataclass, field
 
 from pyeclab import Channel
-from deistools.picocalculation import PicoCalculation
-from TrueFormAWG import TrueFormAWG
+from deistools.acquisition.picocalculator import PicoCalculator
+from trueformawg import TrueFormAWG
 
 
 @dataclass
 class DEISchannel:
     potentiostat : Channel
-    pico : PicoCalculation # I have no general class for pico yet
+    pico : PicoCalculator # I have no general class for pico yet
     awg : TrueFormAWG
     running : bool = field(default=False)
 
-    def __post_ini__(self):
+    def __post_init__(self):
         self.run_thread = Thread(target=self._run)
-        self.potentiostat.function = self._execute_on_techniques_termination
+        self.potentiostat.function = self._execute_on_technique_termination
     
     def start(self):
         self.awg.turn_on()
         self.potentiostat.start()
         self.pico.start()
-        self.run_thread.start()
         self.running = True
+        self.run_thread.start()
+        
 
     def stop(self):
         self.running = False
