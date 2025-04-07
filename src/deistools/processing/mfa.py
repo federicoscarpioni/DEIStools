@@ -1,6 +1,5 @@
 from numpy.fft import fft, fftshift, fftfreq, ifft, ifftshift
 import numpy as np
-import matplotlib.pyplot as plt
 
 def fermi_dirac_filter(fr, fc, bw, n):
     """
@@ -12,7 +11,7 @@ def fermi_dirac_filter(fr, fc, bw, n):
 
 class MultiFrequencyAnalysis:
     
-    def __init__(self, frequencies, voltage, current, sampling_time):
+    def __init__(self, frequencies: np.array, voltage: np.array, current: np.array, sampling_time:float):
         self.frequencies = frequencies
         self.voltage = voltage
         self.current = current
