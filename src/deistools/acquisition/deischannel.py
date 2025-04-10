@@ -52,5 +52,5 @@ class DEISchannel:
 
     def _execute_on_technique_termination(self):
         print('Program should now execute saving')
-        self.pico.save_block_calculation(f'/cycle_{self.potentiostat.current_loop}/sequence_{self.potentiostat.current_tech_index}')
+        self.pico.save_block_calculation(f'/cycle_{self.potentiostat.current_loop}_sequence_{self.potentiostat.current_tech_index}')
         # self.awg.update(self.potentiostat.current_tech_index)
