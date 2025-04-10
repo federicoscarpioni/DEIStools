@@ -35,6 +35,7 @@ class DEISchannel:
             self.running = self.potentiostat.running 
             sleep(1)
         self._stop_instruments()
+        print('DEIS measurement completed')
 
     def _stop_instruments(self):
         if self.potentiostat.running:
