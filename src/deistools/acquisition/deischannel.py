@@ -40,7 +40,14 @@ class DEISchannel:
     def _stop_instruments(self):
         if self.potentiostat.running:
             self.potentiostat.stop()
-        self.pico.stop()
+        for tentative in range(10):
+            try:
+                self.pico.stop()
+                break
+            except :
+                print('Failed to communicate function to pico, device busy. New tentative..')
+                sleep(1)
+            print('Failed to stop and disconnect picoscope device.')
         self.awg.turn_off()
 
     def _execute_on_technique_termination(self):
