@@ -40,6 +40,8 @@ class DEISchannel:
     def _stop_instruments(self):
         if self.potentiostat.running:
             self.potentiostat.stop()
+        else:
+            self._execute_on_technique_termination()
         for tentative in range(10):
             try:
                 self.pico.stop()

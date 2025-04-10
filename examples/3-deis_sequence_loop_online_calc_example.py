@@ -16,7 +16,7 @@ from deistools.acquisition import DEISchannel, PicoCalculator
 # ===============
 
 saving_directory = 'E:/Experimental_data/Federico/2025/python_software_test/'
-experiment_name = "2504071656_test_DEISchannel_with_dependency_injection_30s_auto_saving_loop"
+experiment_name = "2504101418_test_DEISchannel_with_dependency_injection_30s_auto_saving_updated_loop"
 saving_path = saving_directory + experiment_name 
 
 # Potentiostat
@@ -46,8 +46,8 @@ sample_rate = 10000
 amplitude_pp = 0.050
 
 # Digital oscilloscope
-pico_capture_size = 50000000
 pico_samples_total = 50000000
+pico_capture_size = pico_samples_total
 pico_sampling_time = 1
 pico_sampling_time_scale = 'PS5000A_US'
 pico_bandwidth_chA = 'PS5000A_5V'
