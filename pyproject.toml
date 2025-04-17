@@ -16,7 +16,7 @@ dependencies = [
     "pyeclab",
     "pypicostreaming",
     "trueformawg",
-    "NumpyCircularBuffer"
+    "npbuffer"
 ]
 license = "MIT"
 license-files = ["LICENSE"]
