@@ -4,6 +4,7 @@ from threading import Thread
 from dataclasses import dataclass, field
 
 from pyeclab import Channel
+from deistools.acquisition.utils import ConditionAverage, check_software_limits, WaveFormSequence
 from deistools.acquisition.picocalculator import PicoCalculator
 from trueformawg import TrueFormAWG
 
@@ -11,8 +12,10 @@ from trueformawg import TrueFormAWG
 @dataclass
 class DEISchannel:
     potentiostat : Channel
-    pico : PicoCalculator # I have no general class for pico yet
-    awg : TrueFormAWG
+    pico : PicoCalculator
+    awg : TrueFormAWG = field(init=False)
+    waveforms_sequence : WaveFormSequence = field(init=False)
+    conditions: [ConditionAverage] = field(default_factory=list)
     running : bool = field(default=False)
 
     def __post_init__(self):
@@ -20,7 +23,9 @@ class DEISchannel:
         self.potentiostat.function = self._execute_on_technique_termination
     
     def start(self):
-        self.awg.turn_on()
+        if self.awg:
+            self._update_waveform()
+            self.awg.turn_on()
         self.potentiostat.start()
         self.pico.start()
         self.running = True
@@ -32,12 +37,15 @@ class DEISchannel:
 
     def _run(self):
         while self.running:
-            self.running = self.potentiostat.running 
+            if check_software_limits(self):
+                print("Software limit met!")
+                self.potentiostat.end_technique()
+            self.running = self.potentiostat.running
             sleep(1)
-        self._stop_instruments()
+        self.stop_instruments()
         print('DEIS measurement completed')
 
-    def _stop_instruments(self):
+    def stop_instruments(self):
         if self.potentiostat.running:
             self.potentiostat.stop()
         else:
@@ -50,9 +58,25 @@ class DEISchannel:
                 print('Failed to communicate function to pico, device busy. New tentative..')
                 sleep(1)
             print('Failed to stop and disconnect picoscope device.')
-        self.awg.turn_off()
+        if self.awg: self.awg.turn_off()
+
+    def _update_waveform(self):
+        if self.running:
+            for position, seq_index in enumerate(self.waveforms_sequence.indexes):
+                if seq_index == self.potentiostat.new_tech_index :
+                    self.set_multisine(position)
+                    self.awg.turn_on()
+                else:
+                    self.awg.turn_off()
+        else :
+            self.set_multisine(0)
+
+    def set_multisine(self, list_index):
+        self.awg.select_awf(self.waveforms_sequence.names[list_index])
+        self.awg.set_sample_rate(self.waveforms_sequence.sample_rates[list_index])
+        self.awg.set_amplitude(self.waveforms_sequence.amplitudes[list_index])
 
     def _execute_on_technique_termination(self):
         print('Program should now execute saving')
         self.pico.save_block_calculation(f'/cycle_{self.potentiostat.current_loop}_sequence_{self.potentiostat.current_tech_index}')
-        # self.awg.update(self.potentiostat.current_tech_index)
+        if self.awg: self._update_waveform()

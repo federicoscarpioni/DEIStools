@@ -1,8 +1,8 @@
-'''
-Note: always use duration of techniques longer than the window time of the 
+"""
+Note: always use duration of techniques longer than the window time of the
 block calculation. Otherwise, the code throughs an error because trys to save
 the results when the calculation has not yet happen.
-'''
+"""
 from pathlib import Path
 import json
 
@@ -10,8 +10,10 @@ import numpy as np
 
 from pyeclab import BiologicDevice, ChannelConfig, FileWriter, Channel, BANDWIDTH, E_RANGE, I_RANGE
 from pyeclab.techniques import ChronoAmperometry, ChronoPotentiometry, OpenCircuitVoltage, Loop
-from trueformawg import TrueFormAWG, VISAdevices, import_awg_txt
+from trueformawg import TrueFormAWG, import_awg_txt
 from pypicostreaming import Picoscope5000a
+
+from deistools.acquisition.utils import WaveFormSequence
 from deistools.processing import MultiFrequencyAnalysis, fermi_dirac_filter, BlockCalculator
 from deistools.acquisition import DEISchannel, PicoCalculator
 
@@ -66,9 +68,18 @@ loop_start=0
 # Waveform generator
 trueform_address = 'USB0::0x0957::0x4B07::MY59000581::0::INSTR'
 awg_channel = 1
-multisine_path = "E:/multisine_collection/2409131232multisine_1kHz-100mHz_8ptd_fgen10kHz_random_phases_flat_normalized/"
+multisine1_path = "E:/multisine_collection/2409131232multisine_1kHz-100mHz_8ptd_fgen10kHz_random_phases_flat_normalized/"
+multisine1_name = 'multisine1'
+multisine2_path = "E:/multisine_collection/2409131232multisine_1kHz-100mHz_8ptd_fgen10kHz_random_phases_flat_normalized/"
+multisine2_name = 'multisine2'
 sample_rate = 10000
 amplitude_pp = 0.050 # in V
+cccv_multisine_sequence = WaveFormSequence(
+    indexes = [0, 1, 3],
+    waveform_names = [multisine1_name, multisine2_name, multisine1_name],
+    sample_rates = [10000, 10000, 10000],
+    amplitudes = [0.5, 0.05, 0.5]
+)
 
 # Digital oscilloscope
 pico_samples_total = 50000000
@@ -80,7 +91,7 @@ pico_bandwidth_chB = 'PS5000A_500MV'
 pico_current_conversion_factor = 0.01
 
 # Online calculation
-frequencies = json.load(open(multisine_path + "waveform_metadata.json"))["Frequencies / Hz"]
+frequencies = json.load(open(multisine1_path + "waveform_metadata.json"))["Frequencies / Hz"]
 frequencies = np.array(frequencies[11:])
 sampling_time = 1e-6
 time_window = 10
@@ -180,13 +191,15 @@ channel1.load_sequence(sequence)
 # Initialize AWG
 awg_ch1 = TrueFormAWG(trueform_address, awg_channel)
 awg_ch1.clear_ch_mem()
-multisine = import_awg_txt(multisine_path + "waveform.txt")
-awg_ch1.load_awf('multisine', multisine) # Keep the name short or it gives an error
+multisine1 = import_awg_txt(multisine1_path + "waveform.txt")
+awg_ch1.load_awf(multisine1_name, multisine1) # Keep the name short or it gives an error
 awg_ch1.avalable_memory()
-awg_ch1.select_awf('multisine')
-awg_ch1.set_Z_out_infinite()
-awg_ch1.set_sample_rate(sample_rate)
-awg_ch1.set_amplitude(amplitude_pp) 
+awg_ch1.select_awf(multisine1_name)
+multisine2 = import_awg_txt(multisine2_path + "waveform.txt")
+awg_ch1.load_awf(multisine2_name, multisine2) # Keep the name short or it gives an error
+awg_ch1.avalable_memory()
+awg_ch1.select_awf(multisine2_name)
+
 
 # Initialize oscilloscope
 pico = Picoscope5000a('PS5000A_DR_14BIT')
@@ -241,6 +254,7 @@ deischannel = DEISchannel(
     potentiostat = channel1,
     pico = pico_calculator,
     awg=awg_ch1,
+    awg_sequence= cccv_multisine_sequence,
 )
 
 # =====================

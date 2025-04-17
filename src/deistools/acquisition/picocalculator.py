@@ -6,9 +6,10 @@ from deistools.processing import BlockCalculator
 
 @dataclass
 class PicoCalculator:
-    pico : ...
+    pico : ... # Any Picoscope series istances
     block_calculator : BlockCalculator
     running : bool = field(default=False)
+    computation_thread : Thread = field(init=False)
 
     def __post_init__ (self):
         self.run_thread = Thread(target=self._run)
@@ -26,7 +27,8 @@ class PicoCalculator:
         self.running = False
     
     def save_block_calculation(self, subfolder_name):
-        self.computation_thread.join()
+        if hasattr(self, 'computation_thread') and self.computation_thread.is_alive():
+            self.computation_thread.join()
         saving_file_path = self.pico.saving_dir + subfolder_name
         Path(saving_file_path).mkdir(parents=True, exist_ok=True)
         self.block_calculator.save_results(saving_file_path)
