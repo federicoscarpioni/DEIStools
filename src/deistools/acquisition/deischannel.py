@@ -13,9 +13,9 @@ from trueformawg import TrueFormAWG
 class DEISchannel:
     potentiostat : Channel
     pico : PicoCalculator
-    awg : TrueFormAWG = field(init=False)
-    waveforms_sequence : WaveFormSequence = field(init=False)
-    conditions: [ConditionAverage] = field(default_factory=list)
+    awg : TrueFormAWG #= field(init=False)
+    waveforms_sequence : WaveFormSequence #= field(init=False)
+    conditions: list[ConditionAverage] = field(default_factory=list)
     running : bool = field(default=False)
 
     def __post_init__(self):
@@ -23,7 +23,7 @@ class DEISchannel:
         self.potentiostat.function = self._execute_on_technique_termination
     
     def start(self):
-        if self.awg:
+        if hasattr(self, 'awg'):
             self._update_waveform()
             self.awg.turn_on()
         self.potentiostat.start()
@@ -58,16 +58,17 @@ class DEISchannel:
                 print('Failed to communicate function to pico, device busy. New tentative..')
                 sleep(1)
             print('Failed to stop and disconnect picoscope device.')
-        if self.awg: self.awg.turn_off()
+        if hasattr(self, 'awg'): self.awg.turn_off()
+
+    def skip(self):
+        self.potentiostat.end_technique()
 
     def _update_waveform(self):
         if self.running:
-            for position, seq_index in enumerate(self.waveforms_sequence.indexes):
-                if seq_index == self.potentiostat.new_tech_index :
-                    self.set_multisine(position)
-                    self.awg.turn_on()
-                else:
-                    self.awg.turn_off()
+            if any(index == self.potentiostat.new_tech_index for index in self.waveforms_sequence.indexes):
+                self.awg.turn_on()
+            else :
+                self.awg.turn_off()
         else :
             self.set_multisine(0)
 
@@ -79,4 +80,4 @@ class DEISchannel:
     def _execute_on_technique_termination(self):
         print('Program should now execute saving')
         self.pico.save_block_calculation(f'/cycle_{self.potentiostat.current_loop}_sequence_{self.potentiostat.current_tech_index}')
-        if self.awg: self._update_waveform()
+        if hasattr(self, 'awg'): self._update_waveform()
