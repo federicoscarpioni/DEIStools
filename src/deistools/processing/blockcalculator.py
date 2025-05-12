@@ -29,6 +29,8 @@ class BlockCalculator:
         self.high_z_calculator.voltage = data_voltage
         self.high_z_calculator.current = data_current
         # Compute impedance of the high frequency band
+        if self.high_z_calculator.freq_indexes == None:
+            self.high_z_calculator.search_freq_indexes()
         high_z = self.high_z_calculator.run_fft_eis()
         self.impedance[:,self.impedance_index] = high_z
         self.impedance_index += 1
