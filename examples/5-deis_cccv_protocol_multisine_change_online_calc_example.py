@@ -245,7 +245,10 @@ block_calculator = BlockCalculator(
 
 pico_calculator = PicoCalculator(
     pico = pico,
-    block_calculator= block_calculator,
+    config=ChannelConfig(
+        live_plot=True,
+        external_control=True,
+    ),
 )
 
 # Inject instrument object into DEISchannel object

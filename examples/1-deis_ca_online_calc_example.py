@@ -95,7 +95,10 @@ channel1 = Channel(
     device,
     potentiostat_channel,
     writer=writer,
-    config=ChannelConfig(live_plot=True),
+    config=ChannelConfig(
+        live_plot=True,
+        external_control=True,
+    ),
 )
 channel1.load_sequence(sequence)
 
