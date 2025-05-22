@@ -13,8 +13,8 @@ from trueformawg import TrueFormAWG
 class DEISchannel:
     potentiostat : Channel
     pico : PicoCalculator
-    awg : TrueFormAWG #= field(init=False)
-    waveforms_sequence : WaveFormSequence #= field(init=False)
+    awg : TrueFormAWG = field(default=None)
+    waveforms_sequence : WaveFormSequence = field(default=None)
     conditions: list[ConditionAverage] = field(default_factory=list)
     running : bool = field(default=False)
 
@@ -23,9 +23,9 @@ class DEISchannel:
         self.potentiostat.function = self._execute_on_technique_termination
     
     def start(self):
-        if hasattr(self, 'awg'):
+        if self.awg:
             self._update_waveform()
-            self.awg.turn_on()
+            if self.awg: self.awg.turn_on()
         self.potentiostat.start()
         self.pico.start()
         self.running = True
@@ -58,7 +58,7 @@ class DEISchannel:
                 print('Failed to communicate function to pico, device busy. New tentative..')
                 sleep(1)
             print('Failed to stop and disconnect picoscope device.')
-        if hasattr(self, 'awg'): self.awg.turn_off()
+        if self.awg: self.awg.turn_off()
 
     def skip(self):
         self.potentiostat.end_technique()
@@ -80,4 +80,4 @@ class DEISchannel:
     def _execute_on_technique_termination(self):
         print('Program should now execute saving')
         self.pico.save_block_calculation(f'/cycle_{self.potentiostat.current_loop}_sequence_{self.potentiostat.current_tech_index}')
-        if hasattr(self, 'awg'): self._update_waveform()
+        if self.awg: self._update_waveform()
