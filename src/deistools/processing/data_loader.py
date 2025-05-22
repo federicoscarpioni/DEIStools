@@ -24,9 +24,6 @@ def load_voltage_current(text : str = "Select directory with voltage and current
     current = np.load(directory + '/current.npy')
     return voltage, current, directory
 
-def load_VI_pyeclab():
-    ...
-
 if __name__ == '__main__':
     load_impedance_set()
     load_voltage_current()
