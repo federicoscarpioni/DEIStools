@@ -2,14 +2,8 @@ from numpy.fft import fft, fftshift, fftfreq, ifft, ifftshift
 import numpy as np
 
 from deistools.visualise import inspect_spectrum, visualise_peaks
-
-def fermi_dirac_filter(fr, fc, bw, n):
-    """
-    Create a digital filter shaped as a symmetric Fermi-Dirac function.
-    """
-    X = (fr - fc) / bw
-    Y = np.cosh(n) / (np.cosh(n * X) + np.cosh(n))
-    return Y
+from deistools.processing import fermi_dirac_filter
+from deistools.processing.dmfa_functions import extract_zero_frequency, extract_impedance
 
 class MultiFrequencyAnalysis:
     
@@ -19,7 +13,6 @@ class MultiFrequencyAnalysis:
         self.current = current
         self.sampling_time = sampling_time
         self.freq_indexes = freq_indexes
-        self.impedance = impedance
     
     def compute_freq_axis(self):
         self.freq_axis = fftshift(fftfreq(self.voltage.size, self.sampling_time))
@@ -29,10 +22,29 @@ class MultiFrequencyAnalysis:
         self.ft_current = fftshift(fft(self.current)) / self.current.size
     
     def run_fft_eis(self):
-        self.ft_voltage = fftshift(fft(self.voltage)) / self.voltage.size
-        self.ft_current = fftshift(fft(self.current)) / self.current.size
-        self.impedance = self.ft_voltage[self.freq_indexes] / self.ft_current[self.freq_indexes]
-        return self.impedance
+        return self.ft_voltage[self.freq_indexes] / self.ft_current[self.freq_indexes]
+    
+    def run_dmfa(self, 
+                 filter, 
+                 time_resolution,
+                 Npts_eleab
+        ):
+        voltage, current, time = extract_zero_frequency(
+            self.ft_voltage,
+            self.ft_current,
+            self.freq_axis,
+            filter,
+            Npts_eleab,
+            time_resolution,
+        )
+        impedance = extract_impedance(
+            self.ft_voltage,
+            self.ft_current,
+            self.freq_indexes,
+            filter,
+            Npts_eleab
+        )
+        return impedance, voltage, current, time
 
     def compute_freq_indexes(self, input_signal):
         index_f0 = np.where(self.freq_axis == 0)[0][0]
@@ -40,7 +52,6 @@ class MultiFrequencyAnalysis:
         indexes = indexes.astype(int)
         self.freq_indexes = indexes.tolist()
         return self.freq_indexes
-
 
     def search_freq_indexes(self, input_signal):
         guess_i_multisine_freq = self.compute_freq_indexes(input_signal)
