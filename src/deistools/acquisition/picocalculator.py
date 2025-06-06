@@ -2,11 +2,15 @@ from pathlib import Path
 from threading import Thread
 from time import sleep
 from dataclasses import dataclass, field
+from typing import Union
+
+from pypicostreaming import Picoscope4000, Picoscope5000a
+
 from deistools.processing import BlockCalculator
 
 @dataclass
 class PicoCalculator:
-    pico : ... # Any Picoscope series istances
+    pico : Union[Picoscope4000, Picoscope5000a]
     block_calculator : BlockCalculator
     running : bool = field(default=False)
     computation_thread : Thread = field(init=False)
@@ -37,7 +41,6 @@ class PicoCalculator:
         while self.running:
             data_length = self.pico.channels['A'].buffer_total.get_length()
             if data_length > self.block_calculator.input_size:
-                print('Enough data: starting elaboration...')
                 voltage_block = self.pico.convert_ADC_numbers(
                     self.pico.channels['A'].buffer_total.pop(self.block_calculator.input_size), 
                     self.pico.channels['A'].vrange,
@@ -50,5 +53,5 @@ class PicoCalculator:
                 )
                 self.computation_thread = Thread(target=self.block_calculator.calculate, args=(voltage_block, current_block,))
                 self.computation_thread.start()
-            sleep(1)
+            sleep(0.1)
                 
