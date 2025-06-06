@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from tkinter import Tk, filedialog
 
 def load_impedance_set(text : str = 'Select npy impedance file'):
@@ -8,9 +9,10 @@ def load_impedance_set(text : str = 'Select npy impedance file'):
     root.attributes('-topmost', True) # Opened windows will be active. above all windows despite of selection.
     # Returns file path as str
     filename = filedialog.askopenfilename(title = text)
+    directory = os.path.dirname(filename)
     # Import impedance data
     Z = np.load(filename)
-    return Z
+    return Z, directory
 
 def load_voltage_current(text : str = "Select directory with voltage and current npy files"):
     # Open dialog window to select pkl file containing data
