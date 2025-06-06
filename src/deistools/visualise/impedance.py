@@ -9,8 +9,8 @@ def plot_impedance_set(Z):
     
     fig = plt.figure()
     ax = fig.subplots()
-    start_index = int(Z[0].size/2)
-    p, = ax.plot(Z[:,start_index].real,- Z[:,start_index].imag,'-o') 
+    start_index = 0
+    p, = ax.plot(Z[:,start_index].real,- Z[:,start_index].imag, '-o') 
     ax.axis('equal')
     ax.set_xlabel('$Z_{real} / Ohm$',fontsize=12)
     ax.set_ylabel('$-Z_{imag} / Ohm$',fontsize=12)
