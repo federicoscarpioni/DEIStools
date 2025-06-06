@@ -41,10 +41,10 @@ def remove_baseline(signal, sampling_time):
 
 #------------------------------------------------------------------------------#
 
-def redo_baseline(signal, coordinates, DT): 
+def redo_baseline(signal, coordinates): 
     'Tested on 22.03 working preperly'
     m = (coordinates['yfinish'] - coordinates['ystart']) / (coordinates['xfinish'] - coordinates['xstart'])
     q = coordinates['yfinish'] - (m * coordinates['xfinish'])
-    line = np.arange(coordinates['xstart'], coordinates['xfinish'], DT) * m + q  
+    line = np.linspace(coordinates['xstart'], coordinates['xfinish'], signal.size) * m + q  
     signal = signal + line  
     return signal
