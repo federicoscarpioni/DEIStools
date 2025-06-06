@@ -2,19 +2,19 @@ import numpy as np
 from time import sleep
 from threading import Thread
 from dataclasses import dataclass, field
+from typing import Union
 
 from pyeclab import Channel
 from deistools.acquisition.utils import ConditionAverage, check_software_limits, WaveFormSequence
 from deistools.acquisition.picocalculator import PicoCalculator
-from trueformawg import TrueFormAWG
+from deistools.acquisition.multisinegen import MultisineGenerator, MultisineGeneratorCombined
 
 
 @dataclass
 class DEISchannel:
     potentiostat : Channel
     pico : PicoCalculator
-    awg : TrueFormAWG = field(default=None)
-    waveforms_sequence : WaveFormSequence = field(default=None)
+    awg : Union[MultisineGenerator, MultisineGeneratorCombined] = field(default=None)
     conditions: list[ConditionAverage] = field(default_factory=list)
     running : bool = field(default=False)
 
@@ -25,7 +25,6 @@ class DEISchannel:
     def start(self):
         if self.awg:
             self._update_waveform()
-            if self.awg: self.awg.turn_on()
         self.potentiostat.start()
         self.pico.start()
         self.running = True
@@ -65,17 +64,19 @@ class DEISchannel:
 
     def _update_waveform(self):
         if self.running:
-            if any(index == self.potentiostat.new_tech_index for index in self.waveforms_sequence.indexes):
-                self.awg.turn_on()
-            else :
-                self.awg.turn_off()
+            self.awg.update(self.potentiostat.new_tech_index)
+            # if any(index == self.potentiostat.new_tech_index for index in self.waveforms_sequence.indexes):
+            #     self.awg.turn_on()
+            # else :
+            #     self.awg.turn_off()
         else :
-            self.set_multisine(0)
+            # self.set_multisine(0)
+            self.awg.update(0)
 
-    def set_multisine(self, list_index):
-        self.awg.select_awf(self.waveforms_sequence.names[list_index])
-        self.awg.set_sample_rate(self.waveforms_sequence.sample_rates[list_index])
-        self.awg.set_amplitude(self.waveforms_sequence.amplitudes[list_index])
+    # def set_multisine(self, list_index):
+    #     self.awg.select_awf(self.waveforms_sequence.names[list_index])
+    #     self.awg.set_sample_rate(self.waveforms_sequence.sample_rates[list_index])
+    #     self.awg.set_amplitude(self.waveforms_sequence.amplitudes[list_index])
 
     def _execute_on_technique_termination(self):
         print('Program should now execute saving')
