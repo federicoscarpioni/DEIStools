@@ -4,6 +4,7 @@ import numpy as np
 from numpy.fft import ifft, ifftshift
 from npbuffer import NumpyCircularBuffer
 from deistools.processing.mfa import MultiFrequencyAnalysis
+from deistools.processing import detrending
 
 
 @dataclass
@@ -26,8 +27,8 @@ class BlockCalculator:
         self.reset_impedance_memory()
 
     def calculate(self, data_voltage, data_current):
-        self.high_z_calculator.voltage = data_voltage
-        self.high_z_calculator.current = data_current
+        self.high_z_calculator.voltage, coordinates_voltage = detrending.remove_baseline(data_voltage, self.sampling_time)
+        self.high_z_calculator.current, coordinates_current = detrending.remove_baseline(data_current, self.sampling_time)
         # Compute impedance of the high frequency band
         self.high_z_calculator.compute_fft()
         if self.high_z_calculator.freq_indexes == None:
@@ -40,9 +41,10 @@ class BlockCalculator:
         # Decimate the signals
         self.voltage_filt = self.input_size * ifft(ifftshift(self.high_z_calculator.ft_voltage * self.lp_filter)).real
         self.current_filt = self.input_size * ifft(ifftshift(self.high_z_calculator.ft_current * self.lp_filter)).real
+        self.voltage_filt = detrending.redo_baseline(self.voltage_filt, coordinates_voltage)
+        self.current_filt = detrending.redo_baseline(self.current_filt, coordinates_current)
         self.voltage_ds.push(self.voltage_filt[::self.ds_factor])
         self.current_ds.push(self.current_filt[::self.ds_factor])
-        print('Calculation completed!')
 
     def save_results(self, directory):
         np.save(directory+'/impedance.npy', self.impedance[:,0:self.impedance_index])
