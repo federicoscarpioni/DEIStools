@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 from threading import Thread
 from time import sleep
 from dataclasses import dataclass, field
@@ -53,3 +54,14 @@ class PicoCalculator:
                 self.computation_thread = Thread(target=self.block_calculator.calculate, args=(voltage_block, current_block,))
                 self.computation_thread.start()
             sleep(0.1)
+    
+    def save_metadata(self):
+        metadata_dictionary = { 
+            'Window length (Sa)' : self.block_calculator.input_size,
+            'STFFT-EIS frequencies (Hz)' : self.block_calculator.high_z_calculator.frequencies,
+            'Low-pass filter' : type(self.block_calculator.lp_filter).__name__,
+            'Low-pass filter order' : self.block_calculator.lp_filter.order,
+            'Low-pass cut-off frequency': self.block_calculator.lp_filter.cutoff,
+        }
+        with open(self.pico.saving_dir+'/metadata_calculation.json', 'w') as fp:
+            json.dump(metadata_dictionary, fp)
