@@ -13,14 +13,14 @@ def create_fermi_dirac_fun(fr, fc, bw, n):
 class FermiDiracFilter:
     frequencies : np.array
     centered_frequency : float
-    bandwidth: int
-    n : int
+    cutoff: int
+    order : int
     values : np.array = field(init=False) 
 
     def __post_init__(self):
         self.values = create_fermi_dirac_fun(
             self.frequencies,
             self.centered_frequency,
-            self.bandwidth,
-            self.n
+            self.cutoff,
+            self.order
         )

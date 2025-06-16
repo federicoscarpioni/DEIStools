@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from numpy.fft import ifft, ifftshift
 from npbuffer import NumpyCircularBuffer
-from deistools.processing.mfa import MultiFrequencyAnalysis
+from deistools.processing import MultiFrequencyAnalysis, FermiDiracFilter
 from deistools.processing import detrending
 
 
@@ -12,7 +12,7 @@ class BlockCalculator:
     input_size : int
     sampling_time : float
     high_z_calculator : MultiFrequencyAnalysis 
-    lp_filter : np.array
+    lp_filter : FermiDiracFilter
     ds_factor : int
     buffer_size : int
     impedance_index: int = field(default= 0)
@@ -39,8 +39,8 @@ class BlockCalculator:
         self.impedance[:,self.impedance_index] = high_z
         self.impedance_index += 1
         # Decimate the signals
-        self.voltage_filt = self.input_size * ifft(ifftshift(self.high_z_calculator.ft_voltage * self.lp_filter)).real
-        self.current_filt = self.input_size * ifft(ifftshift(self.high_z_calculator.ft_current * self.lp_filter)).real
+        self.voltage_filt = self.input_size * ifft(ifftshift(self.high_z_calculator.ft_voltage * self.lp_filter.values)).real
+        self.current_filt = self.input_size * ifft(ifftshift(self.high_z_calculator.ft_current * self.lp_filter.values)).real
         self.voltage_filt = detrending.redo_baseline(self.voltage_filt, coordinates_voltage)
         self.current_filt = detrending.redo_baseline(self.current_filt, coordinates_current)
         self.voltage_ds.push(self.voltage_filt[::self.ds_factor])
@@ -59,6 +59,3 @@ class BlockCalculator:
             dtype = np.complex64,
             ) 
         self.impedance_index  = 0
-
-    
-    
