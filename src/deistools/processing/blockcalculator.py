@@ -59,5 +59,6 @@ class BlockCalculator:
             dtype = np.complex64,
             ) 
         self.impedance_index  = 0
+
     
     
