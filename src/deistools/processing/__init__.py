@@ -1,3 +1,3 @@
-from deistools.processing.passband_filters import fermi_dirac_filter
+from deistools.processing.passband_filters import FermiDiracFilter
 from deistools.processing.mfa import MultiFrequencyAnalysis
 from deistools.processing.blockcalculator import BlockCalculator

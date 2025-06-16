@@ -23,7 +23,6 @@ class PicoCalculator:
         self.pico.run_streaming_non_blocking(autoStop = False)
         self.running = True
         self.run_thread.start()
-        
     
     def stop(self):
         self.pico.stop()
@@ -54,4 +53,3 @@ class PicoCalculator:
                 self.computation_thread = Thread(target=self.block_calculator.calculate, args=(voltage_block, current_block,))
                 self.computation_thread.start()
             sleep(0.1)
-                
