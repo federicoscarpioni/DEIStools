@@ -36,6 +36,7 @@ class PicoCalculator:
         saving_file_path = self.pico.saving_dir + subfolder_name
         Path(saving_file_path).mkdir(parents=True, exist_ok=True)
         self.block_calculator.save_results(saving_file_path)
+        self.pico.empty_buffers()
 
     def _run(self):
         while self.running:
