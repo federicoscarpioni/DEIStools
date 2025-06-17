@@ -4,6 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class MultisineGenerator:
     channel : TrueFormAWG
+    waveforms_names : list[str]
     sequence_indexes : list[int]
     names : list[str]
     sample_rates : list[int]
@@ -42,6 +43,7 @@ class MultisineGenerator:
 class MultisineGeneratorCombined:
     channel1 : MultisineGenerator
     channel2 : MultisineGenerator
+    waveforms_names : list[str]
 
     def __post_init__(self):
         self.channel1.combine_channels()

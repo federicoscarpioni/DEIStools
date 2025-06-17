@@ -1,7 +1,8 @@
 import numpy as np
 from time import sleep
+import json
 from threading import Thread
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Union
 
 from pyeclab import Channel
@@ -14,6 +15,7 @@ from deistools.acquisition.multisinegen import MultisineGenerator, MultisineGene
 class DEISchannel:
     potentiostat : Channel
     pico : PicoCalculator
+    frequencies : np.array
     awg : Union[MultisineGenerator, MultisineGeneratorCombined] = field(default=None)
     conditions: list[ConditionAverage] = field(default_factory=list)
     running : bool = field(default=False)
@@ -82,3 +84,30 @@ class DEISchannel:
         print('Program should now execute saving')
         self.pico.save_block_calculation(f'/cycle_{self.potentiostat.current_loop}_sequence_{self.potentiostat.current_tech_index}')
         if self.awg: self._update_waveform()
+
+    def save_metadata(self):
+        metadata_dict = {
+            'Software limits' : [asdict(instance) for instance in self.conditions],
+            'AWG controlled' : 'No' if self.awg == None else 'Yes',
+            'Frequencies multisine (Hz)': self.frequencies,
+        }
+        if type(self.pico) == PicoCalculator:
+            metadata_dict.update(
+                {
+                    'Frequencies online computation (Hz)': self.pico.block_calculator.high_z_calculator.frequencies,
+                    'Frequencies remaining (Hz)': self.frequencies[:self.pico.block_calculator.high_z_calculator.frequencies],
+                }
+            )
+        if type(self.awg) == MultisineGenerator :
+            metadata_dict.update(
+                asdict(self.awg)
+            )
+        if type(self.awg) == MultisineGeneratorCombined :
+            metadata_dict.update(
+                asdict(self.awg.channel1)
+            )
+            metadata_dict.update(
+                asdict(self.awg.channel2)
+            )
+        with open(self.potentiostat.writer.file_dir +'/metadata_deis_exp.json', 'w') as fp:
+            json.dump(metadata_dict, fp)
