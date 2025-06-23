@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.fft import fft, fftshift, ifft, ifftshift, fftfreq
 
-from deistools.processing import fermi_dirac_filter
+# from deistools.processing import fermi_dirac_filter
 
 def extract_zero_frequency(
         ft_voltage, 
