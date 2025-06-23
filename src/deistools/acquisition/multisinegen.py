@@ -59,3 +59,12 @@ class MultisineGeneratorCombined:
     def update(self, tech_index):
         self.channel1.update(tech_index)
         self.channel2.update(tech_index)
+
+
+def custom_serialization_factory(data):
+    result_dict = {}
+    for field_name, filed_value in data:
+        if field_name == 'channel' :
+            continue
+        result_dict[field_name] = filed_value
+    return result_dict
