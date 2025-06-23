@@ -2,7 +2,7 @@ from numpy.fft import fft, fftshift, fftfreq, ifft, ifftshift
 import numpy as np
 
 from deistools.visualise import inspect_spectrum, visualise_peaks
-from deistools.processing import fermi_dirac_filter
+# from deistools.processing import fermi_dirac_filter
 from deistools.processing.dmfa_functions import extract_zero_frequency, extract_impedance
 
 class MultiFrequencyAnalysis:
@@ -71,13 +71,13 @@ class MultiFrequencyAnalysis:
         self.freq_indexes = index_multisine_freq.tolist()
         return self.freq_indexes
 
-    def lp_filter(self, cutoff, order):
-        """
-        Apply a low-pass filter to the signal
-        """
-        filter = fermi_dirac_filter(self.freq_axis,0,2*cutoff, order)
-        self.voltage_filt = self.voltage.size * ifft(ifftshift(self.voltage * filter)).real
-        self.current_filt = self.current.size * ifft(ifftshift(self.current * filter)).real
+    # def lp_filter(self, cutoff, order):
+    #     """
+    #     Apply a low-pass filter to the signal
+    #     """
+    #     filter = fermi_dirac_filter(self.freq_axis,0,2*cutoff, order)
+    #     self.voltage_filt = self.voltage.size * ifft(ifftshift(self.voltage * filter)).real
+    #     self.current_filt = self.current.size * ifft(ifftshift(self.current * filter)).real
 
     def inspect_spectrum(self):
         positive_range = range(self.ft_voltage.size//2, self.ft_voltage.size)
@@ -96,3 +96,4 @@ class MultiFrequencyAnalysis:
             self.frequencies,
             self.freq_indexes,
         )
+    
