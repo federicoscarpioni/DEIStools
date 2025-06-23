@@ -45,24 +45,13 @@ class PicoCalculator:
                 voltage_block = self.pico.convert_ADC_numbers(
                     self.pico.channels['A'].buffer_total.pop(self.block_calculator.input_size), 
                     self.pico.channels['A'].vrange,
-                    self.pico.channels['A'].irange
+                    self.pico.channels['A'].conv_factor
                 )
                 current_block = self.pico.convert_ADC_numbers(
                     self.pico.channels['B'].buffer_total.pop(self.block_calculator.input_size),
                     self.pico.channels['B'].vrange,
-                    self.pico.channels['B'].irange
+                    self.pico.channels['B'].conv_factor
                 )
                 self.computation_thread = Thread(target=self.block_calculator.calculate, args=(voltage_block, current_block,))
                 self.computation_thread.start()
             sleep(0.1)
-    
-    def save_metadata(self):
-        metadata_dictionary = { 
-            'Window length (Sa)' : self.block_calculator.input_size,
-            'STFFT-EIS frequencies (Hz)' : self.block_calculator.high_z_calculator.frequencies,
-            'Low-pass filter' : type(self.block_calculator.lp_filter).__name__,
-            'Low-pass filter order' : self.block_calculator.lp_filter.order,
-            'Low-pass cut-off frequency': self.block_calculator.lp_filter.cutoff,
-        }
-        with open(self.pico.saving_dir+'/metadata_calculation.json', 'w') as fp:
-            json.dump(metadata_dictionary, fp)
