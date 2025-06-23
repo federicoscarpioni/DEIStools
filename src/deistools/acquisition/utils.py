@@ -21,6 +21,14 @@ class ConditionAverage:
     def __post_init__(self):
         self.buffer = NumpyCircularBuffer(self.num_elements, dtype=np.float16)
 
+def condition_avarage_serialization_factory(data):
+    result_dict = {}
+    for field_name, filed_value in data:
+        if field_name == 'buffer' :
+            continue
+        result_dict[field_name] = filed_value
+    return result_dict
+
 
 def check_software_limits(deischannel):
     """
