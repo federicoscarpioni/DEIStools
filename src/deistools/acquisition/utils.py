@@ -44,16 +44,11 @@ def check_software_limits(deischannel):
           condition.buffer.push(np.array(quantity_value)) 
           quantity_avarage = np.mean(condition.buffer.get_data())
           if condition.operator == ">" and quantity_avarage >= condition.threshold:
+              print(f'{condition.quantity} > {condition.threshold}')
               condition.buffer.empty()
               return True
           elif condition.operator == "<" and quantity_avarage <= condition.threshold:
+              print(f'{condition.quantity} < {condition.threshold}')
               condition.buffer.empty()
               return True
     return False
-
-@dataclass
-class WaveFormSequence:
-    indexes : list[int]
-    names : list[str]
-    sample_rates : list[int]
-    amplitudes : list[float]
