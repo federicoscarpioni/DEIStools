@@ -2,6 +2,13 @@ from trueformawg import TrueFormAWG
 from dataclasses import dataclass
 
 @dataclass
+class WaveFormSequence:
+    indexes : list[int]
+    names : list[str]
+    sample_rates : list[int]
+    amplitudes : list[float]
+    
+@dataclass
 class MultisineGenerator:
     channel : TrueFormAWG
     waveforms_names : list[str]
