@@ -47,8 +47,8 @@ class MultiFrequencyAnalysis:
         return impedance, voltage, current, time
 
     def compute_freq_indexes(self, input_signal):
-        index_f0 = np.where(self.freq_axis == 0)[0][0]
-        indexes = np.ceil(self.frequencies * self.sampling_time * input_signal.size) + index_f0
+        self.index_f0 = np.where(self.freq_axis == 0)[0][0]
+        indexes = np.ceil(self.frequencies * self.sampling_time * input_signal.size) + self.index_f0
         indexes = indexes.astype(int)
         self.freq_indexes = indexes.tolist()
         return self.freq_indexes
