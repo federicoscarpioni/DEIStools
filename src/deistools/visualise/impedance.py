@@ -29,13 +29,11 @@ def plot_impedance_set(Z):
         p.set_xdata(Z[:,i].real)
         p.set_ydata(-Z[:,i].imag)
         fig.canvas.draw()
-        # ax.relim()
-        # ax.autoscale_view()
     
-    def reset_view(val):
-        ax.relim()
+    def auto_lim(val):
+        ax.relim(visible_only=True)
         ax.autoscale_view()
-
+        fig.canvas.draw()
 
 
     # --- Main code ---#
@@ -55,8 +53,8 @@ def plot_impedance_set(Z):
     
     # Reset button config and call
     axes = plt.axes([0.82, 0.03,  0.15, 0.085])
-    breset = Button(axes, 'Reset view', hovercolor='tab:blue')
-    breset.on_clicked(reset_view)
+    breset = Button(axes, 'Auto lim', hovercolor='tab:blue')
+    breset.on_clicked(auto_lim)
 
     plt.show()
 
