@@ -7,7 +7,7 @@ from typing import Union
 
 from pyeclab import Channel
 from deistools.acquisition.utils import ConditionAverage, check_software_limits, condition_avarage_serialization_factory
-from deistools.acquisition.picocalculator import PicoCalculator, check_software_limits_scope
+from deistools.acquisition.picocalculator import PicoCalculator
 from deistools.acquisition.multisinegen import MultisineGenerator, MultisineGeneratorCombined, WaveFormSequence, custom_serialization_factory
 
 
