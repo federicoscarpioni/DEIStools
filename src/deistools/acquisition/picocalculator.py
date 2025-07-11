@@ -9,11 +9,14 @@ from pypicostreaming import Picoscope4000, Picoscope5000a
 
 from deistools.processing import BlockCalculator
 
+from pyeclab import Channel
+
 
 @dataclass
 class PicoCalculator:
     pico : Union[Picoscope4000, Picoscope5000a]
     block_calculator : BlockCalculator
+    potentiostat : Channel
     running : bool = field(default=False)
     computation_thread : Thread = field(init=False)
 
@@ -45,18 +48,20 @@ class PicoCalculator:
 
     def _run(self):
         while self.running:
-            data_length = self.pico.channels['A'].buffer_total.get_length()
-            if data_length > self.block_calculator.input_size:
-                self.voltage_block = self.pico.convert_ADC_numbers(
-                    self.pico.channels['A'].buffer_total.pop(self.block_calculator.input_size), 
-                    self.pico.channels['A'].vrange,
-                    self.pico.channels['A'].conv_factor
-                )
-                self.current_block = self.pico.convert_ADC_numbers(
-                    self.pico.channels['B'].buffer_total.pop(self.block_calculator.input_size),
-                    self.pico.channels['B'].vrange,
-                    self.pico.channels['B'].conv_factor
-                )
-                self.computation_thread = Thread(target=self.block_calculator.calculate, args=(self.voltage_block, self.current_block,))
-                self.computation_thread.start()
-            sleep(1)
+            if self.potentiostat.current_tech_id != 100: # if not OCV
+                data_lengthA = self.pico.channels['A'].buffer_total.get_length()
+                data_lengthB = self.pico.channels['B'].buffer_total.get_length()
+                if data_lengthA > self.block_calculator.input_size and data_lengthB > self.block_calculator.input_size:
+                    self.voltage_block = self.pico.convert_ADC_numbers(
+                        self.pico.channels['A'].buffer_total.pop(self.block_calculator.input_size), 
+                        self.pico.channels['A'].vrange,
+                        self.pico.channels['A'].conv_factor
+                    )
+                    self.current_block = self.pico.convert_ADC_numbers(
+                        self.pico.channels['B'].buffer_total.pop(self.block_calculator.input_size),
+                        self.pico.channels['B'].vrange,
+                        self.pico.channels['B'].conv_factor
+                    )
+                    self.computation_thread = Thread(target=self.block_calculator.calculate, args=(self.voltage_block, self.current_block,))
+                    self.computation_thread.start()
+                sleep(1)
