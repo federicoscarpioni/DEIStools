@@ -20,6 +20,7 @@ class PicoCalculator:
     running : bool = field(default=False)
     computation_thread : Thread = field(init=False)
 
+
     def __post_init__ (self):
         self.run_thread = Thread(target=self._run)
         self.block_calculator.running = True
@@ -36,6 +37,8 @@ class PicoCalculator:
         self.pico.disconnect()
         self.running = False
     
+    def empty_buffers(self):
+        self.pico.empty_buffers()
 
     def save_block_calculation(self, subfolder_name):
         if hasattr(self, 'computation_thread') and self.computation_thread.is_alive():
@@ -43,12 +46,12 @@ class PicoCalculator:
         saving_file_path = self.pico.saving_dir + subfolder_name
         Path(saving_file_path).mkdir(parents=True, exist_ok=True)
         self.block_calculator.save_results(saving_file_path)
-        self.pico.empty_buffers()
+        self.asked_saving = False
 
 
     def _run(self):
         while self.running:
-            if self.potentiostat.current_tech_id != 100: # if not OCV
+            if self.potentiostat.current_tech_id is not 100: # if not OCV
                 data_lengthA = self.pico.channels['A'].buffer_total.get_length()
                 data_lengthB = self.pico.channels['B'].buffer_total.get_length()
                 if data_lengthA > self.block_calculator.input_size and data_lengthB > self.block_calculator.input_size:
@@ -64,4 +67,6 @@ class PicoCalculator:
                     )
                     self.computation_thread = Thread(target=self.block_calculator.calculate, args=(self.voltage_block, self.current_block,))
                     self.computation_thread.start()
-                sleep(1)
+            else:
+                self.empty_buffers()
+            sleep(1)

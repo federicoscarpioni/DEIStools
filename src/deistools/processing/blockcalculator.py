@@ -44,10 +44,10 @@ class BlockCalculator:
         self.reset_impedance_memory()
 
     def calculate(self, data_voltage, data_current):
-        # self.high_z_calculator.voltage, coordinates_voltage = detrending.remove_baseline(data_voltage, self.sampling_time)
-        # self.high_z_calculator.current, coordinates_current = detrending.remove_baseline(data_current, self.sampling_time)
-        self.high_z_calculator.voltage = data_voltage
-        self.high_z_calculator.current = data_current
+        self.high_z_calculator.voltage, coordinates_voltage = detrending.remove_baseline(data_voltage, self.sampling_time)
+        self.high_z_calculator.current, coordinates_current = detrending.remove_baseline(data_current, self.sampling_time)
+        # self.high_z_calculator.voltage = data_voltage
+        # self.high_z_calculator.current = data_current
 
         # Compute impedance of the high frequency band
         self.high_z_calculator.compute_fft()
@@ -61,11 +61,11 @@ class BlockCalculator:
         # Decimate the signals
         self.voltage_filt = self.input_size * ifft(ifftshift(self.high_z_calculator.ft_voltage * self.lp_filter.values)).real
         self.current_filt = self.input_size * ifft(ifftshift(self.high_z_calculator.ft_current * self.lp_filter.values)).real
-        # self.voltage_filt = detrending.redo_baseline(self.voltage_filt, coordinates_voltage)
-        # self.current_filt = detrending.redo_baseline(self.current_filt, coordinates_current)
+        self.voltage_filt = detrending.redo_baseline(self.voltage_filt, coordinates_voltage)
+        self.current_filt = detrending.redo_baseline(self.current_filt, coordinates_current)
         self.voltage_ds.push(self.voltage_filt[::self.ds_factor])
         self.current_ds.push(self.current_filt[::self.ds_factor])
-        if self.check_software_limits():
+        if self.check_software_limits_average_lin(coordinates_voltage, coordinates_current): # I have written below two possible methods to use here
             print("Software limit scope met!")
             self.potentiostat.end_technique()
 
@@ -83,10 +83,39 @@ class BlockCalculator:
             ) 
         self.impedance_index  = 0
     
-    def check_software_limits(self):
+
+    def check_software_limits_average_lin(self, conditions_voltage, conditions_current):
         """
         Check if a certain averege condition (< or > of a treshold value) is met for a
-        value of the sampled data during the window of the online computation.
+        value of the sampled data during the window of the online computation. It 
+        uses the initial and final coordinate of the linearization. It adds the 
+        value of the zero-frequency of the FFT to correct the linearized avarage.
+        """
+        mfa = self.high_z_calculator
+        for condition in self.conditions:
+            if self.potentiostat.data_info.TechniqueIndex == condition.technique_index:
+                if condition.quantity == 'voltage':
+                    value_avarage = (conditions_voltage['yfinish']+conditions_voltage['ystart'])/2
+                    value_avarage = value_avarage + abs(mfa.ft_voltage[mfa.index_f0])
+                    print(f'Avarage voltage is {value_avarage} V')
+                if condition.quantity == 'current':
+                    value_avarage = (conditions_current['yfinish']+conditions_current['ystart'])/2
+                    value_avarage = value_avarage + abs(mfa.ft_current[mfa.index_f0])
+                    print(f'Avarage current is {value_avarage} A')
+                if condition.operator == ">" and value_avarage >= condition.threshold:
+                    print(f'{condition.quantity} > {condition.threshold}')
+                    return True
+                elif condition.operator == "<" and value_avarage <= condition.threshold:
+                    print(f'{condition.quantity} < {condition.threshold}')
+                    return True
+        return False
+
+
+    def check_software_limits_average_fft(self):
+        """
+        Check if a certain averege condition (< or > of a treshold value) is met for a
+        value of the sampled data during the window of the online computation. It 
+        uses the zero-frequency value of the FFT as avarage.
         """
         mfa = self.high_z_calculator
         for condition in self.conditions:
