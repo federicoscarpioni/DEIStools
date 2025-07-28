@@ -70,6 +70,7 @@ class DEISchannel:
     def skip(self):
         self.potentiostat.end_technique()
 
+
     def _update_waveform(self):
         if self.running:
             self.awg.update(self.potentiostat.new_tech_index)
@@ -79,8 +80,8 @@ class DEISchannel:
 
     def _execute_on_technique_termination(self):
         print('Program should now execute saving')
-        self.pico.save_block_calculation(f'/cycle_{self.potentiostat.current_loop}_sequence_{self.potentiostat.current_tech_index}')
         if self.awg: self._update_waveform()
+        self.pico.save_block_calculation(f'/cycle_{self.potentiostat.current_loop}_sequence_{self.potentiostat.current_tech_index}')
 
 
     def save_metadata(self):
