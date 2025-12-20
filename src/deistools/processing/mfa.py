@@ -3,7 +3,7 @@ import numpy as np
 
 from deistools.visualise import inspect_spectrum, visualise_peaks
 # from deistools.processing import fermi_dirac_filter
-from deistools.processing.dmfa_functions import extract_zero_frequency, extract_impedance
+from deistools.processing.dmfa_functions import extract_zero_frequency, extract_impedance, extract_impedance_with_error
 
 class MultiFrequencyAnalysis:
     
@@ -27,14 +27,14 @@ class MultiFrequencyAnalysis:
     def run_dmfa(self, 
                  filter, 
                  time_resolution,
-                 Npts_eleab
+                 Npts_elab
         ):
         voltage, current, time = extract_zero_frequency(
             self.ft_voltage,
             self.ft_current,
             self.freq_axis,
             filter,
-            Npts_eleab,
+            Npts_elab,
             time_resolution,
         )
         impedance = extract_impedance(
@@ -42,9 +42,36 @@ class MultiFrequencyAnalysis:
             self.ft_current,
             self.freq_indexes,
             filter,
-            Npts_eleab
+            Npts_elab
         )
         return impedance, voltage, current, time
+
+    def run_dmfa_with_error(
+            self, 
+            filter, 
+            time_resolution,
+            Npts_elab,
+            voltage_variance,
+            current_variance
+        ):
+        voltage, current, time = extract_zero_frequency(
+            self.ft_voltage,
+            self.ft_current,
+            self.freq_axis,
+            filter,
+            Npts_elab,
+            time_resolution,
+        )
+        impedance, variance = extract_impedance_with_error(
+            self.ft_voltage,
+            self.ft_current,
+            voltage_variance,
+            current_variance,
+            self.freq_indexes,
+            filter,
+            Npts_elab
+        )
+        return impedance, variance, voltage, current, time
 
     def compute_freq_indexes(self, input_signal):
         self.index_f0 = np.where(self.freq_axis == 0)[0][0]
