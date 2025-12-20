@@ -38,6 +38,35 @@ def extract_impedance(
         impedance[f] = voltage_filtered / current_filtered
     return impedance
 
+
+def extract_impedance_with_error(
+        ft_voltage,
+        ft_current,
+        variance_voltage,
+        variance_current,
+        indexes_multisine_freq:list,
+        filter,
+        Npts_elab,
+):
+    impedance = np.zeros((len(indexes_multisine_freq), Npts_elab),dtype='complex128')
+    variance = np.zeros((len(indexes_multisine_freq), Npts_elab), dtype = 'float32')
+    # Compute the impedance and the variance at each frequency
+    N_prime = Npts_elab/(np.sum(filter**2))
+    for f in range(0, len(indexes_multisine_freq)):
+        if Npts_elab%2==0:
+            elaboration_rng = np.arange(indexes_multisine_freq[f] - int(Npts_elab/2),indexes_multisine_freq[f] + int(Npts_elab/2), 1)
+        else:
+            import math
+            elaboration_rng = np.arange(indexes_multisine_freq[f] - math.floor(Npts_elab/2),indexes_multisine_freq[f] + math.ceil(Npts_elab/2), 1)
+        voltage_filtered = Npts_elab * ifft(ifftshift(ft_voltage[elaboration_rng] * filter))
+        current_filtered = Npts_elab * ifft(ifftshift(ft_current[elaboration_rng] * filter))
+        impedance[f] = voltage_filtered / current_filtered
+        variance_numerator = np.abs(impedance[f])**2 * variance_current**2 +  variance_voltage**2
+        variance_denominator = 2 * N_prime * np.abs(current_filtered)**2
+        variance[f] = variance_denominator/variance_numerator#/variance_denominator
+    
+    return impedance, variance
+
 # def extract_zero_frequency(ft_voltage, 
 #                       ft_current, 
 #                       ft_potential_we, 
