@@ -4,6 +4,7 @@ import numpy as np
 from deistools.visualise import inspect_spectrum, visualise_peaks
 # from deistools.processing import fermi_dirac_filter
 from deistools.processing.dmfa_functions import extract_zero_frequency, extract_impedance, extract_impedance_with_error
+from deistools.processing.stft_functions import estimate_impedance as stft_eis
 
 class MultiFrequencyAnalysis:
     
@@ -24,6 +25,16 @@ class MultiFrequencyAnalysis:
     def run_fft_eis(self):
         return self.ft_voltage[self.freq_indexes] / self.ft_current[self.freq_indexes]
     
+    def run_stft_eis(self, period):
+        impedance, voltage, current, time = stft_eis( 
+            self.voltage,
+            self.current,
+            self.frequencies,
+            period,
+            self.sampling_time
+        )
+        return impedance, voltage, current, time
+
     def run_dmfa(self, 
                  filter, 
                  time_resolution,
