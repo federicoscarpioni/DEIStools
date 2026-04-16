@@ -13,14 +13,17 @@ requires-python = ""
 dependencies = [
     "numpy",
     "matplotlib",
+]
+license = "MIT"
+license-files = ["LICENSE"]
+
+[project.optional-dependencies]
+optional = [
     "pyeclab",
     "pypicostreaming",
     "trueformawg",
     "npbuffer"
 ]
-license = "MIT"
-license-files = ["LICENSE"]
-
 
 [project.urls]
 Repository = "https://github.com/federicoscarpioni/deistools.git"
