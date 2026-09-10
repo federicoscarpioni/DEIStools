@@ -1,9 +1,9 @@
 from numpy.fft import fft, fftshift, fftfreq, ifft, ifftshift
 import numpy as np
 
-from deistools.visualise import inspect_spectrum, visualise_peaks
+from deistools.visualise import inspect_spectrum,inspect_spectrum_phase, visualise_peaks, visualise_peaks_phase
 # from deistools.processing import fermi_dirac_filter
-from deistools.processing.dmfa_functions import extract_zero_frequency, extract_impedance, extract_impedance_with_error
+from deistools.processing.dmfa_functions import extract_zero_frequency, extract_impedance, visualize_dmfa_filtering, extract_impedance_with_error
 from deistools.processing.stft_functions import estimate_impedance as stft_eis
 
 class MultiFrequencyAnalysis:
@@ -56,6 +56,19 @@ class MultiFrequencyAnalysis:
             Npts_elab
         )
         return impedance, voltage, current, time
+
+    def visualize_dmfa_filtering(
+            self,
+            filter,
+        ):
+        visualize_dmfa_filtering(
+            filter,
+            self.ft_voltage,
+            self.ft_current,
+            self.freq_axis,
+            self.frequencies,
+            self.freq_indexes,
+        )
 
     def run_dmfa_with_error(
             self, 
@@ -125,6 +138,15 @@ class MultiFrequencyAnalysis:
             self.freq_axis[positive_range],
         )
         return fig, axs
+
+    def inspect_spectrum_phase(self):
+        positive_range = range(self.ft_voltage.size//2, self.ft_voltage.size)
+        fig, axs = inspect_spectrum_phase(
+            self.ft_voltage[positive_range], 
+            self.ft_current[positive_range], 
+            self.freq_axis[positive_range],
+        )
+        return fig, axs
     
     def visualise_peaks(self):
         visualise_peaks(
@@ -134,4 +156,12 @@ class MultiFrequencyAnalysis:
             self.frequencies,
             self.freq_indexes,
         )
-    
+
+    def visualise_peaks_phase(self):
+        visualise_peaks_phase(
+            self.ft_voltage,
+            self.ft_current,
+            self.freq_axis,
+            self.frequencies,
+            self.freq_indexes,
+        )
