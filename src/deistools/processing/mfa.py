@@ -5,6 +5,7 @@ from deistools.visualise import inspect_spectrum,inspect_spectrum_phase, visuali
 # from deistools.processing import fermi_dirac_filter
 from deistools.processing.dmfa_functions import extract_zero_frequency, extract_impedance, visualize_dmfa_filtering, extract_impedance_with_error
 from deistools.processing.stft_functions import estimate_impedance as stft_eis
+from deistools.processing.bltva import bltva_eis_band
 
 class MultiFrequencyAnalysis:
     
@@ -96,6 +97,17 @@ class MultiFrequencyAnalysis:
             Npts_elab
         )
         return impedance, variance, voltage, current, time
+
+    def run_bltva_eis(self, T_meas):
+        impedance, drift = bltva_eis_band(
+            self.ft_voltage,
+            self.ft_current,
+            self.sampling_time,
+            self.frequencies,
+            T_meas,
+        )
+        return impedance, drift
+
 
     def compute_freq_indexes(self, input_signal):
         self.index_f0 = np.where(self.freq_axis == 0)[0][0]
