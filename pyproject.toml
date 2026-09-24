@@ -17,14 +17,6 @@ dependencies = [
 license = "MIT"
 license-files = ["LICENSE"]
 
-[project.optional-dependencies]
-optional = [
-    "pyeclab",
-    "pypicostreaming",
-    "trueformawg",
-    "npbuffer"
-]
-
 [project.urls]
 Repository = "https://github.com/federicoscarpioni/deistools.git"
 Issues = "https://github.com/federicoscarpioni/deistools/issues"

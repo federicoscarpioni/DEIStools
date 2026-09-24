@@ -1,11 +1,12 @@
 # DEIStools
 
-DEIStools is a package for multi-frequency electrochemical impedance measurement: acquiring multi-frequency excitation/response signals from a lab setup, processing them to estimate the time-varyingimpedance, and visualising the results.
+DEIStools estimates the (possibly time-varying) multi-frequency impedance of an electrochemical system from voltage/current signals, and visualises the results. It is hardware-agnostic: it works on any suitably sampled signal, not just signals acquired with a specific lab setup.
 
 ## Subpackages
 
-- `deistools.acquisition` — automate the lab hardware (oscilloscope, waveform generator, potentiostat) to acquire multi-frequency signals from an electrochemical cell.
-- `deistools.processing` — signal processing and impedance estimation from acquired (or externally supplied) signals; hardware-agnostic.
+- `deistools.processing` — signal processing and impedance/transfer-function estimation from voltage/current signals.
 - `deistools.visualise` — plotting helpers for raw signals, spectra, and impedance results.
 
-Note: as of `v0.1.0`, acquisition and processing/visualise live together in this repo. They are being split into two separate packages — `deistools` (processing/visualise) and `elma` (lab acquisition) since the acquisition code is tied to one specific lab setup while processing/visualise is general-purpose.
+## History note
+
+Before `v0.1.0`, this repo also contained lab-hardware acquisition code. That has moved to a separate package, [`elma`](https://github.com/federicoscarpioni/elma) (Electrochemistry Lab Multi-frequency Acquisition), which depends on `deistools` for impedance estimation. The last combined snapshot remains available at this repo's `v0.1.0` tag.
