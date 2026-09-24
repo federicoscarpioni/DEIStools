@@ -7,8 +7,8 @@ from pyeclab import BiologicDevice, ChannelConfig, FileWriter, Channel, BANDWIDT
 from pyeclab.techniques import ChronoAmperometry
 from trueformawg import TrueFormAWG, VISAdevices, import_awg_txt
 from pypicostreaming import Picoscope5000a
-from deistools.processing import MultiFrequencyAnalysis, fermi_dirac_filter, BlockCalculator
-from deistools.acquisition import DEISchannel, PicoCalculator
+from deistools.processing import MultiFrequencyAnalysis, fermi_dirac_filter
+from deistools.acquisition import DEISchannel, PicoCalculator, BlockCalculator
 
 
 # ===============

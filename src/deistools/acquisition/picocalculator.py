@@ -7,7 +7,7 @@ from typing import Union
 
 from pypicostreaming import Picoscope4000, Picoscope5000a
 
-from deistools.processing import BlockCalculator
+from deistools.acquisition.blockcalculator import BlockCalculator
 
 from pyeclab import Channel
 

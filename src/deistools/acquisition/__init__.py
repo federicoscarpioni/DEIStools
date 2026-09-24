@@ -2,3 +2,4 @@ from deistools.acquisition.multisinegen import MultisineGenerator, MultisineGene
 from deistools.acquisition.deischannel import DEISchannel
 from deistools.acquisition.utils import ConditionAverage, condition_avarage_serialization_factory
 from deistools.acquisition.picocalculator import PicoCalculator
+from deistools.acquisition.blockcalculator import BlockCalculator, ConditionAverageScope
