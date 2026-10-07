@@ -5,7 +5,7 @@ from deistools.visualise import inspect_spectrum,inspect_spectrum_phase, visuali
 # from deistools.processing import fermi_dirac_filter
 from deistools.processing.dmfa_functions import extract_zero_frequency, extract_impedance, visualize_dmfa_filtering, extract_impedance_with_error
 from deistools.processing.stft_functions import estimate_impedance as stft_eis
-from deistools.processing.bltva import bltva_eis_band
+from deistools.processing.bltva import bltva, visualize_bltva_fit
 
 class MultiFrequencyAnalysis:
     
@@ -98,16 +98,25 @@ class MultiFrequencyAnalysis:
         )
         return impedance, variance, voltage, current, time
 
-    def run_bltva_eis(self, T_meas):
-        impedance, drift = bltva_eis_band(
-            self.ft_voltage,
-            self.ft_current,
-            self.sampling_time,
-            self.frequencies,
-            T_meas,
+    def run_bltva(self, P, *, Np=6, Nq=5, Na=6, drift_bands=2,
+                  harmonics="all_nl", band_halfwidth=None, rcond=None):
+        fs = 1.0 / self.sampling_time
+        H_exc = np.round(self.frequencies / self.frequencies.min()).astype(int)
+        return bltva(
+            self.voltage, self.current, fs, P, H_exc,
+            Np=Np, Nq=Nq, Na=Na, drift_bands=drift_bands,
+            harmonics=harmonics, band_halfwidth=band_halfwidth, rcond=rcond,
         )
-        return impedance, drift
 
+    def visualize_bltva_fit(self, P, *, Np=6, Nq=5, Na=6, drift_bands=2,
+                            harmonics="all_nl", band_halfwidth=None, rcond=None):
+        fs = 1.0 / self.sampling_time
+        H_exc = np.round(self.frequencies / self.frequencies.min()).astype(int)
+        return visualize_bltva_fit(
+            self.voltage, self.current, fs, P, H_exc,
+            Np=Np, Nq=Nq, Na=Na, drift_bands=drift_bands,
+            harmonics=harmonics, band_halfwidth=band_halfwidth, rcond=rcond,
+        )
 
     def compute_freq_indexes(self, input_signal):
         self.index_f0 = np.where(self.freq_axis == 0)[0][0]

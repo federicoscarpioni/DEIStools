@@ -1,2 +1,3 @@
 from deistools.processing.passband_filters import FermiDiracFilter
 from deistools.processing.mfa import MultiFrequencyAnalysis
+from deistools.processing.bltva import BLTVAResult
