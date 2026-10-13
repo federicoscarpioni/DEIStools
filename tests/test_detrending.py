@@ -20,9 +20,13 @@ import warnings
 import numpy as np
 import pytest
 
-from deistools.processing.bltva import bltva, estimate_noise_variance, select_na
+from deistools.processing.bltva import (
+    bltva, build_regressors, estimate_noise_variance, legendre_basis,
+    legendre_spectra, select_na,
+)
 from deistools.processing.detrending import (
-    Detrending, Differencing, select_differencing_order,
+    Detrending, DiagonalDetrending, Differencing, LowPassRemoval,
+    MovingAverage, PolynomialFit, check_response, select_differencing_order,
 )
 from tests.conftest import GRIDS, ORACLE_P
 
@@ -312,3 +316,251 @@ def test_no_detrending_is_unchanged(make_oracle):
     a = bltva(o.voltage, o.current, o.fs, o.P, o.H_exc, Nq=5, **FIT)
     b = bltva(o.voltage, o.current, o.fs, o.P, o.H_exc, Nq=5, detrend=None, **FIT)
     assert np.array_equal(a.H_p, b.H_p)
+
+
+# --------------------------------------------------------------------------- #
+# The protocol contract, for every strategy that claims a response
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.parametrize("strategy", [
+    Differencing(1), Differencing(2), Differencing(4),
+    MovingAverage(101), MovingAverage(401),
+    LowPassRemoval(3.0, 2), LowPassRemoval(5.0, 4),
+])
+def test_apply_matches_the_declared_frequency_response(strategy):
+    """Step 1 of the protocol: ``F(k)`` must describe what ``apply`` did.
+
+    If it does not, BLTVA's weighting compensates for the wrong thing and the
+    result is biased with nothing to warn the user.
+    """
+    report = check_response(strategy, N=4096)
+    assert report["exact"], f"{strategy!r} residual {report['residual']:.2e}"
+    assert report["imaginary"] < 1e-9, "the detrended record is not real"
+
+
+def test_the_contract_check_catches_a_lying_response():
+    """A strategy whose response does not match its own ``apply`` must fail.
+
+    Guards the guard: without this, ``check_response`` returning ~1e-15 for
+    everything would be indistinguishable from it not working.
+    """
+    class Liar(MovingAverage):
+        """Declares a boxcar response and then differences instead."""
+        def apply(self, y):
+            return np.diff(np.asarray(y, dtype=float), prepend=0.0)
+
+    assert not check_response(Liar(101), N=4096)["exact"]
+
+    class Unscaled(MovingAverage):
+        """Applies the right shape with the wrong gain."""
+        def apply(self, y):
+            return 2.0 * super().apply(y)
+
+    assert not check_response(Unscaled(101), N=4096)["exact"]
+
+
+def test_a_boxcar_must_be_odd_to_have_no_phase():
+    with pytest.raises(ValueError, match="odd"):
+        MovingAverage(400)
+    with pytest.raises(ValueError, match=">= 3"):
+        MovingAverage(1)
+
+
+def test_low_pass_removal_rejects_nonsense():
+    with pytest.raises(ValueError, match="positive"):
+        LowPassRemoval(0.0)
+    with pytest.raises(ValueError, match=">= 1"):
+        LowPassRemoval(3.0, order=0)
+
+
+# --------------------------------------------------------------------------- #
+# Why only differencing may be used as a BLTVA weighting factor
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.parametrize("strategy", [
+    MovingAverage(401), LowPassRemoval(3.0, 2), PolynomialFit(3),
+])
+def test_bltva_refuses_the_strategies_its_weighting_would_undo(strategy, trended):
+    o = trended()
+    with pytest.raises(ValueError, match="cannot be used as a BLTVA"):
+        bltva(o.voltage, o.current, o.fs, o.P, o.H_exc, detrend=strategy, **FIT)
+
+
+def test_a_diagonal_filter_cannot_change_the_trend_to_signal_ratio():
+    """The structural reason the refusal above is not merely conservative.
+
+    A filter applied by circular convolution multiplies bin ``k`` by ``F(k)``,
+    so a trend and a signal that share that bin are scaled by the same number
+    and their ratio is untouched -- for *any* diagonal filter, whatever its
+    shape. This is the same fact that stops a filter rescuing the DMFA tones
+    that sit in the dc skirt.
+    """
+    N = 8192
+    t = np.linspace(0.0, 1.0, N)
+    rng = np.random.default_rng(0)
+    signal = np.sin(2 * np.pi * 40 * t) + 0.1 * rng.normal(size=N)
+    trend = 30.0 * (t ** 3 - 0.4 * t)
+
+    bins = np.array([8, 16, 40, 100])
+    S, T = np.fft.fft(signal), np.fft.fft(trend)
+    before = np.abs(T[bins]) / np.abs(S[bins])
+
+    for strategy in (MovingAverage(201), LowPassRemoval(2.0, 3)):
+        F = strategy.frequency_response(np.arange(N), N)
+        after = np.abs((F * T)[bins]) / np.abs((F * S)[bins])
+        assert np.allclose(after, before, rtol=1e-12), strategy
+
+
+def test_the_weighting_cancels_a_zero_phase_response_exactly():
+    """eq. (26) with a real ``F`` leaves the skirt regressors unchanged.
+
+    ``W^(1/2) = diag(1/|F|)`` and the skirts carry a factor ``F``, so for a
+    real, zero-phase response the weighted design matrix is bit-identical to
+    the undetrended one. Nothing about the trend was removed; only the trend
+    block of eq. (58) was, which is why the refusal exists.
+    """
+    N, P, Np, Nq, Na = 4096, 20, 2, 5, 8
+    k_e = P * 7
+    K_w = np.arange(k_e - 5 * P, k_e + 5 * P + 1)
+    B = legendre_spectra(legendre_basis(N, max(Np, Nq)))
+    strategy = MovingAverage(401)
+
+    plain, cp = build_regressors(K_w, k_e, np.array([k_e]), B, Np, Nq, Na, None)
+    shaped, cs = build_regressors(K_w, k_e, np.array([k_e]), B, Np, Nq, Na,
+                                  strategy)
+    w = np.abs(strategy.frequency_response(K_w, N))
+
+    for block in ("target", f"h{k_e}"):
+        a, c = plain[:, cp[block]], shaped[:, cs[block]]
+        assert np.allclose(c / w[:, None], a, atol=1e-14), block
+
+    # and the trend block is the one thing that went missing
+    assert "drift" in cp and "drift" not in cs
+
+
+def test_differencing_is_not_diagonal_which_is_why_it_works():
+    """The complement of the test above.
+
+    Differencing annihilates a polynomial trend in the *time domain*, which no
+    multiplication in frequency can do. Its response is also complex, so
+    ``F/|F|`` is a phase ramp the magnitude weighting does not cancel.
+    """
+    N = 4096
+    t = np.arange(N)
+    polynomial = 3.0 + 2.0 * t - 0.5 * t ** 2
+
+    # exact annihilation in time, away from the zero-prepend boundary
+    differenced = Differencing(3).apply(polynomial)
+    assert np.allclose(differenced[3:], 0.0, atol=1e-6 * np.abs(polynomial).max())
+
+    # no diagonal filter can do that: it would need F(k) = 0 at every bin
+    assert not np.allclose(
+        MovingAverage(401).apply(polynomial)[500:-500], 0.0,
+        atol=1e-6 * np.abs(polynomial).max())
+
+    # and F is complex, so the weighting leaves a phase behind
+    F = Differencing(1).frequency_response(np.arange(1, N // 2), N)
+    assert np.max(np.abs(F / np.abs(F) - 1.0)) > 0.5
+
+
+# --------------------------------------------------------------------------- #
+# The diagonal strategies, for the estimators that have no weighting
+# --------------------------------------------------------------------------- #
+
+def test_the_response_at_a_tone_is_not_the_diagnostic():
+    """Why :meth:`band_response` exists and reports ripple.
+
+    A boxcar's response passes exactly through 1 at bins where the Dirichlet
+    kernel nulls, so ``|F|`` at the tone can be perfect while the band either
+    side -- which DMFA reconstructs the time variation from -- swings by 3x.
+    """
+    report = MovingAverage(20001).band_response(8, 4, 160_000)
+    assert report["centre"] == pytest.approx(1.0, abs=1e-3)
+    assert report["ripple"] > 3.0
+    assert report["maximum"] > 1.0, "the Dirichlet kernel overshoots"
+
+    # the Butterworth magnitude is monotone and never exceeds one
+    smooth = LowPassRemoval(2.0, 2).band_response(8, 4, 160_000)
+    assert smooth["ripple"] < 1.1
+    assert smooth["maximum"] <= 1.0
+
+
+def test_differencing_would_destroy_a_dmfa_estimate():
+    """The warning in the module docstring, as a number.
+
+    BLTVA divides the attenuation back out; DMFA and STFT cannot, so the
+    lowest tone does not survive differencing at all.
+    """
+    N, k_min = 160_000, 8
+    assert abs(Differencing(1).frequency_response(
+        np.array([k_min]), N)[0]) < 1e-3
+
+
+# --------------------------------------------------------------------------- #
+# The polynomial fit: the one with no frequency response
+# --------------------------------------------------------------------------- #
+
+def test_polynomial_fit_removes_a_polynomial_trend_exactly():
+    """Exact on a trend of its own degree, and only then.
+
+    The second half is the distortion in miniature: with a signal present the
+    projection takes some of the signal too, because the fit has no way to
+    tell the two apart. That is uncorrectable, and it is why BLTVA fits this
+    basis jointly with the impedance instead of subtracting it first.
+    """
+    N = 2000
+    t = np.linspace(-1.0, 1.0, N)
+    trend = 4.0 - 3.0 * t + 2.0 * t ** 2 - t ** 3
+
+    assert np.allclose(PolynomialFit(3).apply(trend), 0.0, atol=1e-9)
+    assert np.std(PolynomialFit(2).apply(trend)) > 0.1, "a degree short"
+
+    signal = np.sin(2 * np.pi * 37 * np.arange(N) / N)
+    cleaned = PolynomialFit(3).apply(signal + trend)
+    assert not np.allclose(cleaned, signal, atol=1e-8)
+    assert np.std(cleaned - signal) / np.std(signal) < 0.2
+
+
+def test_polynomial_fit_has_no_frequency_response():
+    """A projection is not a convolution, so step 2 cannot be carried out.
+
+    The error must say where to go instead, because the alternative is already
+    in the estimator.
+    """
+    with pytest.raises(NotImplementedError, match="Nq"):
+        PolynomialFit(3).frequency_response(np.arange(10), 100)
+
+
+def test_polynomial_fit_distorts_a_record_with_no_trend():
+    """The cost the class docstring quotes, in its mechanism.
+
+    Subtracting a fitted polynomial from a trend-free record removes signal,
+    and the amount grows with the degree. Nothing corrects it -- which is the
+    reason BLTVA fits this basis rather than subtracting it.
+    """
+    N = 20_000
+    rng = np.random.default_rng(0)
+    signal = np.zeros(N)
+    for h in (1, 3, 9, 27):
+        signal += np.sin(2 * np.pi * h * np.arange(N) / N * 8
+                         + rng.uniform(0, 2 * np.pi))
+
+    removed = [np.std(signal - PolynomialFit(q).apply(signal))
+               for q in (1, 3, 8, 12)]
+    assert removed == sorted(removed), "distortion must grow with the degree"
+    assert removed[-1] > 2 * removed[0]
+
+
+def test_nq_is_the_supported_route_for_a_polynomial_trend(make_oracle):
+    """What the refusal points at must actually work.
+
+    A polynomial drift is recovered by the ``Nq`` block without any
+    detrending, which is the whole reason ``PolynomialFit`` is refused rather
+    than wired in.
+    """
+    o = make_oracle(grid="quasi_log_15", variation=(0.30, 0.10),
+                    drift=np.array([0.0, 0.5, 0.2, 0.1]), noise_std_V=1e-3)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        result = bltva(o.voltage, o.current, o.fs, o.P, o.H_exc, Nq=5, **FIT)
+    assert np.median(o.relative_error(result.H_p)) < 1e-2

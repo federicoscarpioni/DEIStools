@@ -65,6 +65,7 @@ nav:
       - methods/bltva.md
       - methods/lock-in.md
       - methods/goertzel.md
+      - methods/detrending.md
   - Implementation notes:
       - implementation/index.md
       - implementation/bltva.md

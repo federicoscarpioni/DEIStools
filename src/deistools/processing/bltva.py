@@ -61,6 +61,8 @@ from numpy.polynomial.legendre import legvander
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
+from .detrending import require_bltva_compatible
+
 __all__ = [
     "BLTVAResult", "bltva", "legendre_basis", "legendre_spectra",
     "visualize_bltva_fit", "NoiseEstimate", "estimate_noise_variance",
@@ -694,6 +696,7 @@ def _prepare(response, excitation, fs, P, H_exc, Np, Nq, Na, harmonics,
         )
     if harmonics not in ("all_nl", "excited"):
         raise ValueError("harmonics must be 'all_nl' or 'excited'")
+    require_bltva_compatible(detrend)
 
     T = N / fs
     t = np.arange(N) / fs

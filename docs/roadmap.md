@@ -15,7 +15,7 @@ be compared and each one's limitations studied. That makes the list of methods
 | 4 | ~~Variance estimation for DMFA~~ **done** (`extract_impedance_with_error`); the comparison against traditional band filtering is still open | |
 | 4b | **Slepian-basis DMFA** | the Fourier basis forces a periodicity that band-limitedness does not require; a DPSS basis is 5x better at the leading edge for the same cost |
 | 5 | **BLTVA with the Gaussian method** for automatic $N_q$ and $N_p$ selection | would remove the two parameters that currently need judgement |
-| 6 | **Other detrending strategies**, implemented and compared | only differencing exists today |
+| 6 | ~~Other detrending strategies~~ **done**: moving average, Butterworth low-pass removal and polynomial fit are implemented and compared | the comparison concluded that only differencing can be a BLTVA weighting factor, and only the polynomial fit helps DMFA — see [detrending](methods/detrending.md) |
 | 6b | **Joint trend + envelope solve for DMFA** | a filter cannot separate a trend from the signal when both are in the same bins; putting the trend in the design matrix returns every affected tone to its trend-free accuracy. The normal equations are block-arrow and can be formed by FFT |
 
 Also open: uncertainty estimation for STFT and DMFA, deferred until the

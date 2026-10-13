@@ -232,11 +232,16 @@ class MultiFrequencyAnalysis:
                   detrend=None):
         """Estimate the time-varying transfer function (TIM 2021/2022).
 
-        ``detrend`` takes a strategy from :mod:`deistools.processing.detrending`.
-        It is an argument here rather than state on the object on purpose: the
+        ``detrend`` takes a strategy from :mod:`deistools.processing.detrending`,
+        in practice ``Differencing(d)``: it is the only one whose attenuation
+        the eq. (26) weighting can undo, and the estimator refuses the rest
+        with an explanation.
+
+        It is an argument here rather than state on the object on purpose. The
         other estimators cannot compensate for the shaping a detrending filter
         applies, so a detrended signal must never reach ``run_stft_eis`` or
-        ``run_dmfa``."""
+        ``run_dmfa`` -- differencing in particular would annihilate the lowest
+        tones there rather than cost nothing."""
         fs = 1.0 / self.sampling_time
         H_exc = np.round(self.frequencies / self.frequencies.min()).astype(int)
         return bltva(

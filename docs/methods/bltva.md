@@ -99,13 +99,20 @@ It matters in the **worst case**, not the median, because a trend is a
 disturbance near DC that corrupts the lowest tones and leaves the rest alone.
 It saturates exactly at the order of the trend present.
 
-!!! note "Detrending is specific to BLTVA"
+!!! warning "Detrending is specific to BLTVA, and differencing is specific to it twice over"
     `Nq` and the differencing of
-    [`deistools.processing.detrending`](../api/processing.md) exist because
-    BLTVA *models* the trend and differencing reduces the number of
-    coefficients that takes. DMFA has no trend model -- it rejects the trend
-    with its filter's stopband instead -- so neither idea carries over, and
-    differencing is in fact the weakest of the options there. See
+    [`deistools.processing.detrending`](detrending.md) exist because BLTVA
+    *models* the trend and differencing reduces the number of coefficients
+    that takes. Differencing works here precisely because step 2 divides its
+    attenuation back out — and that is why it must **never** be handed to
+    DMFA or STFT, which have no such step. `Differencing(1)` leaves
+    $|F| = 3\times10^{-4}$ at the lowest excited bin of a 160 000-sample
+    record; the measured DMFA error at that tone is 1.00, i.e. the tone is
+    gone.
+
+    Of the four strategies in the module, only differencing may be passed as
+    `detrend`; the estimator refuses the rest with an explanation. See
+    [Detrending](detrending.md) for which one to use where, and
     [DMFA and trends](dmfa.md#trends-why-bltvas-detrending-does-not-transfer).
 
 ### `band_halfwidth` — and why it is not independent of $N_p$
