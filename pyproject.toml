@@ -20,7 +20,9 @@ license-files = ["LICENSE"]
 [project.optional-dependencies]
 docs = [
     "mkdocs>=1.6",
-    "mkdocs-material>=9.5",
+    # the readthedocs theme ships with mkdocs; pymdown-extensions supplies the
+    # arithmatex/superfences/highlight extensions used in mkdocs.yml
+    "pymdown-extensions>=10.0",
     "mkdocstrings[python]>=0.26",
 ]
 

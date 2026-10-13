@@ -8,28 +8,11 @@ repo_name: federicoscarpioni/DEIStools
 edit_uri: edit/main/docs/
 
 theme:
-  name: material
-  features:
-    - navigation.sections
-    - navigation.top
-    - navigation.indexes
-    - content.code.copy
-    - toc.follow
-  palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: teal
-      accent: deep orange
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: teal
-      accent: deep orange
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
+  name: readthedocs
+  highlightjs: false          # pymdownx.highlight already renders with Pygments
+  navigation_depth: 3
+  collapse_navigation: false
+  sticky_navigation: true
 
 plugins:
   - search
@@ -59,7 +42,6 @@ markdown_extensions:
       permalink: true
   - pymdownx.arithmatex:
       generic: true
-  - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
