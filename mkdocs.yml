@@ -2,9 +2,9 @@ site_name: DEIStools
 site_description: >-
   Impedance estimation for slowly time-varying electrochemical systems, with
   the existing methods side by side.
-site_url: https://federicoscarpioni.github.io/deistools/
-repo_url: https://github.com/federicoscarpioni/deistools
-repo_name: federicoscarpioni/deistools
+site_url: https://federicoscarpioni.github.io/DEIStools/
+repo_url: https://github.com/federicoscarpioni/DEIStools
+repo_name: federicoscarpioni/DEIStools
 edit_uri: edit/main/docs/
 
 theme:

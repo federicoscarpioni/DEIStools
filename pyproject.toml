@@ -25,8 +25,8 @@ docs = [
 ]
 
 [project.urls]
-Repository = "https://github.com/federicoscarpioni/deistools.git"
-Issues = "https://github.com/federicoscarpioni/deistools/issues"
+Repository = "https://github.com/federicoscarpioni/DEIStools.git"
+Issues = "https://github.com/federicoscarpioni/DEIStools/issues"
 
 
 [tool.ruff]

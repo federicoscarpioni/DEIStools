@@ -13,7 +13,7 @@ faith.
 It is hardware-agnostic: it works on any suitably sampled voltage/current pair,
 not only on signals from a particular lab setup.
 
-**📖 [Documentation](https://federicoscarpioni.github.io/deistools/)**
+**📖 [Documentation](https://federicoscarpioni.github.io/DEIStools/)**
 
 ## Status of each method
 
@@ -26,13 +26,13 @@ not only on signals from a particular lab setup.
 | Lock-in, Goertzel | not implemented | — |
 
 Uncertainty estimation exists for BLTVA only. See the
-[roadmap](https://federicoscarpioni.github.io/deistools/roadmap/).
+[roadmap](https://federicoscarpioni.github.io/DEIStools/roadmap/).
 
 ## Install
 
 ```bash
-git clone https://github.com/federicoscarpioni/deistools
-cd deistools
+git clone https://github.com/federicoscarpioni/DEIStools
+cd DEIStools
 pip install -e .
 ```
 
@@ -138,7 +138,7 @@ mkdocs gh-deploy      # publish to GitHub Pages
 
 Where a paper is ambiguous, or this implementation makes a choice the paper
 does not dictate, it is recorded in the
-[implementation notes](https://federicoscarpioni.github.io/deistools/implementation/).
+[implementation notes](https://federicoscarpioni.github.io/DEIStools/implementation/).
 
 ## History note
 

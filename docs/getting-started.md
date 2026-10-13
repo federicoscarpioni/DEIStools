@@ -3,8 +3,8 @@
 ## Install
 
 ```bash
-git clone https://github.com/federicoscarpioni/deistools
-cd deistools
+git clone https://github.com/federicoscarpioni/DEIStools
+cd DEIStools
 pip install -e .
 ```
 
@@ -35,9 +35,9 @@ that work, on the same simulated measurement:
 
 | | | |
 |---|---|---|
-| [`04_stft_first_run.py`](https://github.com/federicoscarpioni/deistools/blob/main/examples/04_stft_first_run.py) | STFT | one function call, four arrays back |
-| [`05_dmfa_first_run.py`](https://github.com/federicoscarpioni/deistools/blob/main/examples/05_dmfa_first_run.py) | DMFA | four steps: transform, locate, filter, extract |
-| [`06_bltva_first_run.py`](https://github.com/federicoscarpioni/deistools/blob/main/examples/06_bltva_first_run.py) | BLTVA | one call, returning model coefficients and an uncertainty |
+| [`04_stft_first_run.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/04_stft_first_run.py) | STFT | one function call, four arrays back |
+| [`05_dmfa_first_run.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/05_dmfa_first_run.py) | DMFA | four steps: transform, locate, filter, extract |
+| [`06_bltva_first_run.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/06_bltva_first_run.py) | BLTVA | one call, returning model coefficients and an uncertainty |
 
 They are self-contained: each builds its own simulated measurement at the top,
 so you can replace that block with your own data and the rest still runs.
@@ -46,8 +46,8 @@ so you can replace that block with your own data and the rest still runs.
 
 If you are new to the package:
 
-1. **[`00_synth_stationary.py`](https://github.com/federicoscarpioni/deistools/blob/main/examples/00_synth_stationary.py)** and
-   **[`01_synth_transistor.py`](https://github.com/federicoscarpioni/deistools/blob/main/examples/01_synth_transistor.py)** —
+1. **[`00_synth_stationary.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/00_synth_stationary.py)** and
+   **[`01_synth_transistor.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/01_synth_transistor.py)** —
    how a measurement is simulated, and what a time-varying one looks like.
 2. **04–06** — one estimation with each method.
 3. **[Concepts](concepts/signal-model.md)** — what the methods are actually
