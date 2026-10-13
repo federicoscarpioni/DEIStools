@@ -1,0 +1,91 @@
+site_name: DEIStools
+site_description: >-
+  Impedance estimation for slowly time-varying electrochemical systems, with
+  the existing methods side by side.
+site_url: https://federicoscarpioni.github.io/deistools/
+repo_url: https://github.com/federicoscarpioni/deistools
+repo_name: federicoscarpioni/deistools
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            heading_level: 3
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+            filters: ["!^_"]
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.snippets
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3.2.2/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Concepts:
+      - concepts/signal-model.md
+      - concepts/when-meaningful.md
+      - concepts/excitation.md
+  - Methods:
+      - methods/stft.md
+      - methods/dmfa.md
+      - methods/bltva.md
+  - Implementation notes:
+      - implementation/index.md
+      - implementation/bltva.md
+      - implementation/dmfa.md
+  - API reference:
+      - api/processing.md
+      - api/simulation.md
+  - Roadmap: roadmap.md
