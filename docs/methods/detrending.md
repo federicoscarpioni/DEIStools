@@ -49,9 +49,9 @@ Everything below is a consequence.
 | strategy | BLTVA | DMFA / STFT |
 |---|---|---|
 | [`Differencing`](#differencing) | **the only one that works** | **destroys the signal** (error 1.00) |
-| [`MovingAverage`](#movingaverage) | refused | no help, and adds band ripple |
+| [`MovingAverage`](#movingaverage) | refused | at best 1.7×, and not consistently |
 | [`LowPassRemoval`](#lowpassremoval) | refused | no help on an overlapping trend |
-| [`PolynomialFit`](#polynomialfit) | refused — use $N_q$ | **the only one that helps** |
+| [`PolynomialFit`](#polynomialfit) | refused — use $N_q$ | **the only one that reliably helps** |
 
 The two columns are exact complements, and one question decides both: *can the
 estimator undo an attenuation?*
@@ -170,10 +170,23 @@ bins either side, a 3.3× ripple. That band is exactly what DMFA reconstructs
 the time variation from, so the ripple is an uncorrected envelope distortion.
 Use `band_response` and judge by `ripple`, never by the centre value.
 
-Measured on DMFA against a clean baseline of 4.1e-03 at the lowest tone: this
-filter gives **1.9e-02 on a record with no trend at all**, while leaving a
-trended record no better (8.7e-02 before, 5.0e-02 after). Present for
-completeness; `LowPassRemoval` is strictly the better shape.
+Measured on DMFA at the lowest tone, against a clean baseline of 4.1e-03:
+
+| record | no filter | with it |
+|---|---|---|
+| no trend | 4.1e-03 | **1.9e-02** |
+| trended, $L = 20001$ | 8.7e-02 | 5.0e-02 |
+| trended, $L = 40001$ | 8.7e-02 | 9.7e-02 |
+
+Those three rows have to be read together. $L = 20001$ *does* improve the
+trended record, by 1.7× — per-bin invariance does not forbid that, because a
+filter can still reweight which bins dominate a band fit even though it cannot
+change the ratio within any one of them. But $L = 40001$ makes it worse, so
+the direction is not consistent across settings, and the win is paid for by
+raising the trend-free floor 4.5×. Nothing is gained here that `PolynomialFit`
+does not gain better, and more predictably, on the same record.
+
+Present for completeness; `LowPassRemoval` is strictly the better shape.
 
 ### `LowPassRemoval`
 
@@ -199,9 +212,10 @@ $\pm 4$ bins around bin 8, ripple 1.03× and a DMFA error of 5.8e-03 on a
 trend-free record against the 4.1e-03 baseline.
 
 It still does not remove a trend that *overlaps* the tones — 8.7e-02 before,
-8.8e-02 after. What it does well is remove a trend genuinely slower than
-everything excited, which is the case the cutoff describes. Whether your trend
-is that case is an empirical question; `band_response` answers it.
+8.8e-02 after at `cutoff = 2`, and 1.2e-01 at `cutoff = 4, order = 6`. What it
+does well is remove a trend genuinely slower than everything excited, which is
+the case the cutoff describes. Whether your trend is that case is an empirical
+question; `band_response` answers it.
 
 ### `PolynomialFit`
 

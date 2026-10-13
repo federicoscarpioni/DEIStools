@@ -94,17 +94,18 @@ can compensate for the shaping. The other estimators have no weighting at
 all, so for them whatever a filter removes is simply gone, and the choice
 inverts:
 
-    =====================  ==========================  ======================
-    strategy               BLTVA                        DMFA / STFT
-    =====================  ==========================  ======================
-    :class:`Differencing`  the only one that works      **destroys the
-                                                        signal**
-    :class:`MovingAverage`      refused                 no help, adds ripple
-    :class:`LowPassRemoval`     refused                 no help on an
-                                                        overlapping trend
-    :class:`PolynomialFit`      refused; use ``Nq``     the only one that
-                                                        helps
-    =====================  ==========================  ======================
+    =======================  =====================  =====================
+    strategy                 BLTVA                  DMFA / STFT
+    =======================  =====================  =====================
+    :class:`Differencing`    the only one that      **destroys the
+                             works                  signal**
+    :class:`MovingAverage`   refused                at best 1.7x, and not
+                                                    consistently
+    :class:`LowPassRemoval`  refused                no help on an
+                                                    overlapping trend
+    :class:`PolynomialFit`   refused; use ``Nq``    the only one that
+                                                    reliably helps
+    =======================  =====================  =====================
 
 The two columns are exact complements, and one fact explains both. A diagonal
 filter cannot separate trend from signal inside a shared bin, so neither
@@ -373,13 +374,28 @@ class MovingAverage(DiagonalDetrending):
     ``|F| = 1.00005`` at bin 8 and swings from 0.363 to 1.214 over the +-4
     bins either side. Use :meth:`band_response` and judge by ``ripple``.
 
-    Measured cost on DMFA with that band, against a clean baseline of
-    4.1e-03 at the lowest tone: ``MovingAverage(20001)`` (3.3x ripple) gives
-    1.9e-02 on a record with no trend at all, and ``MovingAverage(40001)``
-    (1.4x ripple) 1.9e-02. Meanwhile neither improves a trended record
-    (8.7e-02 before, 5.0e-02 and 9.7e-02 after), because a diagonal filter
-    cannot change the trend-to-signal ratio in a bin. The boxcar is here for
-    completeness; :class:`LowPassRemoval` is strictly the better shape.
+    Measured cost on DMFA with that band, at the lowest tone, against a clean
+    baseline of 4.1e-03:
+
+        ====================  ==========  ==========
+        record                no filter   with it
+        ====================  ==========  ==========
+        no trend              4.1e-03     1.9e-02
+        trended, L = 20001    8.7e-02     5.0e-02
+        trended, L = 40001    8.7e-02     9.7e-02
+        ====================  ==========  ==========
+
+    Read those three rows together before concluding anything. ``L = 20001``
+    *does* improve the trended record, by 1.7x -- per-bin invariance does not
+    forbid it, because a filter can still reweight which bins dominate a band
+    fit even though it cannot change the ratio within any one of them. But
+    ``L = 40001`` makes it worse, so the direction is not even consistent
+    across settings, and the win is bought by raising the trend-free floor
+    4.5x, from 4.1e-03 to 1.9e-02. Nothing is gained that
+    :class:`PolynomialFit` does not gain better (7.9e-03 on the same record).
+
+    The boxcar is here for completeness. :class:`LowPassRemoval` is strictly
+    the better shape.
     """
 
     def __init__(self, length: int):
@@ -425,9 +441,11 @@ class LowPassRemoval(DiagonalDetrending):
     DMFA error of 5.8e-03 on a trend-free record against a 4.1e-03 baseline.
 
     It still does not remove a trend that overlaps the tones -- 8.7e-02
-    before, 8.8e-02 after -- for the reason in the module docstring. What it
-    does well is remove a trend that is genuinely *slower* than everything
-    excited, which is the case the cutoff describes.
+    before, 8.8e-02 after at ``cutoff = 2``, and 1.2e-01 at ``cutoff = 4,
+    order = 6`` -- for the reason in the module docstring. What it does well
+    is remove a trend that is genuinely *slower* than everything excited,
+    which is the case the cutoff describes. Whether a given trend is that
+    case is an empirical question, and :meth:`band_response` answers it.
 
     Parameters
     ----------
