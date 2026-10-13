@@ -32,20 +32,26 @@ drift_coefficients : array_like, shape (Q+1,), real, optional
     Set to None for no drift (default).
 """
 import numpy as np
-from numpy.polynomial.legendre import legvander
 from ..engine import simulate as _simulate
+
+# The estimator's own basis, deliberately. Hallemans TIM 2021 after eq. (26):
+# on a finite record the continuous property (1/T)*int b_p dt = 0 does not
+# hold exactly, "therefore the mean values of the sampled and windowed b_p(t),
+# p >= 1 are subtracted". An oracle has to be built from the estimator's model
+# rather than a near neighbour of it; using the raw Legendre polynomials here
+# instead left an O(1/N) floor under every recovery test, which at N = 16000
+# showed up as a 5.9e-05 discrepancy against the block-oriented model.
+from deistools.processing.bltva import legendre_basis
 
 
 def legendre_impedance(f, t, T_window, impedance_coefficients):
-    tau = 2 * t / T_window - 1
-    B = legvander(tau, impedance_coefficients.shape[1] - 1)   # (N, P+1)
-    Z = impedance_coefficients @ B.T                          # (n_freq, N)
+    B = legendre_basis(t.size, impedance_coefficients.shape[1] - 1)   # (N, P+1)
+    Z = impedance_coefficients @ B.T                                  # (n_freq, N)
     return Z
 
 
 def legendre_drift(t, T_window, drift_coefficients):
-    tau = 2 * t / T_window - 1
-    B = legvander(tau, len(drift_coefficients) - 1)   # (N, Q+1)
+    B = legendre_basis(t.size, len(drift_coefficients) - 1)   # (N, Q+1)
     return B @ np.asarray(drift_coefficients, dtype=float)
 
 

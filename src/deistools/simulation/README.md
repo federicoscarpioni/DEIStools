@@ -15,13 +15,25 @@ simulation/
 
 ## How it works
 
-The **engine** (`engine.py`) handles the three steps common to every model:
+The **engine** (`engine.py`) handles the three steps common to the frozen-time models:
 
 1. Build the multisine current from the specified frequencies, amplitudes, and phases.
 2. Compute the voltage response tone-by-tone using the frozen-time impedance `Z(f, t)`.
 3. Add Gaussian noise to voltage and current if requested.
 
-Each **model** provides an `impedance_fn(f, t)` that returns a `(n_freq, N)` complex array. The engine does not know or care how the impedance varies with time — that is entirely the model's concern.
+Each such **model** provides an `impedance_fn(f, t)` returning a `(n_freq, N)` complex array. The engine does not know or care how the impedance varies with time — that is entirely the model's concern.
+
+### When frozen-time synthesis is exact, and when it is not
+
+For a **linear time-varying** system expanded in *real* basis functions, the frozen-time synthesis is not an approximation — it is algebraically identical to the block-diagram model of Hallemans TIM 2021 Fig. 1. Because `b_p(t)` is real the two sums commute:
+
+```
+Σ_p b_p(t)·Σ_k A_k Re{G_p(jω_k)e^{jθ}}  ==  Σ_k A_k Re{(Σ_p G_p(jω_k)b_p(t))·e^{jθ}}
+```
+
+so `legendre.py` reproduces the exact LTV response with no ODE solve. This is what makes it usable as an oracle.
+
+It does **not** hold when the impedance depends nonlinearly on a time-varying parameter. In `r_rc_transistor.py`, `Z` is a nonlinear function of `R_ct(t)`, so the frozen-time response is merely a quasi-static approximation of the governing equation — wrong by around 1% rms at realistic gate-ramp rates. That model therefore bypasses the engine and integrates the circuit ODE directly.
 
 ## Models
 
@@ -52,6 +64,24 @@ The transistor is modelled as a voltage-controlled resistance:
 - Between `V_off` and `V_on`: linear interpolation
 
 Driving `V_gate` with a linear ramp (`V_gate(t) = V_gate_start + V_gate_rate * t`) produces a continuously time-varying `R_ct(t)` without any artificial parameter forcing — the variation comes from the circuit topology.
+
+This is the circuit of Breugelmans et al., Electrochim. Acta 76 (2012) 375, Fig. 7, and it is the only model here that can be **built on the bench as well as simulated**.
+
+**It is solved as a genuine time-varying ODE**, not by frozen-time synthesis. Under galvanostatic excitation, with `v_C` across the parallel branch:
+
+```
+dv_C/dt = (i(t) − v_C/R_ct(t)) / C
+v(t)    = R_s·i(t) + v_C(t)
+```
+
+a scalar linear ODE with a time-varying coefficient, integrated with fixed-step RK4 from the quasi-static initial state (so no startup transient is injected). The step size must stay well below `τ = R_ct·C`; a warning is raised otherwise.
+
+Two extra keys come back:
+
+- `voltage_quasistatic_V` — the frozen-time synthesis, so `voltage_V − voltage_quasistatic_V` is the quasi-static modelling error directly.
+- `Z_true` — still the **frozen-time** impedance. That is the quantity an estimator is asked to recover, so it stays the ground truth even though it is not the response the circuit produces.
+
+Because the response does not satisfy the estimators' model assumptions, this model is the one to use when asking *how far* a method degrades on a physically real system. Note `noise_std_A` models a noisy ammeter: it perturbs the recorded current, not the current driving the circuit.
 
 ### `legendre` — Legendre polynomial oracle
 
@@ -116,10 +146,10 @@ All `simulate_*` functions return a dict with at minimum:
 - `time_s` — sample times, shape `(N,)`
 - `voltage_V` — simulated voltage, shape `(N,)`
 - `current_A` — multisine current, shape `(N,)`
-- `Z_true` — ground-truth impedance, shape `(n_freq, N)`
+- `Z_true` — ground-truth (frozen-time) impedance, shape `(n_freq, N)`
 - `frequencies_Hz` — excited frequencies
 
-Model-specific keys (e.g. `R_ct_t`, `V_gate_t`, `drift_V`) are added by each model.
+Model-specific keys are added by each model: `R_ct_t`, `V_gate_t`, `voltage_quasistatic_V` (transistor); `drift_V`, `impedance_coefficients`, `drift_coefficients` (Legendre); `R_s`, `R_p`, `C` (both circuit models).
 
 ## Adding a new model
 
