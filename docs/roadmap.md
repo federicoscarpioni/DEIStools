@@ -5,18 +5,25 @@ from multi-frequency signals of slowly time-varying systems, so that they can
 be compared and each one's limitations studied. That makes the list of methods
 *not yet* implemented part of the specification rather than a backlog.
 
+## Done
+
+| | item | outcome |
+|---|---|---|
+| 1 | Lock-in amplifier and Goertzel filter | both implemented, with [examples](https://github.com/federicoscarpioni/DEIStools/tree/main/examples) 07 and 08 and 15 tests. Both turned out to be the [STFT](methods/stft.md) by another route — Goertzel to 1e-10, the lock-in to 9e-14 — which makes them independent checks on it rather than fourth and fifth methods |
+| 4 | Variance estimation for DMFA | `extract_impedance_with_error`, following Chukwu 2022 eq. (19)–(20). Predicted/observed = 0.997 across three noise configurations. *The comparison against traditional band filtering is still open.* |
+| 6 | Other detrending strategies | moving average, Butterworth low-pass removal and polynomial fit, measured against differencing. Conclusion: only differencing can be a BLTVA weighting factor, and only the polynomial fit helps DMFA — and differencing buys columns rather than accuracy. See [detrending](methods/detrending.md) |
+
 ## Planned
 
 | | item | why |
 |---|---|---|
-| 1 | ~~Lock-in amplifier and Goertzel filter~~ **done** | both implemented, with examples and tests |
 | 2 | **BLA-style short-time Fourier method**, with noise and nonlinearities estimated | would give STFT the uncertainty and distortion diagnostics BLTVA has |
-| 3 | **Verify DMFA against the literature** | the current implementation is unverified — see the [notes](implementation/dmfa.md) |
-| 4 | ~~Variance estimation for DMFA~~ **done** (`extract_impedance_with_error`); the comparison against traditional band filtering is still open | |
-| 4b | **Slepian-basis DMFA** | the Fourier basis forces a periodicity that band-limitedness does not require; a DPSS basis is 5x better at the leading edge for the same cost |
-| 5 | **BLTVA with the Gaussian method** for automatic $N_q$ and $N_p$ selection | would remove the two parameters that currently need judgement |
-| 6 | ~~Other detrending strategies~~ **done**: moving average, Butterworth low-pass removal and polynomial fit are implemented and compared | the comparison concluded that only differencing can be a BLTVA weighting factor, and only the polynomial fit helps DMFA — see [detrending](methods/detrending.md) |
+| 3 | **End-to-end check of DMFA against an independent implementation** | the definition, filter and variance are now verified against Koster 2017, Battistel 2016/2019 and Chukwu 2022, and three bugs were fixed; what is left is a comparison against code that is not this code — see the [notes](implementation/dmfa.md) |
+| 4b | **Slepian-basis DMFA** | the Fourier basis forces a periodicity that band-limitedness does not require; a DPSS basis is 5× better at the leading edge for the same cost |
+| 5 | **BLTVA with the Gaussian method** for automatic $N_q$ and $N_p$ selection | would remove the two parameters that currently need judgement — and [the $N_q$ result](methods/detrending.md#what-it-buys-is-columns-not-accuracy) makes this more valuable than it looked, since $N_q$ matters more than the detrending choice |
 | 6b | **Joint trend + envelope solve for DMFA** | a filter cannot separate a trend from the signal when both are in the same bins; putting the trend in the design matrix returns every affected tone to its trend-free accuracy. The normal equations are block-arrow and can be formed by FFT |
+| 6c | **Trend-aware demodulation for the lock-in** | `method='ls'` already carries a local slope and is 11× better than mixing on a drifting cell. Extending it to a local quadratic, and to STFT's windows, is cheap and untested |
+| 7 | **Comparison examples for the lock-in and Goertzel** | examples 20–23 still show three estimators; both new ones belong there, now that they have first-run scripts |
 
 Also open: uncertainty estimation for STFT and DMFA, deferred until the
 literature on it has been worked through. BLTVA has it because Hallemans *et

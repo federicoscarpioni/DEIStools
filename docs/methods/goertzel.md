@@ -125,6 +125,12 @@ Its limits are STFT's limits: time resolution is the block length, with a
 floor of one multisine period; the skirts are not used; no uncertainty is
 reported. See [STFT](stft.md).
 
+## Worked example
+
+[`examples/07_goertzel_first_run.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/07_goertzel_first_run.py)
+checks the recurrence against `np.fft`, reproduces the STFT estimate, times
+both, and feeds the streaming `GoertzelFilter` sample by sample.
+
 ## When to use it
 
 - **Live processing**, where no FFT is possible because the record has not

@@ -30,7 +30,7 @@ will not complain, so trim the record yourself before using them.
 ## The shortest path to a result
 
 Each estimator is called differently, because each works in a different
-domain. The three "first run" examples show one estimation each, at settings
+domain. The five "first run" examples show one estimation each, at settings
 that work, on the same simulated measurement:
 
 | | | |
@@ -38,6 +38,8 @@ that work, on the same simulated measurement:
 | [`04_stft_first_run.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/04_stft_first_run.py) | STFT | one function call, four arrays back |
 | [`05_dmfa_first_run.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/05_dmfa_first_run.py) | DMFA | four steps: transform, locate, filter, extract |
 | [`06_bltva_first_run.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/06_bltva_first_run.py) | BLTVA | one call, returning model coefficients and an uncertainty |
+| [`07_goertzel_first_run.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/07_goertzel_first_run.py) | Goertzel | a recurrence per bin, and a streaming filter |
+| [`08_lock_in_first_run.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/08_lock_in_first_run.py) | lock-in | mix, low-pass, divide — the familiar instrument |
 
 They are self-contained: each builds its own simulated measurement at the top,
 so you can replace that block with your own data and the rest still runs.
@@ -49,13 +51,13 @@ If you are new to the package:
 1. **[`00_synth_stationary.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/00_synth_stationary.py)** and
    **[`01_synth_transistor.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/01_synth_transistor.py)** —
    how a measurement is simulated, and what a time-varying one looks like.
-2. **04–06** — one estimation with each method.
+2. **04–08** — one estimation with each method.
 3. **[Concepts](concepts/signal-model.md)** — what the methods are actually
    doing, and the notation they are written in.
 4. **10–15** — what each parameter does, measured against known truth.
-5. **20–23** — the three methods side by side on one system each.
+5. **20–23** — the three main methods side by side on one system each.
 
-That is roughly an hour of reading and four minutes of running.
+That is roughly an hour of reading and five minutes of running.
 
 ## Running the examples
 
@@ -66,12 +68,20 @@ python examples/05_dmfa_first_run.py --no-widgets   # skip interactive sliders
 ```
 
 Every seed is fixed, so the numbers you get are the numbers in the commentary.
-The full set of seventeen scripts takes about four minutes and produces 50
-figures.
+The full set of nineteen scripts takes about five minutes and produces
+55 figures.
 
 ## Which method should I use?
 
-Short answer: try all three — that is what the package is for.
+Short answer: try them — that is what the package is for.
+
+First, a simplification. There are five estimators but **three ideas**:
+[Goertzel](methods/goertzel.md) and the [lock-in](methods/lock-in.md) both
+compute the same thing as [STFT](methods/stft.md), verified to 1e-10 and
+9e-14 respectively. Choose between those three on what they *offer* — Goertzel
+runs on a stream, the lock-in gives a continuous output and a drift-corrected
+demodulator — not on accuracy, where they coincide. The real choice is between
+STFT, [DMFA](methods/dmfa.md) and [BLTVA](methods/bltva.md).
 
 Longer answer, from the comparisons in examples 20–23:
 
@@ -88,3 +98,18 @@ Longer answer, from the comparisons in examples 20–23:
 - **You do not know.** Run BLTVA and compare its reported uncertainty with the
   error you actually see. A large gap means the model, not the measurement, is
   your limit — see [BLTVA](methods/bltva.md#the-uncertainty-is-a-model-error-detector).
+
+## My cell drifts
+
+Almost all of them do, and the handling is not symmetric between the methods,
+so it is worth reading [Detrending](methods/detrending.md) before reaching for
+a filter. The short version:
+
+- **With BLTVA**, raise `Nq` and do not detrend at all. It models the trend
+  jointly with the impedance, which neither distorts the signal nor needs the
+  trend to be guessed in advance.
+- **With DMFA or STFT**, use `PolynomialFit` at the lowest degree that works,
+  and know that it removes some signal along with the trend.
+- **Never pass `Differencing` to DMFA or STFT.** It is built for BLTVA, which
+  divides its attenuation back out; without that step it annihilates the
+  lowest tones outright.

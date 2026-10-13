@@ -20,10 +20,11 @@ not only on signals from a particular lab setup.
 | method | status | validated against |
 |---|---|---|
 | **STFT** | usable | analytic ground truth on four simulated systems |
-| **DMFA** | ⚠️ **provisional** | behaves as expected, but **not** checked against the literature |
+| **DMFA** | ⚠️ **provisional** | definition, filter and variance now checked against the source papers; an end-to-end check against an independent implementation is still open |
 | **BLTVA** | usable | the source papers' algorithms, plus exact-recovery tests |
-| **Detrending** (differencing) | usable | the 2022 paper's own worked example |
-| Lock-in, Goertzel | not implemented | — |
+| **Lock-in** | usable | agrees with STFT to 9e-14 at the window centres |
+| **Goertzel** | usable | reproduces numpy's DFT and the STFT estimator to 1e-10 |
+| **Detrending** | usable | four strategies, each measured against the others; only differencing is accepted by BLTVA |
 
 Uncertainty estimation exists for BLTVA only. See the
 [roadmap](https://federicoscarpioni.github.io/DEIStools/roadmap/).
@@ -76,8 +77,16 @@ Signal processing and impedance estimation.
 - **`stft_functions`** — short-time Fourier estimation (`estimate_impedance`).
 - **`dmfa_functions`** — demodulated multi-frequency analysis
   (`extract_impedance` and its helpers), plus `visualize_dmfa_filtering`.
-- **`passband_filters`** — the Fermi-Dirac passband DMFA filters with.
-- **`detrending`** — trend removal by differencing, for use with BLTVA.
+- **`passband_filters`** — passband filters for DMFA: the Fermi-Dirac family
+  and the standard DSP windows, plus `rejection_db`.
+- **`lock_in_amp`** — digital lock-in (`lia_eis`), with two demodulators and
+  the integrator design helpers that make the tone rejection exact.
+- **`goertzel`** — the generalised Goertzel recurrence (`goertzel_eis`), batch
+  and streaming.
+- **`detrending`** — `Differencing`, `MovingAverage`, `LowPassRemoval` and
+  `PolynomialFit`, with `check_response` to verify a strategy against the
+  protocol. Only differencing may be used as a BLTVA weighting factor; the
+  module documents why.
 - **`mfa`** — `MultiFrequencyAnalysis`, a class wrapping the above for
   interactive use.
 
@@ -101,17 +110,17 @@ Interactive plotting helpers: `plot_technique`, `inspect_spectrum`,
 
 ## Examples
 
-[`examples/`](examples/) holds seventeen self-contained scripts — each builds
+[`examples/`](examples/) holds nineteen self-contained scripts — each builds
 its own simulation, calls the estimators directly and prints what it found.
 
 | | |
 |---|---|
 | **00–03** | one simulated system per script |
-| **04–06** | one estimation with each method: how to call it, what comes back |
+| **04–08** | one estimation with each method: how to call it, what comes back |
 | **10–15** | each estimator's parameters, swept against known truth |
-| **20–23** | the three methods side by side, one system per script |
+| **20–23** | the three main methods side by side, one system per script |
 
-If you are new, read `00`, `01`, then `04`–`06`. See
+If you are new, read `00`, `01`, then `04`–`08`. See
 [`examples/README.md`](examples/README.md).
 
 ```bash

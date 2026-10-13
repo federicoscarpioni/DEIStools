@@ -23,17 +23,21 @@ Research software is only as useful as it is honest about its own maturity.
 | **STFT** | usable | analytic ground truth on four simulated systems |
 | **DMFA** | :warning: **provisional** | definition and filter now verified against the source papers; an end-to-end check against an independent implementation is still open |
 | **BLTVA** | usable | the source papers' algorithms, plus exact-recovery tests on a prescribed Legendre system |
-| **Lock-in** | usable | agrees with STFT to 1e-13 where the two coincide |
-| **Detrending** (differencing) | usable | the 2022 paper's own worked example |
+| **Lock-in** | usable | agrees with STFT to 9e-14 at the window centres |
 | **Goertzel** | usable | reproduces numpy's DFT and the STFT estimator to 1e-10 |
+| **Detrending** | usable | four strategies, each measured against the others; only differencing is accepted by BLTVA |
 
 Uncertainty estimation exists for BLTVA only. STFT and DMFA return an estimate
 with no error bars, because the corresponding theory has not been settled here
 yet. See the [roadmap](roadmap.md).
 
 !!! warning "DMFA"
-    Treat DMFA results as provisional. Verifying the implementation against the
-    original description is an open item on the roadmap.
+    Treat DMFA results as provisional. The definition, the filter and the
+    variance have now been checked against Koster 2017, Battistel 2016/2019
+    and Chukwu 2022, and three bugs were fixed in the process; what remains
+    open is an end-to-end comparison against an independent implementation.
+    See the [roadmap](roadmap.md) and the
+    [implementation notes](implementation/dmfa.md).
 
 ## Install
 

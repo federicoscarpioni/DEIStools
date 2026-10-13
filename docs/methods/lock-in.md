@@ -69,10 +69,17 @@ It rejects them all, exactly.
 
 | integrator | worst rejection of the other 12 tones |
 |---|---|
-| boxcar, 1 base period | 315 dB (arithmetic limit) |
-| boxcar, 2 base periods | 315 dB |
+| boxcar, 1 base period | 307 dB (arithmetic limit) |
+| boxcar, 2 base periods | 311 dB |
 | Hann, 2 base periods | 116 dB |
 | Hann, 4 base periods | 134 dB |
+
+*(example 08; the boxcar rows are round-off, not a real finite rejection)*
+
+!!! note "`tone_rejection` includes the tone you demodulated"
+    Each row it returns has one entry per frequency, and the entry for $f_k$
+    itself has zero offset and therefore 0 dB. Drop it before taking a worst
+    case, or the answer is always 0 dB.
 
 !!! warning "The window must span whole base periods of $f_b$, not of $f_k$"
     The nulls sit at multiples of $1/(N_w\Delta t)$ and only land on the
@@ -117,7 +124,9 @@ That matters more than it sounds. On the transistor system:
 | demodulator | median relative error |
 |---|---|
 | mixing, 1-period boxcar | 1.16e-03 |
-| local least squares, same window | **1.09e-04** |
+| local least squares, same window | **1.05e-04** |
+
+*(valid instants only; example 08)*
 
 An order of magnitude, from the same data and the same window, because the
 within-window averaging bias is what limits the mixing route on a drifting
@@ -169,6 +178,13 @@ problem](dmfa.md#the-record-edges-are-unusable), but it is milder and
 explicitly controllable, because the filtering happens in the time domain
 where the boundary can be handled directly instead of being wrapped around by
 a circular DFT.
+
+## Worked example
+
+[`examples/08_lock_in_first_run.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/08_lock_in_first_run.py)
+runs all of the above on the transistor system: designing the integrator,
+the rejection table, the estimate, the edges, the agreement with STFT, and
+the two demodulators side by side.
 
 ## It is STFT, evaluated everywhere
 

@@ -1,6 +1,6 @@
 # DEIStools examples
 
-Eighteen self-contained scripts. Each one builds its own simulation, calls the
+Nineteen self-contained scripts. Each one builds its own simulation, calls the
 estimators directly, and prints what it found. There is no shared science
 module to look through: everything a script does is in that script, in the
 order it happens, so it can be read top to bottom and copied from.
@@ -14,7 +14,7 @@ python examples/12_dmfa_parameters.py --no-widgets  # skip the interactive slide
 
 Nothing needs an instrument, a data file or a network connection. Every seed is
 fixed, so the numbers you see are the numbers in this README. The whole set
-takes about four minutes and produces 52 figures.
+takes about five minutes and produces 55 figures.
 
 The only shared file is [`_plotting.py`](_plotting.py), which holds matplotlib
 boilerplate — axis labels, colours, the two standard figure layouts — so that
@@ -25,12 +25,12 @@ sixty lines of formatting do not bury the four lines that matter.
 | | | |
 |---|---|---|
 | **00–03** | one system per script | how each simulation is built and what kind of ground truth it gives |
-| **04–07** | one estimator per script | a single estimation at good settings: how to call it, and what comes back |
+| **04–08** | one estimator per script | a single estimation at good settings: how to call it, and what comes back |
 | **10–15** | one estimator per pair | its parameters swept against known truth, then applied to all four systems |
 | **20–23** | one system per script | all three estimators side by side |
 
-If you are new to the package, read 00–01 and then 04–07. That is enough to
-run all three estimators on your own data. The rest is about choosing their
+If you are new to the package, read 00–01 and then 04–08. That is enough to
+run every estimator on your own data. The rest is about choosing their
 parameters well.
 
 ### 00–03 · The four systems
@@ -46,9 +46,9 @@ All four use the same excitation: 13 odd harmonics on a quasi-log grid,
 0.05–15.05 Hz, 10 mA per tone, sampled at 1 kHz. Each script defines it again
 at the top, so you can change one without touching the others.
 
-### 04–07 · One estimation with each method
+### 04–08 · One estimation with each method
 
-All three analyse the same transistor-gated measurement, at settings the
+All five analyse the same transistor-gated measurement, at settings the
 parameter scripts arrive at later, so the outputs can be compared directly.
 
 | | script | what it shows |
@@ -57,6 +57,12 @@ parameter scripts arrive at later, so the outputs can be compared directly.
 | [05](05_dmfa_first_run.py) | DMFA | the four steps that make up the method, and `visualize_dmfa_filtering` |
 | [06](06_bltva_first_run.py) | BLTVA | the `BLTVAResult` fields, reconstructing Z(f,t) from the coefficients, the uncertainty, and `visualize_bltva_fit` |
 | [07](07_goertzel_first_run.py) | Goertzel | the recurrence against `np.fft`, agreement with STFT, and the streaming `GoertzelFilter` |
+| [08](08_lock_in_first_run.py) | lock-in | designing the integrator, tone rejection, the record edges, agreement with STFT, and mixing against local least squares |
+
+Two of those five are the same estimator as a third. Goertzel reproduces STFT
+to 1e-10 and a one-period boxcar lock-in to 9e-14, which is why 07 and 08
+spend as much space checking against STFT as estimating: agreement that close,
+by completely different arithmetic, is a real check on all three.
 
 ### 10–15 · The three estimators
 
@@ -105,6 +111,18 @@ settings. Run them without `--save`.
 - **DMFA output must be decimated to 0.5/bandwidth before fitting.** Reported
   more densely than that, neighbouring errors are correlated — 84% at the
   spacing these examples used to report.
+- **The lock-in is the STFT evaluated everywhere**, agreeing to 9e-14 at the
+  window centres. Its median error over *all* instants is higher (1.2e-03
+  against 7.1e-04) precisely because it also reports between them, where more
+  of the variation has happened inside the window. Reporting densely is not
+  resolving finely — the same trap as DMFA's decimation above.
+- **A local-least-squares demodulator is 11× better than mixing** on the same
+  data and the same window (1.05e-04 against 1.16e-03), because it carries a
+  local slope and so follows drift *within* the window instead of averaging
+  over it.
+- **A boxcar integrator over whole base periods rejects the other tones by
+  307 dB** — round-off, not a real limit — because its nulls land exactly on
+  the harmonics. One extra sample detunes them and costs about 230 dB.
 
 ## Conventions
 
@@ -115,9 +133,12 @@ settings. Run them without `--save`.
 
 ## Not covered
 
-Uncertainty estimation for STFT and DMFA; lock-in and Goertzel estimators,
-which are not implemented yet. Record trimming is left to you: the examples
-generate whole numbers of periods, and `bltva` refuses a record that is not one.
+Uncertainty estimation for STFT and DMFA. Detrending, which has no example
+script yet — the measurements live in
+[the documentation](https://federicoscarpioni.github.io/DEIStools/methods/detrending/)
+instead. The 20–23 comparisons still show three estimators rather than five.
+Record trimming is left to you: the examples generate whole numbers of
+periods, and `bltva` refuses a record that is not one.
 
 Why the parameters are what they are, and where each method comes from in the
 literature, belongs in the documentation rather than in these scripts.

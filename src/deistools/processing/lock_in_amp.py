@@ -139,6 +139,11 @@ def tone_rejection(kernel, sampling_time, frequencies, f_k):
     evaluates the kernel's frequency response there. Large positive numbers
     are good. A boxcar over whole base periods gives essentially infinite
     rejection (nulls), limited only by arithmetic.
+
+    The returned array has one entry per frequency, **including ``f_k``
+    itself**, whose offset is zero and whose "rejection" is therefore 0 dB by
+    construction. Drop that entry before taking a worst case over the others,
+    or the answer is always 0 dB.
     """
     offsets = np.abs(np.asarray(frequencies) - f_k)
     n = np.arange(kernel.size)
