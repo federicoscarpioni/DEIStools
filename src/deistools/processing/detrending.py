@@ -31,7 +31,9 @@ Why only differencing works here
 Of the strategies in this module, **only differencing may be passed to
 BLTVA**. That is not an implementation gap; it follows from what the
 weighting does, and the reason is worth stating because it is easy to assume
-the opposite.
+the opposite. (Differencing is also not usually the best option -- plain
+``Nq``, with no detrending at all, beats it unless eq. (49) caps ``Nq`` too
+low. See :class:`Differencing`.)
 
 A filter applied by circular convolution is *diagonal* in frequency: it
 multiplies bin ``k`` by ``F(k)`` and nothing else. Trend and signal that
@@ -180,6 +182,35 @@ class Differencing(Detrending):
     point of the 2022 paper: a trend that no finite polynomial captures well
     cannot be removed parametrically, and trying inflates the variance of the
     low-frequency estimates.
+
+    What it buys is **columns, not accuracy**. The strategy to beat is no
+    detrending at all with a generous ``Nq``, and on the paper's own
+    non-polynomial trend that usually wins -- relative error at the lowest
+    excited tone:
+
+        ======  ====================  =================  ==============
+        Np      Nq cap from eq. (49)  best Nq            Differencing(1)
+        ======  ====================  =================  ==============
+        2       17                    1.4e-04 (Nq=7)     8.2e-03
+        4       13                    2.2e-04 (Nq=11)    5.5e-04
+        6       9                     1.2e-04 (Nq=8)     7.1e-02
+        8       5                     1.9e+00 (Nq=4)     4.6e-02
+        ======  ====================  =================  ==============
+
+    The paper's comparison is the ``Nq = 2`` case, where parametric removal
+    does fail (1.35 against 7.8e-03). Raise ``Nq`` and it reverses, because a
+    joint fit does not distort and a larger basis models the trend better.
+
+    The last row is where differencing earns its place. Eq. (49),
+    ``Nq + 3*Np + Na + 1 < 2P - 1``, means a high ``Np`` eats the budget: at
+    ``Np = 8`` the cap is ``Nq = 5`` and the trend is then unmodellable
+    (1.9e+00 at ``Nq = 4``, 5.4e+00 at ``Nq = 3``), while differencing
+    replaces the whole drift block with ``d-1`` boundary columns -- 15 per
+    band instead of 20 -- and reaches 4.6e-02. That configuration is not
+    otherwise broken; on a trend-free record it gives 2.0e-04.
+
+    So reach for ``Nq`` first, and for differencing when eq. (49) will not
+    allow the trend order the record needs.
 
     Its response is a high-pass, eq. (12b)::
 

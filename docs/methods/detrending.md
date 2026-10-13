@@ -32,6 +32,30 @@ whole record to unfold has its energy in the lowest few bins — exactly where
 the slowest excited tones sit. For a typical multisine, the lowest three to
 five tones are inside the drift's skirt. For those tones, no filter helps.
 
+!!! warning "A projection is not gentler than a filter"
+    It is tempting to think a polynomial fit leaves the excited bins alone,
+    because a polynomial is "slow" and the tones are not. It does not. A
+    degree-$q$ Legendre polynomial on a finite record is **not band-limited**:
+    its spectrum reaches every bin, decaying only as a power law. So the
+    projection removes signal at the excited bins, and measurably more than a
+    filter does.
+
+    Measured on a pure multisine with **no trend at all**, so every change is
+    signal destroyed — relative change at the lowest excited bin:
+
+    | strategy | change at the lowest tone |
+    |---|---|
+    | `MovingAverage(20001)` | 5.0e-05 |
+    | `LowPassRemoval(2, 2)` | 1.9e-03 |
+    | `PolynomialFit(1)` | 7.9e-03 |
+    | `PolynomialFit(3)` | 2.6e-02 |
+    | `PolynomialFit(12)` | 1.4e-01 |
+
+    The damage falls off as $1/h$ with harmonic number — 7.9e-03, 2.6e-03,
+    1.6e-03, 8.8e-04 at $h = 1, 3, 5, 9$ — which is the spectrum of a ramp.
+    So it is worst at the lowest tones: exactly the ones the detrending was
+    for.
+
 Two things *can* work:
 
 - **Annihilate the trend in the time domain.** $\Delta^d$ applied to a
@@ -48,7 +72,7 @@ Everything below is a consequence.
 
 | strategy | BLTVA | DMFA / STFT |
 |---|---|---|
-| [`Differencing`](#differencing) | **the only one that works** | **destroys the signal** (error 1.00) |
+| [`Differencing`](#differencing) | the only one that works — though plain $N_q$ usually beats it | **destroys the signal** (error 1.00) |
 | [`MovingAverage`](#movingaverage) | refused | at best 1.7×, and not consistently |
 | [`LowPassRemoval`](#lowpassremoval) | refused | no help on an overlapping trend |
 | [`PolynomialFit`](#polynomialfit) | refused — use $N_q$ | **the only one that reliably helps** |
@@ -150,6 +174,39 @@ of step 3. `select_differencing_order` picks $d$ by eq. (11), with a documented
 caveat: the criterion assumes "trend plus random series", and a strongly
 low-pass response breaks that, so it can recommend differencing a record with
 no trend at all. Treat it as a starting point.
+
+#### What it buys is columns, not accuracy
+
+The strategy to beat is **no detrending at all, with a generous $N_q$** — and
+on accuracy differencing usually loses to it, including on the non-polynomial
+trend the 2022 paper chose precisely to motivate differencing:
+
+| $N_p$ | $N_q$ cap from eq. (49) | best $N_q$ | `Differencing(1)` | |
+|---|---|---|---|---|
+| 2 | 17 | **1.4e-04** ($N_q=7$) | 8.2e-03 | $N_q$ wins 60× |
+| 4 | 13 | **2.2e-04** ($N_q=11$) | 5.5e-04 | $N_q$ wins 2.5× |
+| 6 | 9 | **1.2e-04** ($N_q=8$) | 7.1e-02 | $N_q$ wins 588× |
+| 8 | 5 | 1.9e+00 ($N_q=4$) | **4.6e-02** | differencing wins 42× |
+
+*(relative error at the lowest excited tone; the paper's trend, 92 V p-p)*
+
+The paper's own comparison is the $N_q = 2$ column of this picture: at that
+order parametric removal does fail, by 1.35 against differencing's 7.8e-03.
+Raise $N_q$ and the conclusion reverses, because a joint fit does not distort
+and a larger basis simply models the trend better.
+
+What flips the table at $N_p = 8$ is eq. (49),
+$N_q + 3N_p + N_a + 1 < 2P - 1$. A high $N_p$ — fine time resolution — eats
+the budget, capping $N_q$ at 5, and at that order the trend is unmodellable:
+$N_q = 4$ gives 1.9e+00, $N_q = 3$ gives 5.4e+00. Differencing replaces the
+whole $N_q$ block with $d-1$ boundary columns — 15 columns per band instead of
+20, for $N_p=2, N_q=5, N_a=8$ — and those freed columns are the entire point.
+The $N_p = 8$ configuration is not otherwise broken: on a trend-free record it
+reaches 2.0e-04.
+
+**So: reach for a generous $N_q$ first. Use differencing when eq. (49) will
+not let you afford the trend order you need, which in practice means when you
+want fine time resolution.**
 
 ### `MovingAverage`
 
@@ -294,9 +351,12 @@ is worth running on anything added later.
 ## In practice
 
 - **A polynomial trend, with BLTVA.** Use `Nq`. Nothing else, no detrending.
-- **A trend no polynomial captures, with BLTVA.** `Differencing(d)`, with $d$
-  from `select_differencing_order` as a starting point, checked against the
-  spectrum.
+- **A trend no polynomial captures, with BLTVA.** Still try $N_q$ first, as
+  generously as eq. (49) allows — it beat `Differencing(1)` by 60× on the
+  2022 paper's own trend. Reach for `Differencing(d)` when $N_p$ has eaten the
+  budget and the $N_q$ cap is below what the trend needs, with $d$ from
+  `select_differencing_order` as a starting point, checked against the
+  spectrum. See [what it buys](#what-it-buys-is-columns-not-accuracy).
 - **Any trend, with DMFA or STFT.** `PolynomialFit` at the lowest degree that
   works, accepting the distortion in the table above — or, for the tones the
   drift actually overlaps, use BLTVA instead. The

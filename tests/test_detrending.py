@@ -210,6 +210,11 @@ def test_differencing_beats_parametric_removal_at_low_frequency(trended):
     "fails at estimating the low frequencies correctly" with Nq = 2 -- while
     differencing recovers them. Measured here: 1.35 relative error against
     7.8e-03 at the lowest excited frequency.
+
+    This holds **at the paper's Nq = 2 and does not generalise**: raising Nq
+    reverses it, by up to 588x. See
+    ``test_a_generous_nq_usually_beats_differencing`` for the rest of the
+    picture, which is why that test exists next to this one.
     """
     o = trended()
     with warnings.catch_warnings():
@@ -564,3 +569,148 @@ def test_nq_is_the_supported_route_for_a_polynomial_trend(make_oracle):
         warnings.simplefilter("ignore")
         result = bltva(o.voltage, o.current, o.fs, o.P, o.H_exc, Nq=5, **FIT)
     assert np.median(o.relative_error(result.H_p)) < 1e-2
+
+
+# --------------------------------------------------------------------------- #
+# Two results that correct the obvious reading of the paper
+# --------------------------------------------------------------------------- #
+
+def test_a_polynomial_fit_disturbs_the_excited_bins_more_than_a_filter():
+    """The projection is not the gentle option, which is easy to assume.
+
+    A degree-q Legendre polynomial on a finite record is not band-limited: its
+    spectrum reaches every bin and decays only as a power law, so subtracting
+    the fit removes signal at the excited bins. Measured on a pure multisine
+    with no trend at all, so every change is signal destroyed. Measured at the
+    lowest tone: boxcar 5.0e-05, Butterworth 1.9e-03, PolynomialFit(1)
+    7.9e-03, PolynomialFit(12) 1.4e-01 -- so the gentlest polynomial fit is
+    4x worse than the better filter and 160x worse than the boxcar.
+    """
+    Tp, fs, periods = 20.0, 1000.0, 8
+    harmonics = np.array([1, 3, 5, 9, 13, 17, 27])
+    N = int(fs * Tp) * periods
+    t = np.arange(N) / fs
+    rng = np.random.default_rng(3)
+
+    signal = np.zeros(N)
+    for h in harmonics:
+        signal += 0.01 * np.sin(2 * np.pi * (h / Tp) * t
+                                + rng.uniform(0, 2 * np.pi))
+
+    k_exc = harmonics * periods
+    V0 = np.fft.fft(signal)
+
+    def disturbance(strategy):
+        V = np.fft.fft(strategy.apply(signal))
+        return np.abs(V[k_exc] - V0[k_exc]) / np.abs(V0[k_exc])
+
+    boxcar = disturbance(MovingAverage(20_001)).max()
+    butter = disturbance(LowPassRemoval(2.0, 2)).max()
+    poly_1 = disturbance(PolynomialFit(1)).max()
+    poly_12 = disturbance(PolynomialFit(12)).max()
+
+    assert boxcar < 1e-4
+    assert butter < 1e-2
+    assert poly_1 > 3 * butter
+    assert poly_1 > 100 * boxcar
+    assert poly_12 > 0.1, "a degree-12 fit eats over a tenth of the tone"
+
+    # worst at the lowest tone, falling as 1/h: the spectrum of a ramp
+    per_tone = disturbance(PolynomialFit(1))
+    assert np.argmax(per_tone) == 0
+    scaled = per_tone * harmonics
+    assert np.allclose(scaled, scaled[0], rtol=0.1), scaled
+
+
+def test_differencing_is_losslessly_invertible_and_a_projection_is_not():
+    """The structural reason BLTVA can afford differencing and not a fit.
+
+    Differencing reshapes the spectrum by a known, invertible ``F(k)`` plus a
+    known low-rank boundary term, so the excited bins come back exactly --
+    which is what step 2 of the protocol does. A least-squares subtraction
+    destroys rank, and no step can undo that.
+    """
+    N = 8192
+    rng = np.random.default_rng(0)
+    t = np.arange(N)
+    signal = np.zeros(N)
+    for h in (1, 3, 9, 27):
+        signal += np.sin(2 * np.pi * h * 4 * t / N + rng.uniform(0, 2 * np.pi))
+    k_exc = np.array([4, 12, 36, 108])
+    V0 = np.fft.fft(signal)
+
+    strategy = Differencing(1)
+    V_d = np.fft.fft(strategy.apply(signal))
+    F = strategy.frequency_response(np.arange(N), N)
+    lam = strategy.boundary_coefficients(signal)
+    boundary = lam[0] * np.ones(N)                      # d = 1: m = 0 only
+    recovered = (V_d - boundary) / np.where(np.abs(F) < 1e-30, 1.0, F)
+    assert np.allclose(recovered[k_exc], V0[k_exc], rtol=1e-10)
+
+    for order in (1, 3, 12):
+        V_p = np.fft.fft(PolynomialFit(order).apply(signal))
+        lost = np.abs(V_p[k_exc] - V0[k_exc]) / np.abs(V0[k_exc])
+        assert lost.max() > 1e-2, f"order {order} should lose signal"
+
+
+def test_a_generous_nq_usually_beats_differencing(trended):
+    """Differencing buys columns, not accuracy -- the other half of Fig. 5.
+
+    ``test_differencing_beats_parametric_removal_at_low_frequency`` reproduces
+    the paper at its Nq = 2. The comparison reverses once Nq is allowed to
+    grow, because a joint fit does not distort and a larger basis models the
+    trend better. Measured at Np = 2 on the paper's own trend: 1.4e-04 at
+    Nq = 7 against 8.2e-03 for Differencing(1), a factor of 60.
+    """
+    o = trended()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        generous = bltva(o.voltage, o.current, o.fs, o.P, o.H_exc, Nq=7, **FIT)
+        differenced = bltva(o.voltage, o.current, o.fs, o.P, o.H_exc, Nq=5,
+                            detrend=Differencing(1), **FIT)
+
+    lowest = 0
+    err_nq = o.relative_error(generous.H_p)[lowest, 0]
+    err_diff = o.relative_error(differenced.H_p)[lowest, 0]
+    assert err_nq < err_diff, f"Nq {err_nq:.2e} vs differencing {err_diff:.2e}"
+    assert err_diff / err_nq > 5
+
+
+def test_differencing_wins_when_eq_49_caps_nq(trended):
+    """And this is when to reach for it.
+
+    Eq. (49) is ``Nq + 3*Np + Na + 1 < 2P - 1``, so a high Np -- fine time
+    resolution -- eats the budget. At Np = 8 the cap is Nq = 5, the trend is
+    then unmodellable (1.9e+00 at Nq = 4), and differencing, which replaces
+    the whole drift block with d-1 boundary columns, reaches 4.6e-02.
+
+    The configuration is not otherwise broken: the same settings on a
+    trend-free record give 2.0e-04, asserted here so that a regression in
+    Np = 8 itself cannot masquerade as this result.
+    """
+    o = trended()
+    high_np = dict(Np=8, harmonics="excited", band_halfwidth=5 * ORACLE_P)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        parametric = bltva(o.voltage, o.current, o.fs, o.P, o.H_exc, Nq=4,
+                           **high_np)
+        differenced = bltva(o.voltage, o.current, o.fs, o.P, o.H_exc, Nq=4,
+                            detrend=Differencing(1), **high_np)
+
+    err_nq = o.relative_error(parametric.H_p)[0, 0]
+    err_diff = o.relative_error(differenced.H_p)[0, 0]
+    assert err_nq > 1.0, f"Nq capped at 4 should fail, got {err_nq:.2e}"
+    assert err_diff < 0.1, f"differencing should cope, got {err_diff:.2e}"
+    assert err_nq / err_diff > 10
+
+
+def test_the_np_8_configuration_is_sound_without_a_trend(make_oracle):
+    """Companion to the test above: the Np = 8 budget squeeze is about the
+    trend, not about Np = 8 being unusable."""
+    o = make_oracle(grid="quasi_log_15", variation=(0.30, 0.10),
+                    noise_std_V=5e-3)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        result = bltva(o.voltage, o.current, o.fs, o.P, o.H_exc, Np=8, Nq=4,
+                       harmonics="excited", band_halfwidth=5 * ORACLE_P)
+    assert o.relative_error(result.H_p)[0, 0] < 1e-3
