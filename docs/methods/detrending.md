@@ -40,21 +40,24 @@ five tones are inside the drift's skirt. For those tones, no filter helps.
     projection removes signal at the excited bins, and measurably more than a
     filter does.
 
-    Measured on a pure multisine with **no trend at all**, so every change is
-    signal destroyed — relative change at the lowest excited bin:
+    Measured on the **stationary** cell of example 00, whose impedance does
+    not move, so every change at an excited bin is signal destroyed:
 
-    | strategy | change at the lowest tone |
-    |---|---|
-    | `MovingAverage(20001)` | 5.0e-05 |
-    | `LowPassRemoval(2, 2)` | 1.9e-03 |
-    | `PolynomialFit(1)` | 7.9e-03 |
-    | `PolynomialFit(3)` | 2.6e-02 |
-    | `PolynomialFit(12)` | 1.4e-01 |
+    | strategy | lowest tone | top tone |
+    |---|---|---|
+    | `MovingAverage(20001)` | 5.0e-05 | 5.0e-05 |
+    | `LowPassRemoval(2, 2)` | 1.9e-03 | 2.4e-13 |
+    | `PolynomialFit(1)` | 6.5e-03 | 5.3e-05 |
+    | `PolynomialFit(3)` | 2.1e-02 | 1.8e-04 |
+    | `PolynomialFit(8)` | 8.8e-02 | 5.0e-04 |
+    | `PolynomialFit(12)` | 1.4e-01 | 2.7e-04 |
 
-    The damage falls off as $1/h$ with harmonic number — 7.9e-03, 2.6e-03,
-    1.6e-03, 8.8e-04 at $h = 1, 3, 5, 9$ — which is the spectrum of a ramp.
-    So it is worst at the lowest tones: exactly the ones the detrending was
-    for.
+    *(example 09)*
+
+    The damage falls off as $1/h$ with harmonic number — 6.5e-03, 2.2e-03,
+    1.3e-03, 7.3e-04 at $h = 1, 3, 5, 9$, whose product with $h$ is constant
+    to two figures — which is the spectrum of a ramp. So it is worst at the
+    lowest tones: exactly the ones the detrending was for.
 
 Two things *can* work:
 
@@ -318,6 +321,21 @@ allows, and read the result as a trade rather than a cleanup.
     distortion above does not arise at all. `PolynomialFit` exists for the
     estimators that have no such block, and for measuring what its absence
     costs.
+
+## Worked example
+
+[`examples/09_detrending.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/09_detrending.py)
+runs all four strategies on one drifting record and plots what the user
+usually wants to see first: the original and detrended signals, and the
+effect on the DFT spectrum. It also reproduces the three tables on this page
+— the trend-to-signal ratio per bin, the damage to the excited bins, and the
+DMFA error before and after — and shows BLTVA accepting exactly one of the
+four.
+
+The record there has 8 periods rather than the 20 used elsewhere, which puts
+the lowest tone at bin 8 instead of bin 20 and so much closer to the drift's
+skirt. That is the situation detrending exists for, and it is where the
+numbers on this page come from.
 
 ## Checking a strategy
 

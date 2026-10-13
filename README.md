@@ -110,13 +110,14 @@ Interactive plotting helpers: `plot_technique`, `inspect_spectrum`,
 
 ## Examples
 
-[`examples/`](examples/) holds nineteen self-contained scripts — each builds
+[`examples/`](examples/) holds twenty self-contained scripts — each builds
 its own simulation, calls the estimators directly and prints what it found.
 
 | | |
 |---|---|
 | **00–03** | one simulated system per script |
 | **04–08** | one estimation with each method: how to call it, what comes back |
+| **09** | trend removal: the four strategies, and what each costs |
 | **10–15** | each estimator's parameters, swept against known truth |
 | **20–23** | the three main methods side by side, one system per script |
 

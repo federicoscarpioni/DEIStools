@@ -1,6 +1,6 @@
 # DEIStools examples
 
-Nineteen self-contained scripts. Each one builds its own simulation, calls the
+Twenty self-contained scripts. Each one builds its own simulation, calls the
 estimators directly, and prints what it found. There is no shared science
 module to look through: everything a script does is in that script, in the
 order it happens, so it can be read top to bottom and copied from.
@@ -14,7 +14,7 @@ python examples/12_dmfa_parameters.py --no-widgets  # skip the interactive slide
 
 Nothing needs an instrument, a data file or a network connection. Every seed is
 fixed, so the numbers you see are the numbers in this README. The whole set
-takes about five minutes and produces 55 figures.
+takes about five minutes and produces 57 figures.
 
 The only shared file is [`_plotting.py`](_plotting.py), which holds matplotlib
 boilerplate — axis labels, colours, the two standard figure layouts — so that
@@ -26,6 +26,7 @@ sixty lines of formatting do not bury the four lines that matter.
 |---|---|---|
 | **00–03** | one system per script | how each simulation is built and what kind of ground truth it gives |
 | **04–08** | one estimator per script | a single estimation at good settings: how to call it, and what comes back |
+| **09** | trend removal | the four strategies: what each does to the signal, its spectrum and the estimate |
 | **10–15** | one estimator per pair | its parameters swept against known truth, then applied to all four systems |
 | **20–23** | one system per script | all three estimators side by side |
 
@@ -63,6 +64,16 @@ Two of those five are the same estimator as a third. Goertzel reproduces STFT
 to 1e-10 and a one-period boxcar lock-in to 9e-14, which is why 07 and 08
 spend as much space checking against STFT as estimating: agreement that close,
 by completely different arithmetic, is a real check on all three.
+
+### 09 · Trend removal
+
+| | script | what it shows |
+|---|---|---|
+| [09](09_detrending.py) | detrending | the drift in the record and in the spectrum, the four strategies side by side, what each removes from the excited bins of a *stationary* cell, and which one BLTVA accepts |
+
+Worth reading before 10–15 if your own cells drift, because the right answer
+differs per estimator and one of the four wrong answers destroys the lowest
+tones outright.
 
 ### 10–15 · The three estimators
 
@@ -123,6 +134,14 @@ settings. Run them without `--save`.
 - **A boxcar integrator over whole base periods rejects the other tones by
   307 dB** — round-off, not a real limit — because its nulls land exactly on
   the harmonics. One extra sample detunes them and costs about 230 dB.
+- **A trend overlaps the lowest tones, and no filter can separate them
+  there.** A filter scales a bin's trend and signal by the same number, so
+  their ratio is untouched. Only the polynomial fit — the one strategy that
+  is not a filter — improves a drifting DMFA estimate, 8.7e-02 to 7.9e-03.
+- **Subtracting a polynomial is not the gentle option.** On a stationary
+  cell, where every change is signal destroyed, a cubic fit takes 2.1e-02 of
+  the lowest tone against 1.9e-03 for a Butterworth and 5.0e-05 for a boxcar.
+  The damage goes as 1/h, so it lands hardest exactly where the trend was.
 
 ## Conventions
 
@@ -133,12 +152,10 @@ settings. Run them without `--save`.
 
 ## Not covered
 
-Uncertainty estimation for STFT and DMFA. Detrending, which has no example
-script yet — the measurements live in
-[the documentation](https://federicoscarpioni.github.io/DEIStools/methods/detrending/)
-instead. The 20–23 comparisons still show three estimators rather than five.
-Record trimming is left to you: the examples generate whole numbers of
-periods, and `bltva` refuses a record that is not one.
+Uncertainty estimation for STFT and DMFA. The 20–23 comparisons show the
+three main estimators rather than all five, since Goertzel and the lock-in
+reproduce STFT anyway. Record trimming is left to you: the examples generate
+whole numbers of periods, and `bltva` refuses a record that is not one.
 
 Why the parameters are what they are, and where each method comes from in the
 literature, belongs in the documentation rather than in these scripts.

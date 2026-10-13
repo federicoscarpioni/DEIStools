@@ -52,10 +52,12 @@ If you are new to the package:
    **[`01_synth_transistor.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/01_synth_transistor.py)** —
    how a measurement is simulated, and what a time-varying one looks like.
 2. **04–08** — one estimation with each method.
-3. **[Concepts](concepts/signal-model.md)** — what the methods are actually
+3. **[`09_detrending.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/09_detrending.py)**
+   — if your cells drift, which they do.
+4. **[Concepts](concepts/signal-model.md)** — what the methods are actually
    doing, and the notation they are written in.
-4. **10–15** — what each parameter does, measured against known truth.
-5. **20–23** — the three main methods side by side on one system each.
+5. **10–15** — what each parameter does, measured against known truth.
+6. **20–23** — the three main methods side by side on one system each.
 
 That is roughly an hour of reading and five minutes of running.
 
@@ -68,8 +70,8 @@ python examples/05_dmfa_first_run.py --no-widgets   # skip interactive sliders
 ```
 
 Every seed is fixed, so the numbers you get are the numbers in the commentary.
-The full set of nineteen scripts takes about five minutes and produces
-55 figures.
+The full set of twenty scripts takes about five minutes and produces 57
+figures.
 
 ## Which method should I use?
 
@@ -113,3 +115,7 @@ a filter. The short version:
 - **Never pass `Differencing` to DMFA or STFT.** It is built for BLTVA, which
   divides its attenuation back out; without that step it annihilates the
   lowest tones outright.
+
+[`09_detrending.py`](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/09_detrending.py)
+shows all four strategies on one drifting record — the signals, the spectra,
+and what each costs.
