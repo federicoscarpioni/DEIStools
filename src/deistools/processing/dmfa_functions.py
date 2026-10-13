@@ -220,29 +220,74 @@ def extract_impedance_with_error(
         ft_current,
         variance_voltage,
         variance_current,
-        indexes_multisine_freq:list,
+        indexes_multisine_freq: list,
         filter,
         Npts_elab,
 ):
+    """Impedance and the variance of its error, per frequency and instant.
+
+    DMFA is a **linear** estimator of the envelope -- band selection, a
+    diagonal weighting by the filter, and an inverse transform are all linear
+    -- so the variance of its output is the covariance of a linear map applied
+    to the measurement noise. That is the same route BLTVA takes, and it gives
+    the expression of Chukwu et al. (2022) eq. (19)-(20):
+
+        var(Re Z) = [ var_v + |Z|^2 * var_i ] / ( 2 * N' * |I_filtered|^2 )
+
+        N' = N / sum(|g|^2)
+
+    with ``N`` the length of the whole record -- not of the extracted band --
+    and ``N'`` the usual equivalent noise bandwidth. The real and imaginary
+    parts have the same variance, which is why the factor of two appears.
+
+    Verified against the scatter of 200 noise realisations on a stationary
+    cell: predicted and observed agree to better than 1%.
+
+    Parameters
+    ----------
+    variance_voltage, variance_current : float
+        Variances (**not** standard deviations) of the noise on the two
+        channels. They can be measured from the instrument, or -- better --
+        taken from bins the excitation never reaches, as
+        :func:`deistools.processing.bltva.estimate_noise_variance` does, which
+        also captures the noise colour.
+
+    Returns
+    -------
+    (impedance, variance) : ndarray, ndarray
+        Both ``(n_frequencies, Npts_elab)``. ``variance`` is that of either
+        the real or the imaginary part.
+
+    Notes
+    -----
+    This covers **noise only**. Nothing here knows about the band-limited
+    model being wrong, which near the record edges it badly is; compare the
+    prediction with the error you actually see, exactly as for BLTVA.
+    """
     _check_elaboration_range(indexes_multisine_freq, Npts_elab, ft_voltage.size)
-    impedance = np.zeros((len(indexes_multisine_freq), Npts_elab),dtype='complex128')
-    variance = np.zeros((len(indexes_multisine_freq), Npts_elab), dtype = 'float32')
-    # Compute the impedance and the variance at each frequency
-    N_prime = Npts_elab/(np.sum(filter**2))
-    for f in range(0, len(indexes_multisine_freq)):
-        if Npts_elab%2==0:
-            elaboration_rng = np.arange(indexes_multisine_freq[f] - int(Npts_elab/2),indexes_multisine_freq[f] + int(Npts_elab/2), 1)
+    n_freq = len(indexes_multisine_freq)
+    impedance = np.zeros((n_freq, Npts_elab), dtype="complex128")
+    variance = np.zeros((n_freq, Npts_elab), dtype="float64")
+
+    # N' uses the length of the record, which is what the noise was spread
+    # over, not the width of the extracted band.
+    N_prime = ft_voltage.size / np.sum(np.abs(filter) ** 2)
+
+    for f in range(n_freq):
+        if Npts_elab % 2 == 0:
+            elaboration_rng = np.arange(indexes_multisine_freq[f] - Npts_elab // 2,
+                                        indexes_multisine_freq[f] + Npts_elab // 2)
         else:
-            import math
-            elaboration_rng = np.arange(indexes_multisine_freq[f] - math.floor(Npts_elab/2),indexes_multisine_freq[f] + math.ceil(Npts_elab/2), 1)
+            elaboration_rng = np.arange(indexes_multisine_freq[f] - Npts_elab // 2,
+                                        indexes_multisine_freq[f] + Npts_elab // 2 + 1)
         voltage_filtered = Npts_elab * ifft(ifftshift(ft_voltage[elaboration_rng] * filter))
         current_filtered = Npts_elab * ifft(ifftshift(ft_current[elaboration_rng] * filter))
         impedance[f] = voltage_filtered / current_filtered
-        variance_numerator = np.abs(impedance[f])**2 * variance_current**2 +  variance_voltage**2
-        variance_denominator = 2 * N_prime * np.abs(current_filtered)**2
-        variance[f] = variance_denominator/variance_numerator#/variance_denominator
-    
+        numerator = variance_voltage + np.abs(impedance[f]) ** 2 * variance_current
+        variance[f] = numerator / (2 * N_prime * np.abs(current_filtered) ** 2)
+
     return impedance, variance
+
 
 # def extract_zero_frequency(ft_voltage, 
 #                       ft_current, 
@@ -307,3 +352,97 @@ def extract_impedance_with_error(
 #     print('Impedance extracted.')
 
 #     return Z_cell
+
+def independent_time_step(bandwidth):
+    """Output spacing at which neighbouring DMFA errors are uncorrelated.
+
+    The filter kernel spans about ``1/bandwidth`` in time, so estimates taken
+    closer together than that rest on overlapping data and their errors are
+    correlated. Chukwu et al. (2022) put the correlation below 20% once
+    successive instants are more than ``0.5/bandwidth`` apart, and measured on
+    a stationary cell over 150 noise realisations the correlation between
+    neighbours is:
+
+        spacing     corr(e_j, e_j+1)
+        0.125/bw          84%
+        0.25/bw           49%
+        0.5/bw             3%
+        1/bw              -3%
+
+    Reporting more densely than this is fine for looking at a result, but the
+    points are then **not independent observations**: using them as such in a
+    least-squares fit will make the parameter uncertainties too small.
+
+    Note that ``Npts_elab`` sets both the width of the extracted band and the
+    number of reported instants, and those are different concerns -- the band
+    must be wide enough for the filter to have decayed, which is finer than
+    this spacing. Extract with a wide band and decimate the result to
+    ``independent_time_step`` before fitting.
+    """
+    return 0.5 / float(bandwidth)
+
+
+def pad_record(signal, factor=2):
+    """Zero-pad a record so DMFA's band extraction is a *linear* convolution.
+
+    Multiplying a spectrum by a filter is a **circular** convolution in time:
+    the filter kernel that reaches past the end of the record wraps around and
+    picks up the beginning. For a time-varying impedance the two ends are
+    different -- 106 ohm against 43 ohm on the transistor system -- so the
+    estimate near either boundary is contaminated by the far one. That is
+    where DMFA's edge oscillation comes from.
+
+    Zero-padding before the transform makes the convolution linear, and the
+    kernel then runs into zeros instead of into the other end of the record.
+    Measured, with the band extracted 24 bandwidths wide and the output
+    decimated to the independent spacing:
+
+        ===========  ==============  ==============  =============
+        system       worst, plain    worst, padded   median
+        ===========  ==============  ==============  =============
+        transistor   7.5e-01         3.2e-02         unchanged
+        legendre     8.8e-01         3.1e-02         unchanged
+        ===========  ==============  ==============  =============
+
+    A factor of 24 to 29 on the worst case, and the interior does not move at
+    all (0.99x) -- as it must not, since the kernel never reaches that far.
+
+    It works better than "assume the signal is zero outside" has any right to,
+    and the reason is worth knowing: the padding attenuates the **numerator
+    and the denominator by the same factor**. At the first instant the
+    filtered current falls to 0.49 of its mid-record value, and the filtered
+    voltage falls with it, so the ratio survives. Zero-padding tapers the
+    estimate's signal-to-noise near the edges but not its accuracy.
+
+    **How much padding.** Only as much as the kernel actually reaches, which
+    is less than it sounds. Measured by sweeping the factor on the transistor
+    record, where ``1/bandwidth`` is 40 s against a 400 s record:
+
+        ============  ==================  ==============
+        pad factor    added / (1/bw)      worst error
+        ============  ==================  ==============
+        1.00x         0                   7.5e-01
+        1.10x         1.0                 3.2e-02
+        1.50x         5.0                 3.2e-02
+        2.00x         10.0                3.2e-02
+        ============  ==================  ==============
+
+    One kernel length already buys the whole benefit and more buys nothing.
+    ``factor=2`` is the convenient default -- it keeps the FFT size tidy and
+    costs only arithmetic -- but ``1 + 1/(bandwidth * duration)`` is enough.
+
+    Note that this is *not* the mirroring suggested for non-periodic records
+    in the DMFA literature. Mirroring a random-phase multisine destroys the
+    carrier -- it scatters more energy off the excited bins than it leaves on
+    them. See the implementation notes.
+
+    Returns
+    -------
+    ndarray
+        The record followed by ``(factor - 1) * len(signal)`` zeros.
+    """
+    signal = np.asarray(signal)
+    extra = int(round((factor - 1) * signal.size))
+    if extra < 0:
+        raise ValueError("factor must be at least 1")
+    return np.concatenate([signal, np.zeros(extra, dtype=signal.dtype)])

@@ -95,12 +95,14 @@ def run_dmfa(sim, N, bw_factor, sharpness):
     indexes = (np.round(frequencies * T).astype(int) + index_f0).tolist()
 
     bw = bw_factor * f_min
-    npts = int(round(8 * bw * T))
+    npts = int(round(16 * bw * T))   # wide enough for the filter to decay
     npts = min(npts - npts % 2, max_elaboration_points(indexes, N))
     filt = create_fermi_dirac_fun(elaboration_frequency_axis(npts, T), 0, bw,
                                   sharpness)
-    return (extract_impedance(ft_v, ft_i, indexes, filt, npts),
-            elaboration_time_axis(npts, T))
+    # report at 0.5/bw, where neighbouring errors are uncorrelated
+    keep = max(1, int(round(npts / (2 * bw * T))))
+    Z = extract_impedance(ft_v, ft_i, indexes, filt, npts)
+    return Z[:, ::keep], elaboration_time_axis(npts, T)[::keep]
 
 
 def truth_at(sim, Z_true, times):

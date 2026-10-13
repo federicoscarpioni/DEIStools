@@ -21,10 +21,11 @@ Research software is only as useful as it is honest about its own maturity.
 | method | status | validated against |
 |---|---|---|
 | **STFT** | usable | analytic ground truth on four simulated systems |
-| **DMFA** | :warning: **provisional** | reproduces expected behaviour, but the implementation has **not** been checked against the literature |
+| **DMFA** | :warning: **provisional** | definition and filter now verified against the source papers; an end-to-end check against an independent implementation is still open |
 | **BLTVA** | usable | the source papers' algorithms, plus exact-recovery tests on a prescribed Legendre system |
+| **Lock-in** | usable | agrees with STFT to 1e-13 where the two coincide |
 | **Detrending** (differencing) | usable | the 2022 paper's own worked example |
-| Lock-in, Goertzel | not implemented | — |
+| **Goertzel** | usable | reproduces numpy's DFT and the STFT estimator to 1e-10 |
 
 Uncertainty estimation exists for BLTVA only. STFT and DMFA return an estimate
 with no error bars, because the corresponding theory has not been settled here
@@ -83,5 +84,20 @@ The methods implemented here come from:
   Sections V and VI, eq. (49) and (55).
 - Hallemans *et al.*, *IEEE TIM* **71** (2022) 6501711 — trend removal by
   differencing, the weighting of eq. (26), the rule for $N_a$ in eq. (22).
-- Breugelmans *et al.*, *Electrochim. Acta* **76** (2012) 375 — the short-time
+- Breugelmans *et al.*, *Electrochim. Acta* **76** (2012) 375 - the short-time
   Fourier approach, and the transistor circuit of Fig. 7.
+
+For DMFA:
+
+- Battistel, Du and La Mantia, *Electroanalysis* **28** (2016) 2346 - the first
+  statement of DMFA, with the first-order expansion of eq. (11) that the later
+  papers replace.
+- Koster, Du, Battistel and La Mantia, *Electrochim. Acta* **246** (2017) 553 -
+  the quadrature-filter definition, eq. (9), which is what this package
+  implements, and the bandwidth ceiling set by the multisine spacing.
+- Battistel and La Mantia, *Electrochim. Acta* **304** (2019) 513 - the
+  physical definition via a Volterra series, the FFT-EIS/DMFA comparison, and
+  the Fermi-Dirac filter of eq. (12).
+- Chukwu, Mugisa, Brogioli and La Mantia, *ChemElectroChem* **9** (2022)
+  e202200109 - the variance of the error on the admittance, eq. (19), and the
+  correlation between neighbouring instants.

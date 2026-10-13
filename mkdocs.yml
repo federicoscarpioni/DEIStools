@@ -63,6 +63,8 @@ nav:
       - methods/stft.md
       - methods/dmfa.md
       - methods/bltva.md
+      - methods/lock-in.md
+      - methods/goertzel.md
   - Implementation notes:
       - implementation/index.md
       - implementation/bltva.md

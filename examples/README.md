@@ -1,6 +1,6 @@
 # DEIStools examples
 
-Seventeen self-contained scripts. Each one builds its own simulation, calls the
+Eighteen self-contained scripts. Each one builds its own simulation, calls the
 estimators directly, and prints what it found. There is no shared science
 module to look through: everything a script does is in that script, in the
 order it happens, so it can be read top to bottom and copied from.
@@ -14,7 +14,7 @@ python examples/12_dmfa_parameters.py --no-widgets  # skip the interactive slide
 
 Nothing needs an instrument, a data file or a network connection. Every seed is
 fixed, so the numbers you see are the numbers in this README. The whole set
-takes about four minutes and produces 50 figures.
+takes about four minutes and produces 52 figures.
 
 The only shared file is [`_plotting.py`](_plotting.py), which holds matplotlib
 boilerplate — axis labels, colours, the two standard figure layouts — so that
@@ -25,11 +25,11 @@ sixty lines of formatting do not bury the four lines that matter.
 | | | |
 |---|---|---|
 | **00–03** | one system per script | how each simulation is built and what kind of ground truth it gives |
-| **04–06** | one estimator per script | a single estimation at good settings: how to call it, and what comes back |
+| **04–07** | one estimator per script | a single estimation at good settings: how to call it, and what comes back |
 | **10–15** | one estimator per pair | its parameters swept against known truth, then applied to all four systems |
 | **20–23** | one system per script | all three estimators side by side |
 
-If you are new to the package, read 00–01 and then 04–06. That is enough to
+If you are new to the package, read 00–01 and then 04–07. That is enough to
 run all three estimators on your own data. The rest is about choosing their
 parameters well.
 
@@ -46,7 +46,7 @@ All four use the same excitation: 13 odd harmonics on a quasi-log grid,
 0.05–15.05 Hz, 10 mA per tone, sampled at 1 kHz. Each script defines it again
 at the top, so you can change one without touching the others.
 
-### 04–06 · One estimation with each method
+### 04–07 · One estimation with each method
 
 All three analyse the same transistor-gated measurement, at settings the
 parameter scripts arrive at later, so the outputs can be compared directly.
@@ -56,6 +56,7 @@ parameter scripts arrive at later, so the outputs can be compared directly.
 | [04](04_stft_first_run.py) | STFT | the four arrays `estimate_impedance` returns |
 | [05](05_dmfa_first_run.py) | DMFA | the four steps that make up the method, and `visualize_dmfa_filtering` |
 | [06](06_bltva_first_run.py) | BLTVA | the `BLTVAResult` fields, reconstructing Z(f,t) from the coefficients, the uncertainty, and `visualize_bltva_fit` |
+| [07](07_goertzel_first_run.py) | Goertzel | the recurrence against `np.fft`, agreement with STFT, and the streaming `GoertzelFilter` |
 
 ### 10–15 · The three estimators
 
@@ -101,6 +102,9 @@ settings. Run them without `--save`.
   impedance is a rational function of time rather than a polynomial.
 - The **bottom decade is always the least reliable part** of a time-varying
   spectrum, whichever method produced it.
+- **DMFA output must be decimated to 0.5/bandwidth before fitting.** Reported
+  more densely than that, neighbouring errors are correlated — 84% at the
+  spacing these examples used to report.
 
 ## Conventions
 

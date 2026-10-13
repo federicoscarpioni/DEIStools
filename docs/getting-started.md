@@ -80,7 +80,8 @@ Longer answer, from the comparisons in examples 20–23:
   stationary, by pruning its time-varying coefficient to exactly zero.
 - **Your system varies smoothly** — charging, slow ageing, a temperature ramp.
   BLTVA is the most accurate and the only one that reports an uncertainty.
-  DMFA gives finer time resolution than STFT and is a good cross-check.
+  DMFA decouples the time resolution from the multisine period and is a good
+  cross-check.
 - **Your system changes abruptly**, or in a way no low-order polynomial
   describes. BLTVA's assumption fails and no setting rescues it. Use STFT,
   which assumes nothing about the form of the variation.

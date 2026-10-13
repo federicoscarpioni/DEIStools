@@ -99,6 +99,15 @@ It matters in the **worst case**, not the median, because a trend is a
 disturbance near DC that corrupts the lowest tones and leaves the rest alone.
 It saturates exactly at the order of the trend present.
 
+!!! note "Detrending is specific to BLTVA"
+    `Nq` and the differencing of
+    [`deistools.processing.detrending`](../api/processing.md) exist because
+    BLTVA *models* the trend and differencing reduces the number of
+    coefficients that takes. DMFA has no trend model -- it rejects the trend
+    with its filter's stopband instead -- so neither idea carries over, and
+    differencing is in fact the weakest of the options there. See
+    [DMFA and trends](dmfa.md#trends-why-bltvas-detrending-does-not-transfer).
+
 ### `band_halfwidth` — and why it is not independent of $N_p$
 
 Bands are *meant* to overlap: the default rule spans three consecutive excited

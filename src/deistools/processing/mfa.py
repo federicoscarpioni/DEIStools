@@ -11,6 +11,11 @@ from deistools.processing.bltva import (
     bltva, visualize_bltva_fit, estimate_noise_variance,
     select_na, check_identifiability,
 )
+from deistools.processing.goertzel import goertzel_eis, cost_ratio
+from deistools.processing.lock_in_amp import (
+    lia_eis, lia_impedance_optim, lia_impedance_ls,
+    integrator_length, integrator_kernel, tone_rejection, valid_mask,
+)
 
 class MultiFrequencyAnalysis:
     
@@ -102,6 +107,125 @@ class MultiFrequencyAnalysis:
             Npts_elab
         )
         return impedance, variance, voltage, current, time
+
+    def run_goertzel(self, period):
+        """Impedance per block, evaluated with the Goertzel recurrence.
+
+        Computes the same quantity as :meth:`run_stft_eis` -- the record cut
+        into blocks of ``period`` seconds, one spectrum each -- but evaluates
+        only the excited bins, by a second-order recurrence instead of a
+        transform. The two agree to about 1e-10.
+
+        On a record of this size it is the slower of the two, because an FFT
+        gives every bin for ``N*log2(N)`` operations while Goertzel costs
+        ``N`` per bin: :func:`goertzel_cost_ratio` reports the crossover. It
+        earns its place as an independent check on the STFT path, and because
+        its recurrence is the one that also runs on a live stream.
+
+        Returns
+        -------
+        (impedance, time) : ndarray, ndarray
+        """
+        return goertzel_eis(self.voltage, self.current, self.frequencies,
+                            period, self.sampling_time)
+
+    def goertzel_cost_ratio(self, period):
+        """Goertzel operations divided by FFT operations; below 1 favours Goertzel."""
+        return cost_ratio(np.size(self.frequencies),
+                          int(round(period / self.sampling_time)))
+
+    def run_lia(self, n_periods=1, *, base_frequency=None, window="boxcar",
+                method="mix", decimate=None, stride=None):
+        """Digital lock-in estimate of Z(f,t) at every excited frequency.
+
+        Each tone is mixed down with a cosine and a sine at its own frequency
+        and the product low-pass filtered, leaving that tone's slowly varying
+        phasor. The ratio of the voltage and current phasors is Z(f,t).
+
+        Parameters
+        ----------
+        n_periods : int
+            Integrator length, in periods of ``base_frequency``. This is the
+            time resolution: ``n_periods / base_frequency`` seconds.
+        base_frequency : float, optional
+            The frequency every tone is a harmonic of, in Hz. Defaults to the
+            lowest excited frequency, which is correct for a multisine built
+            on harmonics of ``1/Tp``. The integrator has to span whole periods
+            of *this* frequency, not of the tone being demodulated, because
+            that is what puts the other tones in its nulls.
+        window : {'boxcar', 'hann'}
+            ``'boxcar'`` nulls every harmonic exactly and is the default.
+            ``'hann'`` rolls off faster but needs ``n_periods >= 2``.
+        method : {'mix', 'ls'}
+            ``'mix'`` demodulates and filters. ``'ls'`` fits a cosine, a sine,
+            an offset and a local slope in a sliding window instead, which is
+            insensitive to drift within the window but far slower.
+        decimate : int, optional
+            Report every n-th sample (``'mix'`` only). The result is smooth on
+            the scale of the integrator, and the full-rate array is large.
+        stride : int, optional
+            Spacing of the reported instants for ``method='ls'``.
+
+        Returns
+        -------
+        (impedance, time) : ndarray, ndarray
+            ``impedance`` has shape ``(n_frequencies, n_instants)``.
+
+        Notes
+        -----
+        A boxcar integrator spanning exactly one base period makes this
+        identical to :meth:`run_stft_eis` with a one-period window -- verified
+        to 1e-13 -- evaluated at every sample instead of once per window. Use
+        :meth:`lia_valid_mask` to drop the instants whose window ran past the
+        end of the record.
+        """
+        if base_frequency is None:
+            base_frequency = float(np.min(self.frequencies))
+        samples_window = integrator_length(
+            self.sampling_time, base_frequency, n_periods, window)
+        self.lia_samples_window = samples_window
+
+        time = np.arange(self.voltage.size) * self.sampling_time
+        fun = lia_impedance_ls if method == "ls" else lia_impedance_optim
+        if method == "ls":
+            columns, t_out = [], None
+            for f in np.asarray(self.frequencies, dtype=float):
+                Z_f, t_out = lia_impedance_ls(
+                    time, self.voltage, self.current, self.sampling_time, f,
+                    samples_window, stride=stride)
+                columns.append(Z_f)
+            return np.vstack(columns), t_out
+        return lia_eis(time, self.voltage, self.current, self.sampling_time,
+                       self.frequencies, samples_window,
+                       impedance_calculation_fun=fun, window=window,
+                       decimate=decimate)
+
+    def lia_tone_rejection(self, n_periods=1, *, base_frequency=None,
+                           window="boxcar"):
+        """How far the lock-in integrator suppresses each other tone, in dB.
+
+        After mixing at one frequency, every other tone of the multisine lands
+        at the difference frequency. This reports the integrator's response
+        there -- one row per demodulated tone. A boxcar over whole base
+        periods nulls them all, so the numbers are limited only by arithmetic.
+        """
+        if base_frequency is None:
+            base_frequency = float(np.min(self.frequencies))
+        samples_window = integrator_length(
+            self.sampling_time, base_frequency, n_periods, window)
+        kernel = integrator_kernel(samples_window, window)
+        return np.vstack([
+            tone_rejection(kernel, self.sampling_time, self.frequencies, f)
+            for f in self.frequencies])
+
+    def lia_valid_mask(self, samples_window=None):
+        """False where the lock-in integrator ran past the end of the record."""
+        if samples_window is None:
+            samples_window = getattr(self, "lia_samples_window", None)
+            if samples_window is None:
+                raise ValueError("run_lia has not been called yet; pass "
+                                 "samples_window explicitly")
+        return valid_mask(self.voltage.size, samples_window)
 
     def run_bltva(self, P, *, Np=6, Nq=5, Na=None, harmonics="all_nl",
                   band_halfwidth=None, rcond=None, noise=None, prune=True,

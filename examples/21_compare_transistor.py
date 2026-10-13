@@ -80,7 +80,13 @@ indexes = (np.round(frequencies * T).astype(int)
            + int(np.argmin(np.abs(spectrum_axis)))).tolist()
 
 bandwidth = 0.5 * f_min
-n_points = int(round(8 * bandwidth * T))
+# The band and the reporting rate are different concerns, and Npts_elab sets
+# both. The band must be wide enough for the filter to have decayed -- 16
+# bandwidths puts the truncation at 1e-9, where 8 leaves 2.6e-03. But the
+# result must not be reported more densely than 0.5/bw, or neighbouring
+# errors are correlated: 84% at the 0.125/bw these examples used to report,
+# against 3% at 0.5/bw. So extract wide, then decimate.
+n_points = int(round(16 * bandwidth * T))
 n_points = min(n_points - n_points % 2, max_elaboration_points(indexes, N))
 band_filter = create_fermi_dirac_fun(
     elaboration_frequency_axis(n_points, T), 0, bandwidth, 2)
@@ -95,6 +101,11 @@ t_dmfa = elaboration_time_axis(n_points, T)
 edge = n_points // 10
 Z_dmfa = Z_dmfa[:, edge:-edge]
 t_dmfa = t_dmfa[edge:-edge]
+
+# Decimate to 0.5/bw, the spacing at which neighbouring errors stop being
+# correlated (see dmfa_functions.independent_time_step).
+keep = max(1, int(round(n_points / (2 * bandwidth * T))))
+Z_dmfa, t_dmfa = Z_dmfa[:, ::keep], t_dmfa[::keep]
 
 
 # --------------------------------------------------------------------------
@@ -127,9 +138,9 @@ for name, Z, t in runs:
           f"{np.median(err):>10.2e}   {np.max(err):>10.2e}")
 
 print(f"\n  BLTVA is best, by the widest margin on the worst case. DMFA is")
-print(f"  close on the median and offers {Tp / np.diff(t_dmfa).mean():.0f}x finer time resolution than")
-print("  STFT. STFT is weakest here but needed no assumption about how the")
-print("  system varies.")
+print(f"  close on the median, at an independent spacing of {np.diff(t_dmfa).mean():.0f} s against")
+print(f"  STFT's {Tp:.0f} s window -- the same, at this bandwidth. STFT is weakest here")
+print("  but needed no assumption about how the system varies.")
 
 fig1 = comparison(frequencies, results, n_instants=3)
 finish(fig1, "21_compare_transistor", args.save,

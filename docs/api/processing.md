@@ -14,6 +14,14 @@ Signal processing and impedance estimation.
 
 ::: deistools.processing.stft_functions
 
+## Lock-in amplifier
+
+::: deistools.processing.lock_in_amp
+
+## Goertzel filter
+
+::: deistools.processing.goertzel
+
 ## Passband filters
 
 ::: deistools.processing.passband_filters
