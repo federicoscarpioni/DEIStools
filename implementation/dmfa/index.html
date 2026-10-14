@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://federicoscarpioni.github.io/DEIStools/implementation/dmfa/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>DMFA implementation notes - DEIStools</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link href="../../assets/_mkdocstrings.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "DMFA implementation notes";
+        var mkdocs_page_input_path = "implementation/dmfa.md";
+        var mkdocs_page_url = "/DEIStools/implementation/dmfa/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]--> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> DEIStools
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../..#status-of-each-method">Status of each method</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../..#install">Install</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../..#a-first-estimation">A first estimation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../..#where-to-go-next">Where to go next</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../..#sources">Sources</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting started</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#install">Install</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#what-you-need-from-a-measurement">What you need from a measurement</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#check-the-record-before-you-estimate-anything">Check the record before you estimate anything</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#the-shortest-path-to-a-result">The shortest path to a result</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#a-reading-path">A reading path</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#running-the-examples">Running the examples</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#which-method-should-i-use">Which method should I use?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#my-cell-drifts">My cell drifts</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/signal-model/">The signal model</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/signal-model/#notation">Notation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/signal-model/#the-model">The model</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/signal-model/#skirts">Skirts</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/signal-model/#what-each-method-does-with-them">What each method does with them</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/when-meaningful/">When is \(Z(f,t)\) meaningful?</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/when-meaningful/#1-the-system-must-change-slowly-compared-with-its-own-dynamics">1. The system must change slowly compared with its own dynamics</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/when-meaningful/#2-the-system-must-be-close-enough-to-linear">2. The system must be close enough to linear</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/when-meaningful/#the-time-resolution-floor">The time-resolution floor</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/when-meaningful/#the-bottom-decade-is-always-the-worst">The bottom decade is always the worst</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/excitation/">Designing the excitation</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#odd-harmonics-with-gaps">Odd harmonics, with gaps</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#whole-periods">Whole periods</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#how-many-periods-p">How many periods, \(P\)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#amplitude">Amplitude</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#choosing-the-frequency-range">Choosing the frequency range</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Methods</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/stft/">STFT</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/stft/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/stft/#the-one-parameter">The one parameter</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/stft/#limits">Limits</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/stft/#when-to-use-it">When to use it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/stft/#failure-mode">Failure mode</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/bla/">Best linear approximation per burst</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#the-one-structural-fact">The one structural fact</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#the-noise-level-is-real">The noise level is real</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#noise-or-the-cell-moving">Noise, or the cell moving?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#what-std_noise-really-contains">What std_noise really contains</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#nonlinear-distortion">Nonlinear distortion</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#where-this-sits">Where this sits</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#sources">Sources</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#not-done-yet">Not done yet</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/dmfa/">DMFA</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#the-mathematics">The mathematics</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#definition">Definition</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#relation-to-stft">Relation to STFT</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#quadrature-filters">Quadrature filters</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#the-bandwidth-ceiling">The bandwidth ceiling</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#the-gabor-limit">The Gabor limit</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#the-two-parameters">The two parameters</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#bandwidth">Bandwidth</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#sharpness">Sharpness</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#the-record-edges-are-unusable">The record edges are unusable</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#is-the-operation-safe-the-division-and-the-truncation">Is the operation safe? The division, and the truncation</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#the-division-is-safe-and-it-is-not-where-the-ringing-comes-from">The division is safe, and it is not where the ringing comes from</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#most-of-the-spectrum-is-discarded-and-that-is-the-point">Most of the spectrum is discarded, and that is the point</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#what-is-unsafe-is-the-wrap-around">What is unsafe is the wrap-around</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#another-way-to-apply-the-filter">Another way to apply the filter</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#zero-padding-works-and-is-the-recommended-fix">Zero-padding — works, and is the recommended fix</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#time-domain-filtering-better-at-the-edges-worse-in-the-middle">Time-domain filtering — better at the edges, worse in the middle</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#envelope-detrending-tried-and-it-does-not-work">Envelope detrending — tried, and it does not work</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#in-short">In short</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#trends-why-bltvas-detrending-does-not-transfer">Trends: why BLTVA's detrending does not transfer</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#what-a-trend-actually-does">What a trend actually does</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#dmfas-actual-knob-stopband-rejection-at-dc">DMFA's actual knob: stopband rejection at dc</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#the-full-ladder">The full ladder</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#when-the-dc-skirt-reaches-several-tones">When the dc skirt reaches several tones</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#why-no-filter-can-fix-this">Why no filter can fix this</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#the-fix-estimate-the-trend-and-the-envelope-together">The fix: estimate the trend and the envelope together</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#in-practice">In practice</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#inspecting-a-fit">Inspecting a fit</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#when-to-use-it">When to use it</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/bltva/">BLTVA</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#calling-it">Calling it</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/bltva/#what-comes-back">What comes back</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#the-parameters">The parameters</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/bltva/#n_p-the-order-of-the-expansion">\(N_p\) — the order of the expansion</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/bltva/#n_q-the-trend-order">\(N_q\) — the trend order</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/bltva/#band_halfwidth-and-why-it-is-not-independent-of-n_p">band_halfwidth — and why it is not independent of \(N_p\)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/bltva/#n_a-leave-it-at-none">\(N_a\) — leave it at None</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#the-uncertainty-is-a-model-error-detector">The uncertainty is a model-error detector</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#pruning-it-can-say-stationary">Pruning: it can say "stationary"</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#distortion-and-sndr">Distortion and SNDR</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#inspecting-a-fit">Inspecting a fit</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#when-not-to-use-it">When not to use it</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/lock-in/">Lock-in amplifier</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#the-mathematics">The mathematics</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#choosing-the-integrator-the-whole-method">Choosing the integrator — the whole method</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#two-demodulators">Two demodulators</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/lock-in/#mixing-methodmix">Mixing (method='mix')</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/lock-in/#local-least-squares-methodls">Local least squares (method='ls')</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#edges">Edges</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#worked-example">Worked example</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#it-is-stft-evaluated-everywhere">It is STFT, evaluated everywhere</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#when-to-use-it">When to use it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#limits">Limits</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/goertzel/">Goertzel filter</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#the-mathematics">The mathematics</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#on-a-stream">On a stream</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#cost-it-is-slower-here-and-that-is-expected">Cost: it is slower here, and that is expected</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#accuracy">Accuracy</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#sources">Sources</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#worked-example">Worked example</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#when-to-use-it">When to use it</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/detrending/">Detrending</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#the-one-fact">The one fact</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#which-strategy-which-estimator">Which strategy, which estimator</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#detrending-for-bltva-is-not-a-preprocessing-step">Detrending for BLTVA is not a preprocessing step</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/detrending/#why-the-weighting-rules-out-three-of-the-four">Why the weighting rules out three of the four</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#the-strategies">The strategies</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/detrending/#differencing">Differencing</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/detrending/#movingaverage">MovingAverage</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/detrending/#lowpassremoval">LowPassRemoval</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/detrending/#polynomialfit">PolynomialFit</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#worked-example">Worked example</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#checking-a-strategy">Checking a strategy</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#in-practice">In practice</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Implementation notes</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../">Implementation notes</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../#what-is-on-these-pages">What is on these pages</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../#how-to-read-a-claim-here">How to read a claim here</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../#a-general-convention">A general convention</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../bltva/">BLTVA implementation notes</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#the-rank-threshold-in-eq-53-is-ambiguous">The rank threshold in eq. (53) is ambiguous</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#the-band-solver-deliberately-does-not-equilibrate">The band solver deliberately does not equilibrate</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#the-legendre-basis-convention">The Legendre basis convention</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#eq-49-is-necessary-not-sufficient">eq. (49) is necessary, not sufficient</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#n_p-and-the-band-width-compete-for-n_a">\(N_p\) and the band width compete for \(N_a\)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#why-band_halfwidth-exists-at-all">Why band_halfwidth exists at all</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../bla/">BLA implementation notes</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../bla/#why-step-3-of-pintelon-2013-is-not-transcribed">Why step 3 of Pintelon 2013 is not transcribed</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../bla/#where-the-derivatives-come-from">Where the derivatives come from</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../bla/#two-separate-things-go-wrong-without-it">Two separate things go wrong without it</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../bla/#what-it-costs-here">What it costs here</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../bla/#the-route-that-does-work">The route that does work</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../bla/#status">Status</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">DMFA implementation notes</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#which-definition-is-implemented">Which definition is implemented</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#the-filter-matches-the-published-one-up-to-a-constant">The filter matches the published one up to a constant</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#the-one-sided-extraction-is-correct">The one-sided extraction is correct</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#block-extraction-is-a-controlled-approximation">Block extraction is a controlled approximation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#mirroring-must-not-be-used-with-a-random-phase-multisine">Mirroring must not be used with a random-phase multisine</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#is-the-fermi-dirac-filter-the-right-choice-no">Is the Fermi-Dirac filter the right choice? No.</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#what-the-filter-actually-does-to-the-result">What the filter actually does to the result</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#the-measurement">The measurement</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#what-n-actually-controls">What n actually controls</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#what-this-package-does-about-it">What this package does about it</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#dmfa-as-linear-algebra-it-is-bltva-in-a-different-basis">DMFA as linear algebra: it is BLTVA in a different basis</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#the-implicit-model">The implicit model</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#fitting-it-gives-exactly-dmfa">Fitting it gives exactly DMFA</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#a-smooth-filter-is-ridge-regularisation">A smooth filter is ridge regularisation</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#three-things-this-explains">Three things this explains</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#variance-propagation-or-measured-in-band">Variance: propagation, or measured in-band?</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#the-bltva-route-is-available-and-is-better">The BLTVA route is available and is better</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#do-not-treat-successive-instants-as-independent">Do not treat successive instants as independent</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#the-record-edges-are-a-property-of-the-method">The record edges are a property of the method</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#the-filter-belongs-on-the-bands-local-axis">The filter belongs on the band's local axis</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#display-fixes-in-visualize_dmfa_filtering">Display fixes in visualize_dmfa_filtering</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../api/processing/">deistools.processing</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#bltva">BLTVA</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.bltva">bltva</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#dmfa">DMFA</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.dmfa_functions">dmfa_functions</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#stft">STFT</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.stft_functions">stft_functions</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#lock-in-amplifier">Lock-in amplifier</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.lock_in_amp">lock_in_amp</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#goertzel-filter">Goertzel filter</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.goertzel">goertzel</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#passband-filters">Passband filters</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.passband_filters">passband_filters</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#best-linear-approximation-per-burst">Best linear approximation per burst</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.bla">bla</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#detrending">Detrending</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.detrending">detrending</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#record-consistency-check">Record consistency check</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.consistency">consistency</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#multi-frequency-analysis">Multi-frequency analysis</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.mfa">mfa</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../api/simulation/">deistools.simulation</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/simulation/#engine">Engine</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/simulation/#deistools.simulation.engine">engine</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/simulation/#stationary-r-rc">Stationary R + (R‖C)</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/simulation/#deistools.simulation.models.r_rc">r_rc</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/simulation/#transistor-gated-r-r_cttc">Transistor-gated R + (R_ct(t)‖C)</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/simulation/#deistools.simulation.models.r_rc_transistor">r_rc_transistor</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/simulation/#prescribed-legendre-expansion">Prescribed Legendre expansion</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/simulation/#deistools.simulation.models.legendre">legendre</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/simulation/#block-oriented-nonlinear-system">Block-oriented nonlinear system</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/simulation/#deistools.simulation.models.block_oriented">block_oriented</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../roadmap/">Roadmap</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../roadmap/#done">Done</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../roadmap/#planned">Planned</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../roadmap/#known-gaps">Known gaps</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../roadmap/#how-a-new-estimator-should-arrive">How a new estimator should arrive</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">DEIStools</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Implementation notes</li>
+      <li class="breadcrumb-item active">DMFA implementation notes</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/federicoscarpioni/DEIStools/edit/main/docs/implementation/dmfa.md">Edit on federicoscarpioni/DEIStools</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="dmfa-implementation-notes">DMFA implementation notes<a class="headerlink" href="#dmfa-implementation-notes" title="Permanent link">&para;</a></h1>
+<div class="admonition info">
+<p class="admonition-title">Verification status</p>
+<p>The <strong>definition</strong> and the <strong>filter</strong> have now been checked line by line
+against Battistel <em>et al.</em> (2016), Koster <em>et al.</em> (2017) and Battistel and
+La Mantia (2019), and both match — see below. What is still open is an
+end-to-end comparison against an independent implementation on the same
+data.</p>
+<p>One finding from that check is a caveat the papers do not state: the
+mirroring they recommend for non-periodic records <strong>must not be applied to
+a random-phase multisine</strong>. See
+<a href="#mirroring-must-not-be-used-with-a-random-phase-multisine">below</a>.</p>
+</div>
+<h2 id="which-definition-is-implemented">Which definition is implemented<a class="headerlink" href="#which-definition-is-implemented" title="Permanent link">&para;</a></h2>
+<p>Three definitions appear in this literature, and they are not equivalent.</p>
+<p><strong>Battistel 2016, eq. (11)</strong> writes the dynamic impedance as the stationary
+ratio times a correction,</p>
+<div class="arithmatex">\[
+Z_k(t) = \frac{V_k}{I_k}\left\{1 - \sum_{l=1}^{bw}
+\left[\frac{I_{k,l}}{I_k}e^{\,2\pi \mathrm{j} l \Delta f t}
+    + \frac{I_{k,l}}{I_k}e^{-2\pi \mathrm{j} l \Delta f t}\right]\right\}
+\]</div>
+<p>This is a <strong>first-order expansion</strong>, valid only while the skirt is small
+against its carrier. The odd look of it — a series that has to be truncated,
+with the truncation doubling as the bandwidth — is real, and it is why the
+later papers replaced it.</p>
+<p><strong>Koster 2017, eq. (9)</strong> is the clean statement: the ratio of two filtered
+inverse transforms, with no expansion and no smallness assumption. <strong>This is
+what DEIStools implements</strong>, and it is the current definition.</p>
+<p><strong>Battistel 2019, eq. (4)</strong> goes further and gives the <em>physical</em> definition
+via a Volterra series, against which both heuristics can be judged. It is a
+reference point rather than an algorithm; the paper finds DMFA within about
+1% of it at the lowest frequency and below 0.1% at the highest.</p>
+<p>So: the calculation that looked odd was the 2016 one, and it is not the one
+in this package.</p>
+<h2 id="the-filter-matches-the-published-one-up-to-a-constant">The filter matches the published one up to a constant<a class="headerlink" href="#the-filter-matches-the-published-one-up-to-a-constant" title="Permanent link">&para;</a></h2>
+<p><code>create_fermi_dirac_fun</code> evaluates</p>
+<div class="arithmatex">\[
+\tilde g = \frac{\cosh n}{\cosh n + \cosh (n x)},
+\qquad x = \frac{f - f_c}{bw}
+\]</div>
+<p>while Battistel 2019 eq. (12) and Chukwu 2022 eq. (3) specify the product of
+two Fermi-Dirac functions, which simplifies exactly to</p>
+<div class="arithmatex">\[
+\tilde g_{\text{paper}} = \frac{\cosh n + 1}{\cosh n + \cosh (n x)}
+\]</div>
+<p>Checked numerically: the two agree in <strong>shape</strong> to 1e-14, and their ratio is
+the frequency-independent constant</p>
+<div class="arithmatex">\[
+\frac{\tilde g_{\text{DEIStools}}}{\tilde g_{\text{paper}}}
+= \frac{\cosh n}{\cosh n + 1} = 0.999329524658 \quad (n = 8)
+\]</div>
+<p>Since DMFA divides voltage by current through the <em>same</em> filter, the constant
+cancels exactly and the impedance is unaffected. The only consequence is that
+the DEIStools filter has gain 0.99933 at the centre rather than 1, which
+matters if you use the filter for anything that is not a ratio.</p>
+<p>Both conventions put <span class="arithmatex">\(\tilde g = 1/2\)</span> at <span class="arithmatex">\(x = \pm 1\)</span>, so <code>bw</code> means the same
+thing in both: the half-amplitude half-width.</p>
+<h2 id="the-one-sided-extraction-is-correct">The one-sided extraction is correct<a class="headerlink" href="#the-one-sided-extraction-is-correct" title="Permanent link">&para;</a></h2>
+<p>The papers stress that <span class="arithmatex">\(\tilde g\)</span> is a <em>quadrature</em> filter, defined only for
+positive frequencies, because that is what makes the inverse transform the
+analytic signal — the complex envelope — rather than a real band-limited
+signal.</p>
+<p><code>extract_impedance</code> takes a block of bins around <span class="arithmatex">\(+f_k\)</span> only and never the
+mirror at <span class="arithmatex">\(-f_k\)</span>, so the output is inherently one-sided. That is correct and
+deliberate. The resulting factor of <span class="arithmatex">\(1/2\)</span> (a real cosine carries half its
+energy on each side) cancels in the ratio, as does the <code>Npts_elab</code> scaling.</p>
+<h2 id="block-extraction-is-a-controlled-approximation">Block extraction is a controlled approximation<a class="headerlink" href="#block-extraction-is-a-controlled-approximation" title="Permanent link">&para;</a></h2>
+<p>Here DEIStools departs from the papers' procedure, for cost. The papers
+filter the <strong>whole</strong> spectrum and inverse-transform at full length;
+<code>extract_impedance</code> takes only <code>Npts_elab</code> bins around each tone and
+inverse-transforms those. That is equivalent to filtering the full spectrum
+with a filter forced to zero outside the block, so the two agree only to the
+extent that the filter has already decayed at the block edge.</p>
+<p>Measured on the transistor record at <code>bw = 0.5 f_min</code>, <code>n = 2</code>:</p>
+<table>
+<thead>
+<tr>
+<th>block width</th>
+<th>filter value at the edge</th>
+<th>difference from full-spectrum filtering (median / worst)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4 bandwidths</td>
+<td>1.2e-01</td>
+<td>1.1e-03 / 2.3e-02</td>
+</tr>
+<tr>
+<td>8 bandwidths</td>
+<td>2.5e-03</td>
+<td>1.5e-05 / 2.6e-03</td>
+</tr>
+<tr>
+<td>16 bandwidths</td>
+<td>8.5e-07</td>
+<td>4.5e-09 / 9.2e-07</td>
+</tr>
+</tbody>
+</table>
+<p>The error tracks the edge value almost exactly, as it should.</p>
+<div class="admonition tip">
+<p class="admonition-title">Use at least 16 bandwidths</p>
+<p>The examples size the block at 8 bandwidths, which with a soft filter
+(<code>n = 2</code>) leaves a worst-case 2.6e-03 — the same order as the method's own
+error. Sixteen costs nothing but arithmetic and puts the truncation at
+1e-09. A sharper filter needs a narrower block; the rule is to extend the
+block until the filter has fallen below about 1e-06.</p>
+</div>
+<h2 id="mirroring-must-not-be-used-with-a-random-phase-multisine">Mirroring must not be used with a random-phase multisine<a class="headerlink" href="#mirroring-must-not-be-used-with-a-random-phase-multisine" title="Permanent link">&para;</a></h2>
+<p>Battistel 2019 §3.1 recommends mirroring a non-periodic record about its last
+point, doubling its length, to suppress the Gibbs skirt. Applied to a
+random-phase multisine it is <strong>destructive</strong>, and badly so.</p>
+<p>Mirroring reflects the record in time. For a tone <span class="arithmatex">\(\cos(\omega t + \varphi)\)</span>
+occupying a whole number of periods, the reflection is
+<span class="arithmatex">\(\cos(\omega t - \varphi)\)</span>: the cosine part is even and survives, but the sine
+part is folded into <span class="arithmatex">\(\sin(\omega|t|)\)</span>, which has a derivative kink at the seam
+and therefore a broadband spectrum. The scattered energy lands in every
+extraction band.</p>
+<p>Measured on the standard 13-tone grid:</p>
+<table>
+<thead>
+<tr>
+<th>record</th>
+<th>off-bin / on-bin energy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>original</td>
+<td>1.1e-24</td>
+</tr>
+<tr>
+<td>mirrored, phases all zero</td>
+<td>6.2e-04</td>
+</tr>
+<tr>
+<td><strong>mirrored, random phases</strong></td>
+<td><strong>1.5e+00</strong></td>
+</tr>
+</tbody>
+</table>
+<p>With random phases the multisine scatters more energy off its bins than it
+leaves on them. The end-to-end effect on the impedance is what you would
+expect:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>worst error, edges included</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>plain</td>
+<td>4.1e-01</td>
+</tr>
+<tr>
+<td>mirrored</td>
+<td>7.5e+00</td>
+</tr>
+</tbody>
+</table>
+<p>The paper's own case is different: their multisine was periodic and it was the
+<em>cyclic voltammetry</em> that was not, so mirroring fixed the dc skirt without
+touching the tones. The technique is sound there and wrong here.</p>
+<p><strong>Conclusion: discard the edges.</strong> It is the robust answer, it costs a fixed
+fraction of the record, and it is what the examples do. If you need the edges,
+the <a href="../../methods/lock-in/">lock-in</a> filters in the time domain, where the
+boundary can be reflected on the smooth baseband envelope instead of being
+wrapped around by a circular DFT.</p>
+<h2 id="is-the-fermi-dirac-filter-the-right-choice-no">Is the Fermi-Dirac filter the right choice? No.<a class="headerlink" href="#is-the-fermi-dirac-filter-the-right-choice-no" title="Permanent link">&para;</a></h2>
+<p>The Fermi-Dirac distribution comes from statistical physics, not from signal
+processing, and the natural question is whether a standard DSP window does
+better. It does. Scored against known ground truth, <strong>the published filter
+comes last of seven</strong>, and the best standard window is about twice as good on
+the worst case.</p>
+<div class="admonition warning">
+<p class="admonition-title">This corrects an earlier conclusion on this page</p>
+<p>A first comparison here tested only the raised-cosine (Tukey) family and
+reported that the Fermi-Dirac won. That comparison was incomplete: the
+cosine-sum windows — Blackman, Blackman-Harris, Nuttall — and Kaiser were
+not in it, and they are the ones that beat it. The table below supersedes
+it.</p>
+</div>
+<h3 id="what-the-filter-actually-does-to-the-result">What the filter actually does to the result<a class="headerlink" href="#what-the-filter-actually-does-to-the-result" title="Permanent link">&para;</a></h3>
+<p>In a galvanostatic measurement the current is the excitation: exactly
+periodic, so its envelope is constant and the filter merely scales it. All the
+time variation sits in the voltage. The consequence is that</p>
+<div class="arithmatex">\[
+Z_{\text{measured}}(f_k, t) \;\approx\;
+\frac{\big(\tilde g * Z\big)(f_k, t)}{\tilde g(0)}
+\]</div>
+<p>— the reported impedance is the true <span class="arithmatex">\(Z(f_k,t)\)</span> <strong>convolved with the filter's
+time-domain kernel</strong>. So the filter's frequency response is, directly, the
+transfer function applied to the time variation, and its time-domain
+sidelobes are the ringing: at the record edges, and wherever the variation
+turns.</p>
+<p>That is precisely the quantity the classical window designs optimise, which is
+why they win.</p>
+<h3 id="the-measurement">The measurement<a class="headerlink" href="#the-measurement" title="Permanent link">&para;</a></h3>
+<p>Every candidate scaled to 1/2 at <span class="arithmatex">\(|f - f_c| = bw\)</span> so that the bandwidth means
+the same thing in each, every bandwidth swept, the band extracted 24
+bandwidths wide and the output decimated to the independent spacing. Scored by
+worst-case relative error over the usable part of the record:</p>
+<table>
+<thead>
+<tr>
+<th>filter</th>
+<th>transistor</th>
+<th>legendre</th>
+<th>block-oriented</th>
+<th>mean rank</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>blackman</strong></td>
+<td><strong>2.40e-04</strong></td>
+<td><strong>5.21e-04</strong></td>
+<td>1.18e-01</td>
+<td><strong>2.7</strong></td>
+</tr>
+<tr>
+<td>kaiser, β = 8</td>
+<td>2.92e-04</td>
+<td>5.94e-04</td>
+<td>1.18e-01</td>
+<td>3.0</td>
+</tr>
+<tr>
+<td>blackman-harris</td>
+<td>2.96e-04</td>
+<td>6.94e-04</td>
+<td>1.18e-01</td>
+<td>3.7</td>
+</tr>
+<tr>
+<td>DPSS, NW = 4</td>
+<td>2.97e-04</td>
+<td>7.09e-04</td>
+<td>1.18e-01</td>
+<td>4.0</td>
+</tr>
+<tr>
+<td>hann (= raised cosine α=1)</td>
+<td>4.71e-04</td>
+<td>9.67e-04</td>
+<td>1.17e-01</td>
+<td>4.3</td>
+</tr>
+<tr>
+<td>gaussian</td>
+<td>3.05e-04</td>
+<td>9.77e-04</td>
+<td>1.18e-01</td>
+<td>4.7</td>
+</tr>
+<tr>
+<td><strong>Fermi-Dirac, n = 2</strong></td>
+<td>4.98e-04</td>
+<td>6.47e-04</td>
+<td>1.27e-01</td>
+<td><strong>5.7</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Three systems, and the ordering is stable on the two that discriminate. The
+block-oriented column is effectively a tie because its error there is
+dominated by the branch filters' roll-off rather than by the extraction — see
+<a href="../../methods/dmfa/">example 23</a>.</p>
+<p>Two details worth noting:</p>
+<ul>
+<li><strong>DPSS lands on top of Kaiser</strong>, within 1%, which is the expected result:
+  Kaiser is a closed-form approximation to the first Slepian sequence. Since
+  time concentration is what decides this problem, the provably optimal
+  concentration was the obvious thing to try, and it confirms that Kaiser is
+  already at that limit. It is not offered in the package because it needs an
+  eigensolve for no measurable gain.</li>
+<li><strong>A rectangular filter — eq. (13) of the paper — is catastrophic</strong>, at
+  3.8e-02. The smooth filter of eq. (12) was a large improvement over it; it
+  simply was not taken as far as the window literature already had.</li>
+</ul>
+<h3 id="what-n-actually-controls">What <code>n</code> actually controls<a class="headerlink" href="#what-n-actually-controls" title="Permanent link">&para;</a></h3>
+<p>A second correction. At <code>n = 8</code> the Fermi-Dirac is a flat top with a steep
+roll-off. At <code>n = 2</code> — the value the bandwidth/sharpness sweep selects — it is
+<strong>not flat at all</strong>, but a smooth bell. Calling <code>n</code> a sharpness parameter is
+misleading: it trades passband flatness against time concentration, and on
+this problem concentration is what pays. That is also why the two <em>least</em>
+flat-topped candidates came out ahead of the flatter ones.</p>
+<div class="admonition note">
+<p class="admonition-title">A metric that did not survive scrutiny</p>
+<p>An earlier version of this page quoted a "time concentration" figure — the
+fraction of kernel energy beyond <span class="arithmatex">\(5/bw\)</span> — and drew conclusions from it.
+That number turned out to depend on the frequency grid it was evaluated
+on, moving by orders of magnitude between two reasonable choices, and the
+ranking it implied did not match the end-to-end result. It has been
+removed. The error against ground truth is the measure that decides.</p>
+</div>
+<h3 id="what-this-package-does-about-it">What this package does about it<a class="headerlink" href="#what-this-package-does-about-it" title="Permanent link">&para;</a></h3>
+<p>The Fermi-Dirac remains the <strong>default</strong>, because it is what the DMFA papers
+specify and this package's job is to implement the published methods
+faithfully. But <code>create_window_filter</code> makes every alternative a one-line
+change:</p>
+<pre class="highlight"><code class="language-python">from deistools.processing.passband_filters import create_window_filter
+
+band_filter = create_window_filter(band_axis, 0, bandwidth, "blackman")</code></pre>
+<p>and <code>create_raised_cosine_fun</code> covers the Tukey family. Example 12 runs the
+comparison, so the ranking can be re-checked on your own system rather than
+taken on trust — which is the point, since the block-oriented column already
+shows a case where the filter choice does not matter at all.</p>
+<h2 id="dmfa-as-linear-algebra-it-is-bltva-in-a-different-basis">DMFA as linear algebra: it is BLTVA in a different basis<a class="headerlink" href="#dmfa-as-linear-algebra-it-is-bltva-in-a-different-basis" title="Permanent link">&para;</a></h2>
+<p>DMFA looks like a filtering operation and BLTVA looks like a least-squares
+fit, which makes them seem like different kinds of thing. They are not. DMFA
+is already a linear-algebra estimator; it just happens to use a basis in
+which the solve is trivial.</p>
+<h3 id="the-implicit-model">The implicit model<a class="headerlink" href="#the-implicit-model" title="Permanent link">&para;</a></h3>
+<p>Filtering a band of width <span class="arithmatex">\(bw\)</span> around a tone and transforming back <strong>assumes
+the envelope is band-limited</strong> to <span class="arithmatex">\(|f| &lt; bw\)</span>. That is a model, and on a record
+of length <span class="arithmatex">\(T\)</span> it is this one:</p>
+<div class="arithmatex">\[
+V_k(t) \;=\; \sum_{m=-M}^{M} c_m \, e^{\,\mathrm{j}2\pi m t / T},
+\qquad M = bw\,T
+\]</div>
+<p>— the envelope is a trigonometric polynomial of degree <span class="arithmatex">\(bw\,T\)</span>, with
+<span class="arithmatex">\(2M+1\)</span> complex coefficients. Compare BLTVA, whose model is</p>
+<div class="arithmatex">\[
+Z(f,t) \;=\; \sum_{p=0}^{N_p} H_p(f)\, b_p(t)
+\]</div>
+<p>with <span class="arithmatex">\(b_p\)</span> the Legendre polynomials and <span class="arithmatex">\(N_p+1\)</span> coefficients. <strong>Same
+structure, different basis.</strong></p>
+<h3 id="fitting-it-gives-exactly-dmfa">Fitting it gives exactly DMFA<a class="headerlink" href="#fitting-it-gives-exactly-dmfa" title="Permanent link">&para;</a></h3>
+<p>Build the design matrix in the time domain — one column pair per mode,
+<span class="arithmatex">\(\cos\)</span> and <span class="arithmatex">\(-\sin\)</span> of <span class="arithmatex">\((\omega_k + 2\pi m/T)\,t\)</span> — and solve the ordinary
+least-squares problem. The result is the band extraction, to machine
+precision:</p>
+<pre class="highlight"><code>max |DMFA − least squares| / max   =  1.3e-15
+design-matrix condition number     =  1.000000</code></pre>
+<p>That condition number is the whole explanation. The columns are distinct
+Fourier harmonics, so they are <strong>orthogonal on the record</strong>; the normal
+equations <span class="arithmatex">\(K^{\mathrm{H}}K\,\hat\theta = K^{\mathrm{H}}y\)</span> have a diagonal
+matrix on the left, and the solve degenerates into reading off the DFT bins.
+There is nothing to invert. BLTVA's Legendre columns are not orthogonal in
+the band, which is why it has a solve, a condition number worth reporting,
+and a pruning step.</p>
+<h3 id="a-smooth-filter-is-ridge-regularisation">A smooth filter is ridge regularisation<a class="headerlink" href="#a-smooth-filter-is-ridge-regularisation" title="Permanent link">&para;</a></h3>
+<p>Multiplying coefficient <span class="arithmatex">\(m\)</span> by the filter gain <span class="arithmatex">\(g_m\)</span> is exactly diagonal
+Tikhonov shrinkage. Minimising
+<span class="arithmatex">\(\|y - Kc\|^2 + \sum_m \lambda_m |c_m|^2\)</span> gives
+<span class="arithmatex">\(\hat c_m = y_m/(1+\lambda_m)\)</span>, so</p>
+<div class="arithmatex">\[
+g_m \;=\; \frac{1}{1+\lambda_m}
+\qquad\Longleftrightarrow\qquad
+\lambda_m \;=\; \frac{1}{g_m} - 1
+\]</div>
+<p>Verified to 1.2e-15. So the choice between a rectangular and a Fermi-Dirac
+filter is not a choice between "no filter" and "a filter" — it is a choice
+between <strong>hard model-order truncation and a ridge prior</strong>, with the penalty
+rising smoothly towards the band edge. The filter <em>is</em> the regulariser.</p>
+<h3 id="three-things-this-explains">Three things this explains<a class="headerlink" href="#three-things-this-explains" title="Permanent link">&para;</a></h3>
+<p><strong>It gives DMFA an uncertainty.</strong> A linear estimator <span class="arithmatex">\(\hat c = Ay\)</span> has
+covariance <span class="arithmatex">\(A\Sigma A^{\mathrm{H}}\)</span>, which is the route BLTVA already takes.
+Working it through reproduces Chukwu eq. (19)–(20) exactly — their error
+propagation <em>is</em> this covariance — and
+<a href="../../api/processing/"><code>extract_impedance_with_error</code></a> now computes it,
+agreeing with the scatter over 200 noise realisations to better than 1%.</p>
+<p><strong>It explains the independent spacing.</strong> The model has <span class="arithmatex">\(2\,bw\,T\)</span> free
+coefficients over a record of length <span class="arithmatex">\(T\)</span>, so there is one degree of freedom
+per <span class="arithmatex">\(T/(2\,bw\,T) = 1/(2\,bw)\)</span> seconds. That is precisely the
+<span class="arithmatex">\(0.5/bw\)</span> at which neighbouring errors stop being correlated — the rule is
+just "do not report more points than the model has parameters".</p>
+<p><strong>It explains the edges, and points at a better basis.</strong> The Fourier basis is
+<strong>periodic by construction</strong>. Band-limitedness does not require periodicity;
+the basis imposes it, and a non-periodic envelope then produces Gibbs
+oscillation. BLTVA's polynomial basis carries no such constraint, which is why
+it has no edge problem at all.</p>
+<p>The natural basis for <em>band-limited on a finite interval</em> is the Slepian
+(DPSS) basis, not the Fourier one. Fitting the same band with the same number
+of coefficients:</p>
+<table>
+<thead>
+<tr>
+<th>basis</th>
+<th>at <span class="arithmatex">\(t=0\)</span></th>
+<th>interior</th>
+<th>at <span class="arithmatex">\(t=T\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fourier (periodic)</td>
+<td>26.8%</td>
+<td>1.5%</td>
+<td>3.2%</td>
+</tr>
+<tr>
+<td><strong>Slepian (not periodic)</strong></td>
+<td><strong>5.0%</strong></td>
+<td>1.6%</td>
+<td>2.4%</td>
+</tr>
+</tbody>
+</table>
+<p>Five times better at the leading edge, for nothing — same bandwidth, same
+degrees of freedom, same data. The interior is unchanged, as it must be.</p>
+<div class="admonition note">
+<p class="admonition-title">Not implemented</p>
+<p>A Slepian-basis DMFA is a genuine improvement over zero-padding rather
+than an alternative to it: padding removes the wrap-around, a non-periodic
+basis removes the reason the wrap hurt. It needs an eigensolve per
+bandwidth and a different code path from <code>extract_impedance</code>, so it is on
+the <a href="../../roadmap/">roadmap</a> rather than in the package. The same DPSS
+appeared in the filter comparison above, for the same underlying reason.</p>
+</div>
+<h2 id="variance-propagation-or-measured-in-band">Variance: propagation, or measured in-band?<a class="headerlink" href="#variance-propagation-or-measured-in-band" title="Permanent link">&para;</a></h2>
+<p>Chukwu <em>et al.</em> (2022) derive the expected variance of the error on the
+admittance by propagating the measurement noise through the DMFA chain:</p>
+<div class="arithmatex">\[
+\sigma^2_{Y_{l,k_0}} \;=\;
+\frac{\sigma_i^2 + \big|Y_{l,k_0}\big|^2\,\sigma_v^2}
+     {2\,N'\,\big|\tilde v_{l,k_0}\big|^2},
+\qquad
+N' = \frac{N}{\sum_{k=-N/2}^{N/2}\big|\tilde g(k-k_0)\big|^2}
+\tag{19, 20}
+\]</div>
+<p>The derivation is sound — <span class="arithmatex">\(N'\)</span> is the usual equivalent-noise-bandwidth factor,
+and the assumptions (noise of constant variance, uncorrelated between samples,
+Parseval for the filter norm) are stated rather than hidden.</p>
+<p>The weakness is not the algebra; it is <strong>where <span class="arithmatex">\(\sigma_i\)</span> and <span class="arithmatex">\(\sigma_v\)</span> come
+from</strong>. The paper obtains them from a separate calibration: zero volts across
+resistors, histogrammed. That assumes the noise is white and that it has not
+changed between the calibration and the measurement.</p>
+<h3 id="the-bltva-route-is-available-and-is-better">The BLTVA route is available and is better<a class="headerlink" href="#the-bltva-route-is-available-and-is-better" title="Permanent link">&para;</a></h3>
+<p>BLTVA already estimates the noise variance <em>from the measurement itself</em>,
+using bins the excitation never reaches (Algorithm 1 of Hallemans TIM 2021,
+exposed here as <code>estimate_noise_variance</code>). On an odd-harmonic grid with gaps
+those bins are plentiful, and the estimate:</p>
+<ul>
+<li>needs no separate instrument calibration;</li>
+<li>captures the noise <strong>colour</strong>, not just its level;</li>
+<li>reflects the noise as it was during that measurement;</li>
+<li>can be separated from nonlinear distortion by the parity of the bins.</li>
+</ul>
+<p>The two are complementary rather than rival. Keep eq. (19) — it is the correct
+propagation through the filter — and feed it a <span class="arithmatex">\(\sigma^2(f)\)</span> measured from the
+unexcited bins instead of from a resistor. That removes the assumption the
+formula rests on while keeping its structure. The section above shows that eq. (19) is nothing more than the covariance of
+a linear estimator, which is also why BLTVA can report one.</p>
+<p><code>extract_impedance_with_error</code> now computes it correctly. Three bugs had
+survived in that function, unnoticed because it had no test coverage: it
+returned the <strong>reciprocal</strong> of the variance (a half-finished edit was still
+commented out on its last line), it squared arguments already named
+<code>variance_*</code>, and its N' used the width of the extracted band where eq. (20)
+calls for the length of the record. Corrected, it agrees with the scatter over
+200 noise realisations to 0.3%. Passing it a data-driven noise variance from
+the unexcited bins, rather than a resistor calibration, is left to the caller
+and is the remaining improvement.</p>
+<div class="admonition note">
+<p class="admonition-title">A testable hypothesis about the paper's own residual</p>
+<p>Chukwu <em>et al.</em> report that below 100 Hz their measured standard
+deviations run up to four times the predicted value, and state the reason
+could not be ascertained. A noise floor rising towards low frequency —
+<span class="arithmatex">\(1/f\)</span> noise, which is ubiquitous in electrochemical cells — would produce
+exactly that signature, and a white-noise calibration cannot see it. A
+data-driven estimate from the unexcited bins would. This has not been
+tested here and is offered as a hypothesis, not a result.</p>
+</div>
+<h3 id="do-not-treat-successive-instants-as-independent">Do not treat successive instants as independent<a class="headerlink" href="#do-not-treat-successive-instants-as-independent" title="Permanent link">&para;</a></h3>
+<p>Neighbouring estimates rest on overlapping filter kernels, so their errors are
+correlated. Chukwu <em>et al.</em> put the correlation below 20% once successive
+instants are more than <span class="arithmatex">\(0.5/bw\)</span> apart. Measured here on a stationary cell —
+where the impedance never moves, so the whole spread of the estimate is noise
+— over 150 noise realisations:</p>
+<table>
+<thead>
+<tr>
+<th>output spacing</th>
+<th>instants over the record</th>
+<th>corr(<span class="arithmatex">\(e_j\)</span>, <span class="arithmatex">\(e_{j+1}\)</span>)</th>
+<th>corr(<span class="arithmatex">\(e_j\)</span>, <span class="arithmatex">\(e_{j+2}\)</span>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.125/bw</td>
+<td>80</td>
+<td><strong>84%</strong></td>
+<td>50%</td>
+</tr>
+<tr>
+<td>0.25/bw</td>
+<td>40</td>
+<td>49%</td>
+<td>4%</td>
+</tr>
+<tr>
+<td><strong>0.5/bw</strong></td>
+<td>20</td>
+<td><strong>3%</strong></td>
+<td>0%</td>
+</tr>
+<tr>
+<td>1/bw</td>
+<td>10</td>
+<td>−3%</td>
+<td>−3%</td>
+</tr>
+<tr>
+<td>2/bw</td>
+<td>4</td>
+<td>−9%</td>
+<td>−1%</td>
+</tr>
+</tbody>
+</table>
+<p>The rule is confirmed, and the earlier examples sat at 0.125/bw — four times
+too dense, with 84% correlated neighbours. Reporting densely is fine for
+looking at a result; using every point as an independent observation in a
+least-squares fit is not, and will make the parameter uncertainties too small.</p>
+<p><code>independent_time_step(bandwidth)</code> returns <span class="arithmatex">\(0.5/bw\)</span>. Note that <code>Npts_elab</code>
+sets the band width and the reporting rate together, and they are different
+concerns — the band must be wide enough for the filter to decay, which is
+<em>finer</em> than this spacing. <strong>Extract wide, then decimate</strong>, which is what the
+examples now do.</p>
+<div class="admonition warning">
+<p class="admonition-title">The time resolution is not free after all</p>
+<p>At the bandwidth that measures best here, <span class="arithmatex">\(bw = 0.5 f_{\min}\)</span>, the
+independent spacing works out to <span class="arithmatex">\(0.5/bw\)</span> = one multisine period —
+exactly STFT's window. DMFA's resolution is <em>adjustable</em> where STFT's is
+fixed, which is a real advantage, but the claim that it is simply finer
+was an artefact of reporting more densely than the data supports. Buying
+genuinely finer resolution means widening the band, and example 12 shows
+what that costs.</p>
+</div>
+<h2 id="the-record-edges-are-a-property-of-the-method">The record edges are a property of the method<a class="headerlink" href="#the-record-edges-are-a-property-of-the-method" title="Permanent link">&para;</a></h2>
+<p>The band-limited inverse transform rings at the record boundaries. Measured on
+the four simulated systems:</p>
+<table>
+<thead>
+<tr>
+<th>system</th>
+<th>worst, edges removed</th>
+<th>worst, edges kept</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>stationary</td>
+<td>1.35e-05</td>
+<td>1.35e-05</td>
+</tr>
+<tr>
+<td>transistor</td>
+<td>1.39e-03</td>
+<td>4.13e-01</td>
+</tr>
+<tr>
+<td>legendre</td>
+<td>1.33e-03</td>
+<td>8.85e-01</td>
+</tr>
+<tr>
+<td>block-oriented</td>
+<td>1.71e-01</td>
+<td>4.26e-01</td>
+</tr>
+</tbody>
+</table>
+<p>The stationary row is the diagnostic one: identical with and without the
+edges. A constant impedance occupies a single bin, so truncating the band
+removes nothing and there is nothing to ring.</p>
+<p>That establishes the cause. The artefact is not "the record ended" — it is the
+cost of representing a <em>changing</em> quantity with a finite band, under a DFT
+that treats the record as periodic when the envelope is not. No parameter
+setting removes it. This package discards the first and last tenth throughout.</p>
+<h2 id="the-filter-belongs-on-the-bands-local-axis">The filter belongs on the band's local axis<a class="headerlink" href="#the-filter-belongs-on-the-bands-local-axis" title="Permanent link">&para;</a></h2>
+<p><code>elaboration_frequency_axis(n_points, T)</code> returns the frequency axis of an
+extracted band: <code>n_points</code> bins of width <span class="arithmatex">\(1/T\)</span>, centred on zero — about 0.2 Hz
+in the worked example. The full spectrum axis spans <span class="arithmatex">\(f_s\)</span>, 1000 Hz there.</p>
+<p>Build the passband on the wrong axis and its bandwidth is scaled wrongly by
+<span class="arithmatex">\(f_s T / n_{\text{points}}\)</span>, a factor of 2500. The result is not an error,
+just a filter that does something entirely different from what was asked. This
+is the easiest mistake to make with the method and the reason
+<code>elaboration_frequency_axis</code> exists as a named function rather than being
+inlined.</p>
+<h2 id="display-fixes-in-visualize_dmfa_filtering">Display fixes in <code>visualize_dmfa_filtering</code><a class="headerlink" href="#display-fixes-in-visualize_dmfa_filtering" title="Permanent link">&para;</a></h2>
+<p>Three defects were corrected in the slider view. They were display-only — no
+estimation path was affected — but they had survived because the function had
+no test coverage:</p>
+<ul>
+<li>the voltage panel drew its "Original data" trace with the filter <em>applied</em>,
+  making it identical to the filtered trace until the slider was first moved;</li>
+<li>the initial title hard-coded the first frequency rather than the selected
+  one;</li>
+<li>a stray parenthesis in the updated title (<code>Fouri(er</code>).</li>
+</ul>
+<p>The parameter name <code>frequenies</code> is still misspelled in the public signature,
+so pass that argument positionally.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../bla/" class="btn btn-neutral float-left" title="BLA implementation notes"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../api/processing/" class="btn btn-neutral float-right" title="deistools.processing">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/federicoscarpioni/DEIStools" class="fa fa-code-fork" style="color: #fcfcfc"> federicoscarpioni/DEIStools</a>
+        </span>
+    
+    
+      <span><a href="../bla/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../api/processing/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../javascripts/mathjax.js"></script>
+      <script src="https://unpkg.com/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://federicoscarpioni.github.io/DEIStools/api/simulation/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>deistools.simulation - DEIStools</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link href="../../assets/_mkdocstrings.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "deistools.simulation";
+        var mkdocs_page_input_path = "api/simulation.md";
+        var mkdocs_page_url = "/DEIStools/api/simulation/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]--> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> DEIStools
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../..#status-of-each-method">Status of each method</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../..#install">Install</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../..#a-first-estimation">A first estimation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../..#where-to-go-next">Where to go next</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../..#sources">Sources</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting started</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#install">Install</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#what-you-need-from-a-measurement">What you need from a measurement</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#check-the-record-before-you-estimate-anything">Check the record before you estimate anything</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#the-shortest-path-to-a-result">The shortest path to a result</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#a-reading-path">A reading path</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#running-the-examples">Running the examples</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#which-method-should-i-use">Which method should I use?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#my-cell-drifts">My cell drifts</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/signal-model/">The signal model</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/signal-model/#notation">Notation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/signal-model/#the-model">The model</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/signal-model/#skirts">Skirts</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/signal-model/#what-each-method-does-with-them">What each method does with them</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/when-meaningful/">When is \(Z(f,t)\) meaningful?</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/when-meaningful/#1-the-system-must-change-slowly-compared-with-its-own-dynamics">1. The system must change slowly compared with its own dynamics</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/when-meaningful/#2-the-system-must-be-close-enough-to-linear">2. The system must be close enough to linear</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/when-meaningful/#the-time-resolution-floor">The time-resolution floor</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/when-meaningful/#the-bottom-decade-is-always-the-worst">The bottom decade is always the worst</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/excitation/">Designing the excitation</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#odd-harmonics-with-gaps">Odd harmonics, with gaps</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#whole-periods">Whole periods</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#how-many-periods-p">How many periods, \(P\)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#amplitude">Amplitude</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#choosing-the-frequency-range">Choosing the frequency range</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Methods</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/stft/">STFT</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/stft/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/stft/#the-one-parameter">The one parameter</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/stft/#limits">Limits</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/stft/#when-to-use-it">When to use it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/stft/#failure-mode">Failure mode</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/bla/">Best linear approximation per burst</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#the-one-structural-fact">The one structural fact</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#the-noise-level-is-real">The noise level is real</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#noise-or-the-cell-moving">Noise, or the cell moving?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#what-std_noise-really-contains">What std_noise really contains</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#nonlinear-distortion">Nonlinear distortion</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#where-this-sits">Where this sits</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#sources">Sources</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bla/#not-done-yet">Not done yet</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/dmfa/">DMFA</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#the-mathematics">The mathematics</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#definition">Definition</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#relation-to-stft">Relation to STFT</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#quadrature-filters">Quadrature filters</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#the-bandwidth-ceiling">The bandwidth ceiling</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#the-gabor-limit">The Gabor limit</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#the-two-parameters">The two parameters</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#bandwidth">Bandwidth</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#sharpness">Sharpness</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#the-record-edges-are-unusable">The record edges are unusable</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#is-the-operation-safe-the-division-and-the-truncation">Is the operation safe? The division, and the truncation</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#the-division-is-safe-and-it-is-not-where-the-ringing-comes-from">The division is safe, and it is not where the ringing comes from</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#most-of-the-spectrum-is-discarded-and-that-is-the-point">Most of the spectrum is discarded, and that is the point</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#what-is-unsafe-is-the-wrap-around">What is unsafe is the wrap-around</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#another-way-to-apply-the-filter">Another way to apply the filter</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#zero-padding-works-and-is-the-recommended-fix">Zero-padding — works, and is the recommended fix</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#time-domain-filtering-better-at-the-edges-worse-in-the-middle">Time-domain filtering — better at the edges, worse in the middle</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#envelope-detrending-tried-and-it-does-not-work">Envelope detrending — tried, and it does not work</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#in-short">In short</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#trends-why-bltvas-detrending-does-not-transfer">Trends: why BLTVA's detrending does not transfer</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#what-a-trend-actually-does">What a trend actually does</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#dmfas-actual-knob-stopband-rejection-at-dc">DMFA's actual knob: stopband rejection at dc</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#the-full-ladder">The full ladder</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#when-the-dc-skirt-reaches-several-tones">When the dc skirt reaches several tones</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#why-no-filter-can-fix-this">Why no filter can fix this</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#the-fix-estimate-the-trend-and-the-envelope-together">The fix: estimate the trend and the envelope together</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/dmfa/#in-practice">In practice</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#inspecting-a-fit">Inspecting a fit</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/dmfa/#when-to-use-it">When to use it</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/bltva/">BLTVA</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#calling-it">Calling it</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/bltva/#what-comes-back">What comes back</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#the-parameters">The parameters</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/bltva/#n_p-the-order-of-the-expansion">\(N_p\) — the order of the expansion</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/bltva/#n_q-the-trend-order">\(N_q\) — the trend order</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/bltva/#band_halfwidth-and-why-it-is-not-independent-of-n_p">band_halfwidth — and why it is not independent of \(N_p\)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/bltva/#n_a-leave-it-at-none">\(N_a\) — leave it at None</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#the-uncertainty-is-a-model-error-detector">The uncertainty is a model-error detector</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#pruning-it-can-say-stationary">Pruning: it can say "stationary"</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#distortion-and-sndr">Distortion and SNDR</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#inspecting-a-fit">Inspecting a fit</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/bltva/#when-not-to-use-it">When not to use it</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/lock-in/">Lock-in amplifier</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#the-mathematics">The mathematics</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#choosing-the-integrator-the-whole-method">Choosing the integrator — the whole method</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#two-demodulators">Two demodulators</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/lock-in/#mixing-methodmix">Mixing (method='mix')</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/lock-in/#local-least-squares-methodls">Local least squares (method='ls')</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#edges">Edges</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#worked-example">Worked example</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#it-is-stft-evaluated-everywhere">It is STFT, evaluated everywhere</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#when-to-use-it">When to use it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/lock-in/#limits">Limits</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/goertzel/">Goertzel filter</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#the-mathematics">The mathematics</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#on-a-stream">On a stream</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#cost-it-is-slower-here-and-that-is-expected">Cost: it is slower here, and that is expected</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#accuracy">Accuracy</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#sources">Sources</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#worked-example">Worked example</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/goertzel/#when-to-use-it">When to use it</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../methods/detrending/">Detrending</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#the-one-fact">The one fact</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#which-strategy-which-estimator">Which strategy, which estimator</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#detrending-for-bltva-is-not-a-preprocessing-step">Detrending for BLTVA is not a preprocessing step</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/detrending/#why-the-weighting-rules-out-three-of-the-four">Why the weighting rules out three of the four</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#the-strategies">The strategies</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/detrending/#differencing">Differencing</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/detrending/#movingaverage">MovingAverage</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/detrending/#lowpassremoval">LowPassRemoval</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../methods/detrending/#polynomialfit">PolynomialFit</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#worked-example">Worked example</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#checking-a-strategy">Checking a strategy</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../methods/detrending/#in-practice">In practice</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Implementation notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../implementation/">Implementation notes</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/#what-is-on-these-pages">What is on these pages</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/#how-to-read-a-claim-here">How to read a claim here</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/#a-general-convention">A general convention</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../implementation/bltva/">BLTVA implementation notes</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bltva/#the-rank-threshold-in-eq-53-is-ambiguous">The rank threshold in eq. (53) is ambiguous</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bltva/#the-band-solver-deliberately-does-not-equilibrate">The band solver deliberately does not equilibrate</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bltva/#the-legendre-basis-convention">The Legendre basis convention</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bltva/#eq-49-is-necessary-not-sufficient">eq. (49) is necessary, not sufficient</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bltva/#n_p-and-the-band-width-compete-for-n_a">\(N_p\) and the band width compete for \(N_a\)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bltva/#why-band_halfwidth-exists-at-all">Why band_halfwidth exists at all</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../implementation/bla/">BLA implementation notes</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bla/#why-step-3-of-pintelon-2013-is-not-transcribed">Why step 3 of Pintelon 2013 is not transcribed</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/bla/#where-the-derivatives-come-from">Where the derivatives come from</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/bla/#two-separate-things-go-wrong-without-it">Two separate things go wrong without it</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/bla/#what-it-costs-here">What it costs here</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/bla/#the-route-that-does-work">The route that does work</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/bla/#status">Status</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../implementation/dmfa/">DMFA implementation notes</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#which-definition-is-implemented">Which definition is implemented</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#the-filter-matches-the-published-one-up-to-a-constant">The filter matches the published one up to a constant</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#the-one-sided-extraction-is-correct">The one-sided extraction is correct</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#block-extraction-is-a-controlled-approximation">Block extraction is a controlled approximation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#mirroring-must-not-be-used-with-a-random-phase-multisine">Mirroring must not be used with a random-phase multisine</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#is-the-fermi-dirac-filter-the-right-choice-no">Is the Fermi-Dirac filter the right choice? No.</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#what-the-filter-actually-does-to-the-result">What the filter actually does to the result</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#the-measurement">The measurement</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#what-n-actually-controls">What n actually controls</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#what-this-package-does-about-it">What this package does about it</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#dmfa-as-linear-algebra-it-is-bltva-in-a-different-basis">DMFA as linear algebra: it is BLTVA in a different basis</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#the-implicit-model">The implicit model</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#fitting-it-gives-exactly-dmfa">Fitting it gives exactly DMFA</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#a-smooth-filter-is-ridge-regularisation">A smooth filter is ridge regularisation</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#three-things-this-explains">Three things this explains</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#variance-propagation-or-measured-in-band">Variance: propagation, or measured in-band?</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#the-bltva-route-is-available-and-is-better">The BLTVA route is available and is better</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#do-not-treat-successive-instants-as-independent">Do not treat successive instants as independent</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#the-record-edges-are-a-property-of-the-method">The record edges are a property of the method</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#the-filter-belongs-on-the-bands-local-axis">The filter belongs on the band's local axis</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#display-fixes-in-visualize_dmfa_filtering">Display fixes in visualize_dmfa_filtering</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../processing/">deistools.processing</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../processing/#bltva">BLTVA</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../processing/#deistools.processing.bltva">bltva</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../processing/#dmfa">DMFA</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../processing/#deistools.processing.dmfa_functions">dmfa_functions</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../processing/#stft">STFT</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../processing/#deistools.processing.stft_functions">stft_functions</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../processing/#lock-in-amplifier">Lock-in amplifier</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../processing/#deistools.processing.lock_in_amp">lock_in_amp</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../processing/#goertzel-filter">Goertzel filter</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../processing/#deistools.processing.goertzel">goertzel</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../processing/#passband-filters">Passband filters</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../processing/#deistools.processing.passband_filters">passband_filters</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../processing/#best-linear-approximation-per-burst">Best linear approximation per burst</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../processing/#deistools.processing.bla">bla</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../processing/#detrending">Detrending</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../processing/#deistools.processing.detrending">detrending</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../processing/#record-consistency-check">Record consistency check</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../processing/#deistools.processing.consistency">consistency</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../processing/#multi-frequency-analysis">Multi-frequency analysis</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../processing/#deistools.processing.mfa">mfa</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">deistools.simulation</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#engine">Engine</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#deistools.simulation.engine">engine</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#stationary-r-rc">Stationary R + (R‖C)</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#deistools.simulation.models.r_rc">r_rc</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#transistor-gated-r-r_cttc">Transistor-gated R + (R_ct(t)‖C)</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#deistools.simulation.models.r_rc_transistor">r_rc_transistor</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#prescribed-legendre-expansion">Prescribed Legendre expansion</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#deistools.simulation.models.legendre">legendre</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#block-oriented-nonlinear-system">Block-oriented nonlinear system</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#deistools.simulation.models.block_oriented">block_oriented</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../roadmap/">Roadmap</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../roadmap/#done">Done</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../roadmap/#planned">Planned</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../roadmap/#known-gaps">Known gaps</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../roadmap/#how-a-new-estimator-should-arrive">How a new estimator should arrive</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">DEIStools</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">API reference</li>
+      <li class="breadcrumb-item active">deistools.simulation</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/federicoscarpioni/DEIStools/edit/main/docs/api/simulation.md">Edit on federicoscarpioni/DEIStools</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="deistoolssimulation"><code>deistools.simulation</code><a class="headerlink" href="#deistoolssimulation" title="Permanent link">&para;</a></h1>
+<p>Synthetic measurements with known ground truth, for testing and benchmarking
+estimators. Each model gives a different <em>kind</em> of ground truth — see the
+<a href="../../concepts/when-meaningful/">concepts</a> pages for what that means in
+practice.</p>
+<h2 id="engine">Engine<a class="headerlink" href="#engine" title="Permanent link">&para;</a></h2>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h3 id="deistools.simulation.engine" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">engine</span>
+
+
+<a href="#deistools.simulation.engine" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="deistools.simulation.engine.simulate" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">simulate</span>
+
+
+<a href="#deistools.simulation.engine.simulate" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">simulate(duration_s, sampling_time_s, frequencies, amplitudes, phases, impedance_fn, noise_std_V=0.0, noise_std_A=0.0, seed=None)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Simulate a multisine-excited electrochemical cell.</p>
+<p>impedance_fn(f, t) must return a (n_freq, N) complex array giving the
+frozen-time impedance at each excitation frequency and each sample time.</p>
+<p>Returns a dict with time_s, voltage_V, current_A, Z_true, frequencies_Hz.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/deistools/simulation/engine.py</code></summary>
+              <pre class="highlight"><code class="language-python">def simulate(duration_s, sampling_time_s, frequencies, amplitudes, phases,
+             impedance_fn, noise_std_V=0.0, noise_std_A=0.0, seed=None):
+    """
+    Simulate a multisine-excited electrochemical cell.
+
+    impedance_fn(f, t) must return a (n_freq, N) complex array giving the
+    frozen-time impedance at each excitation frequency and each sample time.
+
+    Returns a dict with time_s, voltage_V, current_A, Z_true, frequencies_Hz.
+    """
+    rng = np.random.default_rng(seed)
+
+    N = int(round(duration_s / sampling_time_s))
+    t = np.arange(N) * sampling_time_s
+    frequencies = np.asarray(frequencies)
+    amplitudes = np.asarray(amplitudes)
+    phases = np.asarray(phases)
+
+    Z = impedance_fn(frequencies, t)
+
+    current_A = generate_multisine(t, frequencies, amplitudes, phases)
+    voltage_V = synthesize_voltage(t, frequencies, amplitudes, phases, Z)
+
+    if noise_std_V &gt; 0:
+        voltage_V += rng.normal(0.0, noise_std_V, N)
+    if noise_std_A &gt; 0:
+        current_A += rng.normal(0.0, noise_std_A, N)
+
+    return {
+        'time_s': t,
+        'voltage_V': voltage_V,
+        'current_A': current_A,
+        'Z_true': Z,
+        'frequencies_Hz': frequencies,
+    }</code></pre>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div><h2 id="stationary-r-rc">Stationary R + (R‖C)<a class="headerlink" href="#stationary-r-rc" title="Permanent link">&para;</a></h2>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h3 id="deistools.simulation.models.r_rc" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">r_rc</span>
+
+
+<a href="#deistools.simulation.models.r_rc" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents first">
+
+        <p>Stationary R + RC circuit (series resistance plus a parallel RC element).</p>
+<pre class="highlight"><code>Z(f) = R_s + R_p / (1 + j * 2*pi*f * R_p * C)</code></pre>
+<p>All parameters are scalars (time-invariant). Use this as a stationary
+reference baseline when benchmarking time-varying estimation algorithms.</p>
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h2 id="transistor-gated-r-r_cttc">Transistor-gated R + (R_ct(t)‖C)<a class="headerlink" href="#transistor-gated-r-r_cttc" title="Permanent link">&para;</a></h2>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h3 id="deistools.simulation.models.r_rc_transistor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">r_rc_transistor</span>
+
+
+<a href="#deistools.simulation.models.r_rc_transistor" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents first">
+
+        <p>Non-stationary R + (R_ct(t) || C) circuit, solved as a true time-varying ODE.</p>
+<p>A transistor T is placed in series with R_p inside the parallel branch:</p>
+<pre class="highlight"><code>R_s ---+--- R_p --- T ---+
+       |                 |
+       +------- C -------+</code></pre>
+<p>The transistor is modelled as a voltage-controlled resistance R_T(V_gate):</p>
+<pre class="highlight"><code>V_gate &gt;= V_on        : R_T = 0           (fully conducting, short circuit)
+V_off &lt; V_gate &lt; V_on : R_T varies linearly from R_T_max to 0
+V_gate &lt;= V_off       : R_T = R_T_max     (fully blocking)</code></pre>
+<p>Driving V_gate with a linear ramp makes the effective charge-transfer
+resistance R_ct(t) = R_p + R_T(V_gate(t)) change continuously, producing a
+physically motivated non-stationary system. This is the circuit of
+Breugelmans et al., Electrochim. Acta 76 (2012) 375, Fig. 7 -- the only model
+in this package that can be built on the bench as well as simulated.</p>
+
+
+<details class="frozen-time-impedance-versus-true-response" open>
+  <summary>Frozen-time impedance versus true response</summary>
+  <p>The <em>frozen-time</em> (quasi-static) impedance</p>
+<pre class="highlight"><code>Z(f, t) = R_s + R_ct(t) / (1 + j*2*pi*f * R_ct(t) * C)</code></pre>
+<p>is the ground truth an estimator is supposed to recover, and it is returned as
+<code>Z_true</code>. It is <strong>not</strong>, however, the response the circuit actually produces.
+Because Z depends nonlinearly on R_ct(t), the quasi-static response is only an
+approximation of the governing equation, valid when R_ct varies slowly
+compared with the local time constant tau = R_ct*C. At realistic gate-ramp
+rates the two differ by on the order of 1% rms -- far above the numerical
+precision of the estimators under test, so the distinction matters.</p>
+<p>The voltage returned here is therefore obtained by integrating the circuit
+equation. Under galvanostatic excitation, with v_C the voltage across the
+parallel branch:</p>
+<pre class="highlight"><code>i(t) = v_C/R_ct(t) + C * dv_C/dt
+=&gt;  dv_C/dt = (i(t) - v_C/R_ct(t)) / C
+    v(t)    = R_s*i(t) + v_C(t)</code></pre>
+<p>a scalar linear ODE with a time-varying coefficient, integrated with
+fixed-step RK4. <code>voltage_quasistatic_V</code> carries the frozen-time synthesis
+alongside it so the modelling error is directly observable.</p>
+<p>Contrast with <code>legendre.py</code>: there the frozen-time synthesis is algebraically
+<em>exact</em>, because the basis functions are real and the impedance is linear in
+them. Here it is not, which is precisely what makes this model useful for
+testing estimators against a system that does not satisfy their assumptions.</p>
+</details>
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="deistools.simulation.models.r_rc_transistor.impedance" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">impedance</span>
+
+
+<a href="#deistools.simulation.models.r_rc_transistor.impedance" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">impedance(f, R_s, R_ct_t, C)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Frozen-time impedance, shape (n_freq, N) when R_ct_t is an array.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/deistools/simulation/models/r_rc_transistor.py</code></summary>
+              <pre class="highlight"><code class="language-python">def impedance(f, R_s, R_ct_t, C):
+    """Frozen-time impedance, shape (n_freq, N) when R_ct_t is an array."""
+    f = np.atleast_1d(f)[:, None]
+    Z = R_s + R_ct_t / (1 + 1j * 2 * np.pi * f * R_ct_t * C)
+    return Z</code></pre>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="deistools.simulation.models.r_rc_transistor.simulate_r_rc_transistor" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">simulate_r_rc_transistor</span>
+
+
+<a href="#deistools.simulation.models.r_rc_transistor.simulate_r_rc_transistor" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">simulate_r_rc_transistor(duration_s, sampling_time_s, frequencies, amplitudes, phases, R_s, R_p, C, V_gate_start, V_gate_rate, R_T_max, V_off=V_OFF_DEFAULT, V_on=V_ON_DEFAULT, noise_std_V=0.0, noise_std_A=0.0, seed=None)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Simulate the transistor-gated circuit by integrating its ODE.</p>
+<p>Returns a dict with the usual <code>time_s</code>, <code>voltage_V</code>, <code>current_A</code>,
+<code>Z_true</code> and <code>frequencies_Hz</code>, plus:</p>
+<p><code>voltage_quasistatic_V</code>
+    The frozen-time synthesis, for comparison. <code>voltage_V</code> minus this is
+    the error incurred by assuming quasi-static behaviour.
+<code>R_ct_t</code>, <code>V_gate_t</code>
+    The time-varying charge-transfer resistance and the gate ramp driving it.</p>
+<p><code>Z_true</code> is the frozen-time impedance at each excited frequency and each
+sample, which is the quantity an estimator should recover.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/deistools/simulation/models/r_rc_transistor.py</code></summary>
+              <pre class="highlight"><code class="language-python">def simulate_r_rc_transistor(duration_s, sampling_time_s, frequencies, amplitudes, phases,
+                              R_s, R_p, C, V_gate_start, V_gate_rate, R_T_max,
+                              V_off=V_OFF_DEFAULT, V_on=V_ON_DEFAULT,
+                              noise_std_V=0.0, noise_std_A=0.0, seed=None):
+    """Simulate the transistor-gated circuit by integrating its ODE.
+
+    Returns a dict with the usual ``time_s``, ``voltage_V``, ``current_A``,
+    ``Z_true`` and ``frequencies_Hz``, plus:
+
+    ``voltage_quasistatic_V``
+        The frozen-time synthesis, for comparison. ``voltage_V`` minus this is
+        the error incurred by assuming quasi-static behaviour.
+    ``R_ct_t``, ``V_gate_t``
+        The time-varying charge-transfer resistance and the gate ramp driving it.
+
+    ``Z_true`` is the frozen-time impedance at each excited frequency and each
+    sample, which is the quantity an estimator should recover.
+    """
+    rng = np.random.default_rng(seed)
+
+    N = int(round(duration_s / sampling_time_s))
+    dt = sampling_time_s
+    t = np.arange(N) * dt
+    frequencies = np.asarray(frequencies)
+    amplitudes = np.asarray(amplitudes)
+    phases = np.asarray(phases)
+
+    def gate(tq):
+        return V_gate_start + V_gate_rate * tq
+
+    def r_ct(tq):
+        return transistor_r_ct(gate(tq), R_p, R_T_max, V_off, V_on)
+
+    V_gate_t = gate(t)
+    R_ct_t = r_ct(t)
+
+    tau_min = float(np.min(R_ct_t) * C)
+    if dt &gt; 0.1 * tau_min:
+        warnings.warn(
+            f"sampling_time_s={dt:.3g} is not small against the fastest circuit "
+            f"time constant tau={tau_min:.3g}; the RK4 integration may be "
+            "inaccurate. Reduce sampling_time_s.")
+
+    # Noise-free current drives the circuit; measurement noise is added after.
+    current_A = generate_multisine(t, frequencies, amplitudes, phases)
+    current_half = generate_multisine(t + 0.5 * dt, frequencies, amplitudes, phases)
+    R_ct_half = r_ct(t + 0.5 * dt)
+
+    # Start from the quasi-static state, i.e. as if the circuit had already
+    # been running. Starting from v_C = 0 would add a ~5*tau startup transient
+    # that has nothing to do with the time variation under study.
+    Zp0 = _parallel_impedance(frequencies, R_ct_t[0], C)
+    v_C0 = float(np.sum(amplitudes * np.real(Zp0 * np.exp(1j * phases))))
+
+    v_C = _integrate_parallel_branch(dt, current_A, R_ct_t,
+                                     current_half, R_ct_half, C, v_C0)
+    voltage_V = R_s * current_A + v_C
+
+    Z_true = impedance(frequencies, R_s, R_ct_t, C)
+    voltage_quasistatic_V = synthesize_voltage(t, frequencies, amplitudes, phases, Z_true)
+
+    if noise_std_V &gt; 0:
+        voltage_V = voltage_V + rng.normal(0.0, noise_std_V, N)
+    if noise_std_A &gt; 0:
+        current_A = current_A + rng.normal(0.0, noise_std_A, N)
+
+    return {
+        'time_s': t,
+        'voltage_V': voltage_V,
+        'current_A': current_A,
+        'Z_true': Z_true,
+        'frequencies_Hz': frequencies,
+        'voltage_quasistatic_V': voltage_quasistatic_V,
+        'R_s': R_s,
+        'R_p': R_p,
+        'C': C,
+        'V_gate_t': V_gate_t,
+        'R_ct_t': R_ct_t,
+    }</code></pre>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div><h2 id="prescribed-legendre-expansion">Prescribed Legendre expansion<a class="headerlink" href="#prescribed-legendre-expansion" title="Permanent link">&para;</a></h2>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h3 id="deistools.simulation.models.legendre" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">legendre</span>
+
+
+<a href="#deistools.simulation.models.legendre" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents first">
+
+        <p>Legendre polynomial oracle model for non-stationary transfer function estimation.</p>
+<p>The transfer function at each excited frequency f_k is parameterised as a sum of
+Legendre polynomials in time up to order P:</p>
+<pre class="highlight"><code>H(f_k, t) = sum_{p=0}^{P} a_p(f_k) * L_p(2*t/T - 1)</code></pre>
+<p>where T is the total window length and L_p is the p-th Legendre polynomial.</p>
+<p>An additive voltage drift is modelled separately as its own Legendre expansion:</p>
+<pre class="highlight"><code>v_drift(t) = sum_{q=0}^{Q} b_q * L_q(2*t/T - 1)</code></pre>
+<p>This is exactly the signal model that BLTVA assumes, so the algorithm should
+recover the coefficients a_p and b_q exactly (up to noise). Use this model as
+an oracle test: if BLTVA fails to recover known coefficients, there is a bug.</p>
+<p>The voltage response is:</p>
+<pre class="highlight"><code>v(t) = v_drift(t) + sum_k |H(f_k,t)| * A_k * cos(2*pi*f_k*t + phi_k + angle(H(f_k,t)))</code></pre>
+
+
+<details class="specifying-coefficients" open>
+  <summary>Specifying coefficients</summary>
+  <p>impedance_coefficients : array_like, shape (n_freq, P+1), complex
+    a[k, p] is the coefficient of L_p for frequency f_k.
+    a[k, 0] sets the mean impedance at f_k over the window.
+    a[k, 1] sets a linear variation, a[k, 2] a quadratic one.</p>
+<p>drift_coefficients : array_like, shape (Q+1,), real, optional
+    b[q] is the coefficient of L_q for the additive drift.
+    Set to None for no drift (default).</p>
+</details>
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h2 id="block-oriented-nonlinear-system">Block-oriented nonlinear system<a class="headerlink" href="#block-oriented-nonlinear-system" title="Permanent link">&para;</a></h2>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h3 id="deistools.simulation.models.block_oriented" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">block_oriented</span>
+
+
+<a href="#deistools.simulation.models.block_oriented" class="headerlink" title="Permanent link">&para;</a></h3>
+
+    <div class="doc doc-contents first">
+
+        <p>Block-oriented nonlinear time-varying systems, Hallemans TIM 2021 Section II.</p>
+<p>This is the system class the BLTVA is actually derived for: parallel branches,
+each a <em>nonlinear time-invariant</em> block followed by a time-varying gain
+(Fig. 2)::</p>
+<pre class="highlight"><code>y(t) = sum_p  NL_p{u(t)} * b_p(t)</code></pre>
+<p>with each branch a Wiener-Hammerstein structure (Fig. 7)::</p>
+<pre class="highlight"><code>y_p(t) = f2_p( L^-1{ H_p(s) L{ f1_p(u(t)) } } )</code></pre>
+<p>a static nonlinearity, an LTI filter, then another static nonlinearity.
+Choosing which of the two nonlinearities is the identity gives a Hammerstein
+branch, a Wiener branch, or a purely linear one.</p>
+
+
+<details class="why-this-model-and-not-the-frozen-time-one" open>
+  <summary>Why this model and not the frozen-time one</summary>
+  <p><code>legendre.py</code> and <code>r_rc_transistor.py</code> both prescribe an impedance and
+synthesise a response from it. Neither can produce <em>nonlinear distortion</em>, so
+neither can exercise Section V, and neither has a ground truth for the best
+linear approximation beyond "the impedance we prescribed".</p>
+<p>Here the ground truth has to be computed, because the BLA of a nonlinear
+block is not its linear part. The static nonlinearities move it. The paper
+obtains it by averaging <code>Y(k)/U(k)</code> over many random phase realisations of
+the input, which is what :func:<code>best_linear_approximation</code> does. That gives a
+genuine target for <code>H_p</code> and, from the residuals, for the distortion
+variances.</p>
+</details>
+
+<details class="filtering-without-an-ode-solver" open>
+  <summary>Filtering without an ODE solver</summary>
+  <p><code>f1_p(u)</code> is a static function of a periodic multisine, so it is periodic
+with the same period, and so is the filter's steady-state response. Filtering
+in the DFT domain is therefore <em>exact</em> for the periodic steady state, needs
+no integrator, and no scipy::</p>
+<pre class="highlight"><code>Y(k) = H(j*2*pi*f_k) * X(k)</code></pre>
+<p>The one thing it omits is the startup transient, which the paper models
+separately with the <code>alpha_r</code> polynomial rather than treating as signal.
+Use <code>r_rc_transistor</code> when the transient itself is the object of study.</p>
+</details>
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="deistools.simulation.models.block_oriented.SecondOrderLowpass" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">SecondOrderLowpass</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#deistools.simulation.models.block_oriented.SecondOrderLowpass" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p><code>H(s) = dc_gain * wn**2 / (s**2 + 2*zeta*wn*s + wn**2)</code>.</p>
+<p><code>wn</code> is in <strong>rad/s</strong>. The paper quotes its natural frequencies in Hz
+("wn,0 = 0.7 Hz") while naming them <code>wn</code>, which is ambiguous; use
+:meth:<code>from_hz</code> to be explicit about which you mean.</p>
+
+
+
+
+
+
+
+              <details class="quote">
+                <summary>Source code in <code>src/deistools/simulation/models/block_oriented.py</code></summary>
+                <pre class="highlight"><code class="language-python">@dataclass
+class SecondOrderLowpass:
+    """``H(s) = dc_gain * wn**2 / (s**2 + 2*zeta*wn*s + wn**2)``.
+
+    ``wn`` is in **rad/s**. The paper quotes its natural frequencies in Hz
+    ("wn,0 = 0.7 Hz") while naming them ``wn``, which is ambiguous; use
+    :meth:`from_hz` to be explicit about which you mean.
+    """
+
+    wn: float
+    zeta: float
+    dc_gain: float = 1.0
+
+    @classmethod
+    def from_hz(cls, f_n, zeta, dc_gain=1.0):
+        return cls(2 * np.pi * f_n, zeta, dc_gain)
+
+    def response(self, f):
+        """``H(j*2*pi*f)``, conjugate-symmetric in ``f`` so the filtered
+        signal comes back real."""
+        s = 2j * np.pi * np.asarray(f, dtype=float)
+        return self.dc_gain * self.wn ** 2 / (s ** 2 + 2 * self.zeta * self.wn * s + self.wn ** 2)</code></pre>
+              </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="deistools.simulation.models.block_oriented.SecondOrderLowpass.response" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">response</span>
+
+
+<a href="#deistools.simulation.models.block_oriented.SecondOrderLowpass.response" class="headerlink" title="Permanent link">&para;</a></h5>
+<pre class="highlight"><code class="language-python doc-signature">response(f)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p><code>H(j*2*pi*f)</code>, conjugate-symmetric in <code>f</code> so the filtered
+signal comes back real.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/deistools/simulation/models/block_oriented.py</code></summary>
+              <pre class="highlight"><code class="language-python">def response(self, f):
+    """``H(j*2*pi*f)``, conjugate-symmetric in ``f`` so the filtered
+    signal comes back real."""
+    s = 2j * np.pi * np.asarray(f, dtype=float)
+    return self.dc_gain * self.wn ** 2 / (s ** 2 + 2 * self.zeta * self.wn * s + self.wn ** 2)</code></pre>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h4 id="deistools.simulation.models.block_oriented.Branch" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">Branch</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#deistools.simulation.models.block_oriented.Branch" class="headerlink" title="Permanent link">&para;</a></h4>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>One parallel branch: <code>f2( filter( f1(u) ) )</code>, scaled by <code>b_p(t)</code>.</p>
+<p><code>f1</code> and <code>f2</code> default to the identity, so a branch is linear unless
+you say otherwise. <code>name</code> is only for reporting.</p>
+
+
+
+
+
+
+
+              <details class="quote">
+                <summary>Source code in <code>src/deistools/simulation/models/block_oriented.py</code></summary>
+                <pre class="highlight"><code class="language-python">@dataclass
+class Branch:
+    """One parallel branch: ``f2( filter( f1(u) ) )``, scaled by ``b_p(t)``.
+
+    ``f1`` and ``f2`` default to the identity, so a branch is linear unless
+    you say otherwise. ``name`` is only for reporting.
+    """
+
+    filter: SecondOrderLowpass
+    f1: Callable[[np.ndarray], np.ndarray] = field(default=lambda x: x)
+    f2: Callable[[np.ndarray], np.ndarray] = field(default=lambda x: x)
+    name: str = ""
+
+    @property
+    def is_linear(self):
+        probe = np.linspace(-2.0, 2.0, 41)
+        return (np.allclose(self.f1(probe), probe)
+                and np.allclose(self.f2(probe), probe))
+
+    def apply(self, u, fs):
+        """Branch output before the time-varying gain."""
+        x = np.asarray(self.f1(np.asarray(u, dtype=float)), dtype=float)
+        f = np.fft.fftfreq(x.size, 1.0 / fs)
+        filtered = np.fft.ifft(np.fft.fft(x) * self.filter.response(f)).real
+        return np.asarray(self.f2(filtered), dtype=float)</code></pre>
+              </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="deistools.simulation.models.block_oriented.Branch.apply" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">apply</span>
+
+
+<a href="#deistools.simulation.models.block_oriented.Branch.apply" class="headerlink" title="Permanent link">&para;</a></h5>
+<pre class="highlight"><code class="language-python doc-signature">apply(u, fs)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Branch output before the time-varying gain.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/deistools/simulation/models/block_oriented.py</code></summary>
+              <pre class="highlight"><code class="language-python">def apply(self, u, fs):
+    """Branch output before the time-varying gain."""
+    x = np.asarray(self.f1(np.asarray(u, dtype=float)), dtype=float)
+    f = np.fft.fftfreq(x.size, 1.0 / fs)
+    filtered = np.fft.ifft(np.fft.fft(x) * self.filter.response(f)).real
+    return np.asarray(self.f2(filtered), dtype=float)</code></pre>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="deistools.simulation.models.block_oriented.hallemans_2021_system" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">hallemans_2021_system</span>
+
+
+<a href="#deistools.simulation.models.block_oriented.hallemans_2021_system" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">hallemans_2021_system()</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>The three branches of the simulation in Section VII, eq. (91d)-(91g).</p>
+<p><code>NL_0</code> is Wiener-Hammerstein (nonlinear either side of the filter),
+<code>NL_1</code> Hammerstein (nonlinear before), <code>NL_2</code> Wiener (nonlinear
+after). The distortion of each is weak -- the paper reports the variances
+at least 20 dB below the linear part -- which is the regime where a linear
+approximation is worth making at all.</p>
+<p>Natural frequencies are read as Hz, as printed.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/deistools/simulation/models/block_oriented.py</code></summary>
+              <pre class="highlight"><code class="language-python">def hallemans_2021_system():
+    """The three branches of the simulation in Section VII, eq. (91d)-(91g).
+
+    ``NL_0`` is Wiener-Hammerstein (nonlinear either side of the filter),
+    ``NL_1`` Hammerstein (nonlinear before), ``NL_2`` Wiener (nonlinear
+    after). The distortion of each is weak -- the paper reports the variances
+    at least 20 dB below the linear part -- which is the regime where a linear
+    approximation is worth making at all.
+
+    Natural frequencies are read as Hz, as printed.
+    """
+    return [
+        Branch(SecondOrderLowpass.from_hz(0.7, 0.15, 1.0),
+               f1=lambda x: x + 0.02 * np.tanh(x - 2),
+               f2=lambda x: x + 0.03 * np.tanh(x - 1),
+               name="NL_0 Wiener-Hammerstein"),
+        Branch(SecondOrderLowpass.from_hz(1.0, 0.10, 0.2),
+               f1=lambda x: x + 0.08 * x ** 2,
+               name="NL_1 Hammerstein"),
+        Branch(SecondOrderLowpass.from_hz(1.5, 0.15, 0.2),
+               f2=lambda x: x + 0.15 * x ** 3,
+               name="NL_2 Wiener"),
+    ]</code></pre>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="deistools.simulation.models.block_oriented.simulate_block_oriented" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">simulate_block_oriented</span>
+
+
+<a href="#deistools.simulation.models.block_oriented.simulate_block_oriented" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">simulate_block_oriented(duration_s, sampling_time_s, frequencies, amplitudes, phases, branches, trend_coefficients=None, noise_std_V=0.0, noise_std_A=0.0, seed=None)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Simulate <code>y(t) = y_trend(t) + sum_p NL_p{u(t)} b_p(t) + v(t)</code>.</p>
+<p>Mirrors eq. (90)-(91). Branch <code>p</code> is multiplied by the <code>p</code>-th Legendre
+basis function, so the branch list defines <code>Np</code> implicitly.</p>
+<p>Returns the usual <code>time_s</code>/<code>voltage_V</code>/<code>current_A</code>/<code>frequencies_Hz</code>
+plus <code>H_linear</code> -- the branch filters evaluated at the excited
+frequencies, shape <code>(n_freq, n_branches)</code>. That is the <em>linear part</em>,
+which equals the BLA only for a linear system; use
+:func:<code>best_linear_approximation</code> for the true target.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/deistools/simulation/models/block_oriented.py</code></summary>
+              <pre class="highlight"><code class="language-python">def simulate_block_oriented(duration_s, sampling_time_s, frequencies,
+                            amplitudes, phases, branches,
+                            trend_coefficients=None, noise_std_V=0.0,
+                            noise_std_A=0.0, seed=None):
+    """Simulate ``y(t) = y_trend(t) + sum_p NL_p{u(t)} b_p(t) + v(t)``.
+
+    Mirrors eq. (90)-(91). Branch ``p`` is multiplied by the ``p``-th Legendre
+    basis function, so the branch list defines ``Np`` implicitly.
+
+    Returns the usual ``time_s``/``voltage_V``/``current_A``/``frequencies_Hz``
+    plus ``H_linear`` -- the branch filters evaluated at the excited
+    frequencies, shape ``(n_freq, n_branches)``. That is the *linear part*,
+    which equals the BLA only for a linear system; use
+    :func:`best_linear_approximation` for the true target.
+    """
+    rng = np.random.default_rng(seed)
+    N = int(round(duration_s / sampling_time_s))
+    fs = 1.0 / sampling_time_s
+    t = np.arange(N) * sampling_time_s
+    frequencies = np.asarray(frequencies, dtype=float)
+
+    current_A = generate_multisine(t, frequencies, np.asarray(amplitudes),
+                                   np.asarray(phases))
+
+    b = legendre_basis(N, max(len(branches) - 1, 0))
+    voltage_V = np.zeros(N)
+    for p, branch in enumerate(branches):
+        voltage_V += branch.apply(current_A, fs) * b[:, p]
+
+    drift_V = np.zeros(N)
+    if trend_coefficients is not None:
+        q = np.asarray(trend_coefficients, dtype=float)
+        drift_V = legendre_basis(N, q.size - 1) @ q
+        voltage_V = voltage_V + drift_V
+
+    if noise_std_V &gt; 0:
+        voltage_V = voltage_V + rng.normal(0.0, noise_std_V, N)
+    if noise_std_A &gt; 0:
+        current_A = current_A + rng.normal(0.0, noise_std_A, N)
+
+    H_linear = np.stack([br.filter.response(frequencies) for br in branches],
+                        axis=1)
+    return {
+        'time_s': t,
+        'voltage_V': voltage_V,
+        'current_A': current_A,
+        'frequencies_Hz': frequencies,
+        'H_linear': H_linear,
+        'drift_V': drift_V,
+        'branches': branches,
+    }</code></pre>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="deistools.simulation.models.block_oriented.best_linear_approximation" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">best_linear_approximation</span>
+
+
+<a href="#deistools.simulation.models.block_oriented.best_linear_approximation" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">best_linear_approximation(branches, frequencies, amplitudes, sampling_time_s, duration_s, n_realisations=100, seed=None)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p>Monte Carlo BLA of each branch, as the paper computes its ground truth.</p>
+<p>For every random phase realisation of the multisine, each branch is driven
+on its own and <code>Y_p(k)/U(k)</code> taken at the excited bins; the mean over
+realisations is <code>G_p</code>. Random phases are what make this converge: the
+distortion is uncorrelated with the input and averages away, while the
+linear part does not.</p>
+<p>Returns <code>(G, scatter)</code>, each <code>(n_freq, n_branches)</code> -- the BLA and the
+standard error of its mean, so a caller can see whether
+<code>n_realisations</code> was enough.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/deistools/simulation/models/block_oriented.py</code></summary>
+              <pre class="highlight"><code class="language-python">def best_linear_approximation(branches, frequencies, amplitudes,
+                              sampling_time_s, duration_s,
+                              n_realisations=100, seed=None):
+    """Monte Carlo BLA of each branch, as the paper computes its ground truth.
+
+    For every random phase realisation of the multisine, each branch is driven
+    on its own and ``Y_p(k)/U(k)`` taken at the excited bins; the mean over
+    realisations is ``G_p``. Random phases are what make this converge: the
+    distortion is uncorrelated with the input and averages away, while the
+    linear part does not.
+
+    Returns ``(G, scatter)``, each ``(n_freq, n_branches)`` -- the BLA and the
+    standard error of its mean, so a caller can see whether
+    ``n_realisations`` was enough.
+    """
+    rng = np.random.default_rng(seed)
+    N = int(round(duration_s / sampling_time_s))
+    fs = 1.0 / sampling_time_s
+    t = np.arange(N) * sampling_time_s
+    frequencies = np.asarray(frequencies, dtype=float)
+    amplitudes = np.asarray(amplitudes, dtype=float)
+    bins = np.round(frequencies * duration_s).astype(int)
+
+    ratios = np.empty((n_realisations, frequencies.size, len(branches)),
+                      dtype=complex)
+    for r in range(n_realisations):
+        phases = rng.uniform(0, 2 * np.pi, frequencies.size)
+        u = generate_multisine(t, frequencies, amplitudes, phases)
+        U = np.fft.fft(u)[bins]
+        for p, branch in enumerate(branches):
+            ratios[r, :, p] = np.fft.fft(branch.apply(u, fs))[bins] / U
+
+    G = ratios.mean(axis=0)
+    scatter = ratios.std(axis=0, ddof=1) / np.sqrt(n_realisations)
+    return G, scatter</code></pre>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="deistools.simulation.models.block_oriented.frozen_impedance" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">frozen_impedance</span>
+
+
+<a href="#deistools.simulation.models.block_oriented.frozen_impedance" class="headerlink" title="Permanent link">&para;</a></h4>
+<pre class="highlight"><code class="language-python doc-signature">frozen_impedance(G, N)</code></pre>
+
+    <div class="doc doc-contents ">
+
+        <p><code>Z(f, t) = sum_p G_p(f) b_p(t)</code>, shape <code>(n_freq, N)</code>.</p>
+<p>The time-varying transfer function a BLTVA of this system should return.
+Identical in form to the Legendre model, which is the point: a <em>linear</em>
+block-oriented system is exactly that model with <code>a_p(f) = H_p(j2*pi*f)</code>.</p>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/deistools/simulation/models/block_oriented.py</code></summary>
+              <pre class="highlight"><code class="language-python">def frozen_impedance(G, N):
+    """``Z(f, t) = sum_p G_p(f) b_p(t)``, shape ``(n_freq, N)``.
+
+    The time-varying transfer function a BLTVA of this system should return.
+    Identical in form to the Legendre model, which is the point: a *linear*
+    block-oriented system is exactly that model with ``a_p(f) = H_p(j2*pi*f)``.
+    """
+    G = np.atleast_2d(G)
+    return G @ legendre_basis(N, G.shape[1] - 1).T</code></pre>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../processing/" class="btn btn-neutral float-left" title="deistools.processing"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../roadmap/" class="btn btn-neutral float-right" title="Roadmap">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/federicoscarpioni/DEIStools" class="fa fa-code-fork" style="color: #fcfcfc"> federicoscarpioni/DEIStools</a>
+        </span>
+    
+    
+      <span><a href="../processing/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../roadmap/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../javascripts/mathjax.js"></script>
+      <script src="https://unpkg.com/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

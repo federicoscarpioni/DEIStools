@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://federicoscarpioni.github.io/DEIStools/methods/detrending/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Detrending - DEIStools</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link href="../../assets/_mkdocstrings.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Detrending";
+        var mkdocs_page_input_path = "methods/detrending.md";
+        var mkdocs_page_url = "/DEIStools/methods/detrending/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]--> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> DEIStools
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../..#status-of-each-method">Status of each method</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../..#install">Install</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../..#a-first-estimation">A first estimation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../..#where-to-go-next">Where to go next</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../..#sources">Sources</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting started</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#install">Install</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#what-you-need-from-a-measurement">What you need from a measurement</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#check-the-record-before-you-estimate-anything">Check the record before you estimate anything</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#the-shortest-path-to-a-result">The shortest path to a result</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#a-reading-path">A reading path</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#running-the-examples">Running the examples</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#which-method-should-i-use">Which method should I use?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../getting-started/#my-cell-drifts">My cell drifts</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Concepts</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/signal-model/">The signal model</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/signal-model/#notation">Notation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/signal-model/#the-model">The model</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/signal-model/#skirts">Skirts</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/signal-model/#what-each-method-does-with-them">What each method does with them</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/when-meaningful/">When is \(Z(f,t)\) meaningful?</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/when-meaningful/#1-the-system-must-change-slowly-compared-with-its-own-dynamics">1. The system must change slowly compared with its own dynamics</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/when-meaningful/#2-the-system-must-be-close-enough-to-linear">2. The system must be close enough to linear</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/when-meaningful/#the-time-resolution-floor">The time-resolution floor</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/when-meaningful/#the-bottom-decade-is-always-the-worst">The bottom decade is always the worst</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../concepts/excitation/">Designing the excitation</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#odd-harmonics-with-gaps">Odd harmonics, with gaps</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#whole-periods">Whole periods</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#how-many-periods-p">How many periods, \(P\)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#amplitude">Amplitude</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../concepts/excitation/#choosing-the-frequency-range">Choosing the frequency range</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Methods</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../stft/">STFT</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../stft/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../stft/#the-one-parameter">The one parameter</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../stft/#limits">Limits</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../stft/#when-to-use-it">When to use it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../stft/#failure-mode">Failure mode</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../bla/">Best linear approximation per burst</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../bla/#the-one-structural-fact">The one structural fact</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bla/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bla/#the-noise-level-is-real">The noise level is real</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bla/#noise-or-the-cell-moving">Noise, or the cell moving?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bla/#what-std_noise-really-contains">What std_noise really contains</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bla/#nonlinear-distortion">Nonlinear distortion</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bla/#where-this-sits">Where this sits</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bla/#sources">Sources</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bla/#not-done-yet">Not done yet</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../dmfa/">DMFA</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../dmfa/#the-mathematics">The mathematics</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#definition">Definition</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#relation-to-stft">Relation to STFT</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#quadrature-filters">Quadrature filters</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#the-bandwidth-ceiling">The bandwidth ceiling</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#the-gabor-limit">The Gabor limit</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../dmfa/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../dmfa/#the-two-parameters">The two parameters</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#bandwidth">Bandwidth</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#sharpness">Sharpness</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../dmfa/#the-record-edges-are-unusable">The record edges are unusable</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../dmfa/#is-the-operation-safe-the-division-and-the-truncation">Is the operation safe? The division, and the truncation</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#the-division-is-safe-and-it-is-not-where-the-ringing-comes-from">The division is safe, and it is not where the ringing comes from</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#most-of-the-spectrum-is-discarded-and-that-is-the-point">Most of the spectrum is discarded, and that is the point</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#what-is-unsafe-is-the-wrap-around">What is unsafe is the wrap-around</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../dmfa/#another-way-to-apply-the-filter">Another way to apply the filter</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#zero-padding-works-and-is-the-recommended-fix">Zero-padding — works, and is the recommended fix</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#time-domain-filtering-better-at-the-edges-worse-in-the-middle">Time-domain filtering — better at the edges, worse in the middle</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#envelope-detrending-tried-and-it-does-not-work">Envelope detrending — tried, and it does not work</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#in-short">In short</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../dmfa/#trends-why-bltvas-detrending-does-not-transfer">Trends: why BLTVA's detrending does not transfer</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#what-a-trend-actually-does">What a trend actually does</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#dmfas-actual-knob-stopband-rejection-at-dc">DMFA's actual knob: stopband rejection at dc</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#the-full-ladder">The full ladder</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#when-the-dc-skirt-reaches-several-tones">When the dc skirt reaches several tones</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#why-no-filter-can-fix-this">Why no filter can fix this</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#the-fix-estimate-the-trend-and-the-envelope-together">The fix: estimate the trend and the envelope together</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../dmfa/#in-practice">In practice</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../dmfa/#inspecting-a-fit">Inspecting a fit</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../dmfa/#when-to-use-it">When to use it</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../bltva/">BLTVA</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#calling-it">Calling it</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../bltva/#what-comes-back">What comes back</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#the-parameters">The parameters</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../bltva/#n_p-the-order-of-the-expansion">\(N_p\) — the order of the expansion</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../bltva/#n_q-the-trend-order">\(N_q\) — the trend order</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../bltva/#band_halfwidth-and-why-it-is-not-independent-of-n_p">band_halfwidth — and why it is not independent of \(N_p\)</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../bltva/#n_a-leave-it-at-none">\(N_a\) — leave it at None</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#the-uncertainty-is-a-model-error-detector">The uncertainty is a model-error detector</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#pruning-it-can-say-stationary">Pruning: it can say "stationary"</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#distortion-and-sndr">Distortion and SNDR</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#inspecting-a-fit">Inspecting a fit</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../bltva/#when-not-to-use-it">When not to use it</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../lock-in/">Lock-in amplifier</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../lock-in/#the-mathematics">The mathematics</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../lock-in/#choosing-the-integrator-the-whole-method">Choosing the integrator — the whole method</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../lock-in/#two-demodulators">Two demodulators</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../lock-in/#mixing-methodmix">Mixing (method='mix')</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../lock-in/#local-least-squares-methodls">Local least squares (method='ls')</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../lock-in/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../lock-in/#edges">Edges</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../lock-in/#worked-example">Worked example</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../lock-in/#it-is-stft-evaluated-everywhere">It is STFT, evaluated everywhere</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../lock-in/#when-to-use-it">When to use it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../lock-in/#limits">Limits</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../goertzel/">Goertzel filter</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../goertzel/#the-mathematics">The mathematics</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../goertzel/#calling-it">Calling it</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../goertzel/#on-a-stream">On a stream</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../goertzel/#cost-it-is-slower-here-and-that-is-expected">Cost: it is slower here, and that is expected</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../goertzel/#accuracy">Accuracy</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../goertzel/#sources">Sources</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../goertzel/#worked-example">Worked example</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../goertzel/#when-to-use-it">When to use it</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Detrending</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#the-one-fact">The one fact</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#which-strategy-which-estimator">Which strategy, which estimator</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#detrending-for-bltva-is-not-a-preprocessing-step">Detrending for BLTVA is not a preprocessing step</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#why-the-weighting-rules-out-three-of-the-four">Why the weighting rules out three of the four</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#the-strategies">The strategies</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#differencing">Differencing</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#movingaverage">MovingAverage</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#lowpassremoval">LowPassRemoval</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#polynomialfit">PolynomialFit</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#worked-example">Worked example</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#checking-a-strategy">Checking a strategy</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#in-practice">In practice</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Implementation notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../implementation/">Implementation notes</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/#what-is-on-these-pages">What is on these pages</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/#how-to-read-a-claim-here">How to read a claim here</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/#a-general-convention">A general convention</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../implementation/bltva/">BLTVA implementation notes</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bltva/#the-rank-threshold-in-eq-53-is-ambiguous">The rank threshold in eq. (53) is ambiguous</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bltva/#the-band-solver-deliberately-does-not-equilibrate">The band solver deliberately does not equilibrate</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bltva/#the-legendre-basis-convention">The Legendre basis convention</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bltva/#eq-49-is-necessary-not-sufficient">eq. (49) is necessary, not sufficient</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bltva/#n_p-and-the-band-width-compete-for-n_a">\(N_p\) and the band width compete for \(N_a\)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bltva/#why-band_halfwidth-exists-at-all">Why band_halfwidth exists at all</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../implementation/bla/">BLA implementation notes</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/bla/#why-step-3-of-pintelon-2013-is-not-transcribed">Why step 3 of Pintelon 2013 is not transcribed</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/bla/#where-the-derivatives-come-from">Where the derivatives come from</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/bla/#two-separate-things-go-wrong-without-it">Two separate things go wrong without it</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/bla/#what-it-costs-here">What it costs here</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/bla/#the-route-that-does-work">The route that does work</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/bla/#status">Status</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../implementation/dmfa/">DMFA implementation notes</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#which-definition-is-implemented">Which definition is implemented</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#the-filter-matches-the-published-one-up-to-a-constant">The filter matches the published one up to a constant</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#the-one-sided-extraction-is-correct">The one-sided extraction is correct</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#block-extraction-is-a-controlled-approximation">Block extraction is a controlled approximation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#mirroring-must-not-be-used-with-a-random-phase-multisine">Mirroring must not be used with a random-phase multisine</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#is-the-fermi-dirac-filter-the-right-choice-no">Is the Fermi-Dirac filter the right choice? No.</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#what-the-filter-actually-does-to-the-result">What the filter actually does to the result</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#the-measurement">The measurement</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#what-n-actually-controls">What n actually controls</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#what-this-package-does-about-it">What this package does about it</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#dmfa-as-linear-algebra-it-is-bltva-in-a-different-basis">DMFA as linear algebra: it is BLTVA in a different basis</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#the-implicit-model">The implicit model</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#fitting-it-gives-exactly-dmfa">Fitting it gives exactly DMFA</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#a-smooth-filter-is-ridge-regularisation">A smooth filter is ridge regularisation</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#three-things-this-explains">Three things this explains</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#variance-propagation-or-measured-in-band">Variance: propagation, or measured in-band?</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#the-bltva-route-is-available-and-is-better">The BLTVA route is available and is better</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="../../implementation/dmfa/#do-not-treat-successive-instants-as-independent">Do not treat successive instants as independent</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#the-record-edges-are-a-property-of-the-method">The record edges are a property of the method</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#the-filter-belongs-on-the-bands-local-axis">The filter belongs on the band's local axis</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../implementation/dmfa/#display-fixes-in-visualize_dmfa_filtering">Display fixes in visualize_dmfa_filtering</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">API reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../api/processing/">deistools.processing</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#bltva">BLTVA</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.bltva">bltva</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#dmfa">DMFA</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.dmfa_functions">dmfa_functions</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#stft">STFT</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.stft_functions">stft_functions</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#lock-in-amplifier">Lock-in amplifier</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.lock_in_amp">lock_in_amp</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#goertzel-filter">Goertzel filter</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.goertzel">goertzel</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#passband-filters">Passband filters</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.passband_filters">passband_filters</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#best-linear-approximation-per-burst">Best linear approximation per burst</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.bla">bla</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#detrending">Detrending</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.detrending">detrending</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#record-consistency-check">Record consistency check</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.consistency">consistency</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/processing/#multi-frequency-analysis">Multi-frequency analysis</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/processing/#deistools.processing.mfa">mfa</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../api/simulation/">deistools.simulation</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/simulation/#engine">Engine</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/simulation/#deistools.simulation.engine">engine</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/simulation/#stationary-r-rc">Stationary R + (R‖C)</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/simulation/#deistools.simulation.models.r_rc">r_rc</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/simulation/#transistor-gated-r-r_cttc">Transistor-gated R + (R_ct(t)‖C)</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/simulation/#deistools.simulation.models.r_rc_transistor">r_rc_transistor</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/simulation/#prescribed-legendre-expansion">Prescribed Legendre expansion</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/simulation/#deistools.simulation.models.legendre">legendre</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../api/simulation/#block-oriented-nonlinear-system">Block-oriented nonlinear system</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="../../api/simulation/#deistools.simulation.models.block_oriented">block_oriented</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../roadmap/">Roadmap</a>
+    <ul>
+    <li class="toctree-l2"><a class="reference internal" href="../../roadmap/#done">Done</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../roadmap/#planned">Planned</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../roadmap/#known-gaps">Known gaps</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="../../roadmap/#how-a-new-estimator-should-arrive">How a new estimator should arrive</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">DEIStools</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Methods</li>
+      <li class="breadcrumb-item active">Detrending</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/federicoscarpioni/DEIStools/edit/main/docs/methods/detrending.md">Edit on federicoscarpioni/DEIStools</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="detrending">Detrending<a class="headerlink" href="#detrending" title="Permanent link">&para;</a></h1>
+<p>A measured cell drifts. Its open-circuit voltage wanders, its temperature
+moves, a reference electrode ages — and the resulting slow excursion can be
+tens of volts peak-to-peak on a signal of one volt. That drift is not what the
+measurement is for, so the instinct is to filter it out first and estimate
+afterwards.</p>
+<p>The instinct is wrong, and this page is mostly about why. Four strategies are
+implemented. <strong>Each one is useless or harmful with three of the four
+estimators</strong>, and the pattern is not arbitrary: it falls out of one fact about
+what a filter can do.</p>
+<h2 id="the-one-fact">The one fact<a class="headerlink" href="#the-one-fact" title="Permanent link">&para;</a></h2>
+<p>A filter applied by convolution is <strong>diagonal in frequency</strong>. It multiplies
+bin <span class="arithmatex">\(k\)</span> by <span class="arithmatex">\(F(k)\)</span> and does nothing else. So if a trend and the signal both
+have content at bin <span class="arithmatex">\(k\)</span>, they are scaled by the same number:</p>
+<div class="arithmatex">\[
+\frac{|T(k)|}{|S(k)|} \quad\text{is unchanged, for every } k
+\text{ and every diagonal filter}
+\]</div>
+<p>Measured here as <em>bit-identical</em> before and after, for both a boxcar and a
+Butterworth. A filter cannot separate a trend from the signal where the two
+overlap, because at a single bin there is nothing to separate them with. It
+can only reject a disturbance that lives somewhere <strong>else</strong> in frequency.</p>
+<p>Whether a trend overlaps is not a matter of taste. A trend that takes the
+whole record to unfold has its energy in the lowest few bins — exactly where
+the slowest excited tones sit. For a typical multisine, the lowest three to
+five tones are inside the drift's skirt. For those tones, no filter helps.</p>
+<div class="admonition warning">
+<p class="admonition-title">A projection is not gentler than a filter</p>
+<p>It is tempting to think a polynomial fit leaves the excited bins alone,
+because a polynomial is "slow" and the tones are not. It does not. A
+degree-<span class="arithmatex">\(q\)</span> Legendre polynomial on a finite record is <strong>not band-limited</strong>:
+its spectrum reaches every bin, decaying only as a power law. So the
+projection removes signal at the excited bins, and measurably more than a
+filter does.</p>
+<p>Measured on the <strong>stationary</strong> cell of example 00, whose impedance does
+not move, so every change at an excited bin is signal destroyed:</p>
+<table>
+<thead>
+<tr>
+<th>strategy</th>
+<th>lowest tone</th>
+<th>top tone</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MovingAverage(20001)</code></td>
+<td>5.0e-05</td>
+<td>5.0e-05</td>
+</tr>
+<tr>
+<td><code>LowPassRemoval(2, 2)</code></td>
+<td>1.9e-03</td>
+<td>2.4e-13</td>
+</tr>
+<tr>
+<td><code>PolynomialFit(1)</code></td>
+<td>6.5e-03</td>
+<td>5.3e-05</td>
+</tr>
+<tr>
+<td><code>PolynomialFit(3)</code></td>
+<td>2.1e-02</td>
+<td>1.8e-04</td>
+</tr>
+<tr>
+<td><code>PolynomialFit(8)</code></td>
+<td>8.8e-02</td>
+<td>5.0e-04</td>
+</tr>
+<tr>
+<td><code>PolynomialFit(12)</code></td>
+<td>1.4e-01</td>
+<td>2.7e-04</td>
+</tr>
+</tbody>
+</table>
+<p><em>(example 09)</em></p>
+<p>The damage falls off as <span class="arithmatex">\(1/h\)</span> with harmonic number — 6.5e-03, 2.2e-03,
+1.3e-03, 7.3e-04 at <span class="arithmatex">\(h = 1, 3, 5, 9\)</span>, whose product with <span class="arithmatex">\(h\)</span> is constant
+to two figures — which is the spectrum of a ramp. So it is worst at the
+lowest tones: exactly the ones the detrending was for.</p>
+</div>
+<p>Two things <em>can</em> work:</p>
+<ul>
+<li><strong>Annihilate the trend in the time domain.</strong> <span class="arithmatex">\(\Delta^d\)</span> applied to a
+  polynomial of degree <span class="arithmatex">\(d-1\)</span> gives exactly zero, pointwise. No multiplication
+  in frequency can do that, and differencing achieves it by not being
+  diagonal — the zero-padded history is what buys the extra power.</li>
+<li><strong>Model the trend and fit it jointly.</strong> Put trend regressors in the design
+  matrix alongside the signal model and let least squares apportion the shared
+  bins. This is what BLTVA's <span class="arithmatex">\(N_q\)</span> block does.</li>
+</ul>
+<p>Everything below is a consequence.</p>
+<h2 id="which-strategy-which-estimator">Which strategy, which estimator<a class="headerlink" href="#which-strategy-which-estimator" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>strategy</th>
+<th>BLTVA</th>
+<th>DMFA / STFT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#differencing"><code>Differencing</code></a></td>
+<td>the only one that works — though plain <span class="arithmatex">\(N_q\)</span> usually beats it</td>
+<td><strong>destroys the signal</strong> (error 1.00)</td>
+</tr>
+<tr>
+<td><a href="#movingaverage"><code>MovingAverage</code></a></td>
+<td>refused</td>
+<td>at best 1.7×, and not consistently</td>
+</tr>
+<tr>
+<td><a href="#lowpassremoval"><code>LowPassRemoval</code></a></td>
+<td>refused</td>
+<td>no help on an overlapping trend</td>
+</tr>
+<tr>
+<td><a href="#polynomialfit"><code>PolynomialFit</code></a></td>
+<td>refused — use <span class="arithmatex">\(N_q\)</span></td>
+<td><strong>the only one that reliably helps</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The two columns are exact complements, and one question decides both: <em>can the
+estimator undo an attenuation?</em></p>
+<p>BLTVA can. Its cost function is weighted by <span class="arithmatex">\(W = (FF^H)^{-1}\)</span>, so whatever the
+filter took out is divided back in. That is what lets differencing trade away
+the entire low-frequency band and still get the answer. DMFA and STFT have no
+such step, so for them whatever a filter removes is simply gone — and
+differencing, which removes almost everything near DC, is catastrophic rather
+than free.</p>
+<div class="admonition danger">
+<p class="admonition-title">Never pass <code>Differencing</code> to DMFA or STFT</p>
+<p><code>Differencing(1)</code> attenuates the lowest excited bin of a 160 000-sample
+record to <span class="arithmatex">\(|F| = 3\times10^{-4}\)</span>. The measured DMFA error at that tone is
+<strong>1.00</strong> — the tone is gone. In BLTVA the same attenuation costs nothing.
+This is the most dangerous thing in the module, and the reason
+<code>frequency_response</code> is a mandatory part of the protocol: it is the only
+way to see the <span class="arithmatex">\(3\times10^{-4}\)</span> coming.</p>
+</div>
+<h2 id="detrending-for-bltva-is-not-a-preprocessing-step">Detrending for BLTVA is not a preprocessing step<a class="headerlink" href="#detrending-for-bltva-is-not-a-preprocessing-step" title="Permanent link">&para;</a></h2>
+<p>Removing a trend before a BLTVA fit changes <strong>four</strong> things at once (2022
+paper, eq. 18–27):</p>
+<ol>
+<li>every skirt regressor is multiplied by <span class="arithmatex">\(F(k)\)</span> — eq. (21)</li>
+<li>the cost function is weighted by <span class="arithmatex">\(W = (FF^H)^{-1}\)</span> — eq. (26)</li>
+<li>the filter's boundary effects add their own regressors — eq. (21)</li>
+<li>the transient order <span class="arithmatex">\(N_a\)</span> shrinks by the filter order — eq. (22)</li>
+</ol>
+<p>So a strategy is not "a function returning a cleaned signal". It is the bundle
+of those four things, which is what the <code>Detrending</code> protocol encodes. A
+strategy that cannot report its <code>frequency_response</code> cannot be used, because
+step 2 would be impossible.</p>
+<h3 id="why-the-weighting-rules-out-three-of-the-four">Why the weighting rules out three of the four<a class="headerlink" href="#why-the-weighting-rules-out-three-of-the-four" title="Permanent link">&para;</a></h3>
+<p>Step 2 is also what disqualifies them. For a real, zero-phase response
+<span class="arithmatex">\(F/|F| = 1\)</span>, so the weighted system is <strong>identical</strong> to the one built from the
+raw record — verified to <span class="arithmatex">\(5.6\times10^{-17}\)</span> on the skirt regressors. Nothing
+about the trend was removed. What <em>did</em> change is that the trend block of
+eq. (58) is gone, replaced by nothing.</p>
+<p>Measured on the 2022 paper's own trend, with <span class="arithmatex">\(F(k) = 1\)</span> exactly — a filter
+that does nothing at all, which the protocol happily accepts:</p>
+<table>
+<thead>
+<tr>
+<th>configuration</th>
+<th>error at the lowest tone</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>no trend, <span class="arithmatex">\(N_q = 5\)</span></td>
+<td>2.2e-04</td>
+</tr>
+<tr>
+<td>trend, <span class="arithmatex">\(N_q = 5\)</span>, no detrending</td>
+<td>1.6e-02</td>
+</tr>
+<tr>
+<td>trend, <span class="arithmatex">\(F(k) = 1\)</span> "detrending"</td>
+<td><strong>2.6e+00</strong></td>
+</tr>
+</tbody>
+</table>
+<p>A moving average scores well in the same test (1.8e-04), which looks like a
+refutation until the averaging length is varied:</p>
+<table>
+<thead>
+<tr>
+<th>length</th>
+<th>error at the lowest tone</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>101</td>
+<td>1.83e-04</td>
+</tr>
+<tr>
+<td>401</td>
+<td>1.82e-04</td>
+</tr>
+<tr>
+<td>1601</td>
+<td>1.68e-04</td>
+</tr>
+</tbody>
+</table>
+<p>An answer that does not depend on the averaging length is not coming from the
+averaging. It comes from the <span class="arithmatex">\(1/|F(k)|\)</span> weighting applied to the <em>transient</em>
+block, which eq. (21) does not multiply by <span class="arithmatex">\(F\)</span>: since <span class="arithmatex">\(F \sim k^2\)</span> near DC for
+any boxcar, the weighting hands the transient polynomial a <span class="arithmatex">\(k^{-2}\)</span> envelope,
+and that reshaped basis happens to absorb the trend skirt. The trend removal is
+an accident of the reparametrisation — and a Butterworth low-pass, same
+protocol but a different <span class="arithmatex">\(1/|F|\)</span> shape, scores 2.6e-02, <em>worse</em> than no
+detrending at all.</p>
+<p>So BLTVA refuses them, with an error naming the alternative.</p>
+<h2 id="the-strategies">The strategies<a class="headerlink" href="#the-strategies" title="Permanent link">&para;</a></h2>
+<h3 id="differencing"><code>Differencing</code><a class="headerlink" href="#differencing" title="Permanent link">&para;</a></h3>
+<div class="arithmatex">\[
+y_d(n) = \Delta^d \tilde y(n), \qquad \tilde y(n) = 0 \text{ for } n &lt; 0
+\]</div>
+<p>High-pass, eq. (12b): <span class="arithmatex">\(F_d(k) = (1 - z_k^{-1})^d\)</span> with
+<span class="arithmatex">\(z_k = e^{j2\pi k/N}\)</span>.</p>
+<p>The published strategy, and the only one BLTVA accepts. It suppresses a smooth
+trend <em>without modelling it</em>, which is the point of the 2022 paper: a trend
+that no finite polynomial captures cannot be removed parametrically, and
+trying inflates the variance of the low-frequency estimates.</p>
+<p>Two properties make it work where the others fail. It annihilates a
+degree-<span class="arithmatex">\((d-1)\)</span> polynomial identically in the time domain, which no diagonal
+filter can. And its <span class="arithmatex">\(F\)</span> is complex, so <span class="arithmatex">\(F/|F|\)</span> is a phase ramp the magnitude
+weighting does not cancel.</p>
+<p>The price is the boundary term — the zero-padded history leaves a polynomial
+of degree <span class="arithmatex">\(d-1\)</span> in <span class="arithmatex">\(z_k^{-1}\)</span> (Theorem 2), which becomes the extra regressors
+of step 3. <code>select_differencing_order</code> picks <span class="arithmatex">\(d\)</span> by eq. (11), with a documented
+caveat: the criterion assumes "trend plus random series", and a strongly
+low-pass response breaks that, so it can recommend differencing a record with
+no trend at all. Treat it as a starting point.</p>
+<h4 id="what-it-buys-is-columns-not-accuracy">What it buys is columns, not accuracy<a class="headerlink" href="#what-it-buys-is-columns-not-accuracy" title="Permanent link">&para;</a></h4>
+<p>The strategy to beat is <strong>no detrending at all, with a generous <span class="arithmatex">\(N_q\)</span></strong> — and
+on accuracy differencing usually loses to it, including on the non-polynomial
+trend the 2022 paper chose precisely to motivate differencing:</p>
+<table>
+<thead>
+<tr>
+<th><span class="arithmatex">\(N_p\)</span></th>
+<th><span class="arithmatex">\(N_q\)</span> cap from eq. (49)</th>
+<th>best <span class="arithmatex">\(N_q\)</span></th>
+<th><code>Differencing(1)</code></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td>17</td>
+<td><strong>1.4e-04</strong> (<span class="arithmatex">\(N_q=7\)</span>)</td>
+<td>8.2e-03</td>
+<td><span class="arithmatex">\(N_q\)</span> wins 60×</td>
+</tr>
+<tr>
+<td>4</td>
+<td>13</td>
+<td><strong>2.2e-04</strong> (<span class="arithmatex">\(N_q=11\)</span>)</td>
+<td>5.5e-04</td>
+<td><span class="arithmatex">\(N_q\)</span> wins 2.5×</td>
+</tr>
+<tr>
+<td>6</td>
+<td>9</td>
+<td><strong>1.2e-04</strong> (<span class="arithmatex">\(N_q=8\)</span>)</td>
+<td>7.1e-02</td>
+<td><span class="arithmatex">\(N_q\)</span> wins 588×</td>
+</tr>
+<tr>
+<td>8</td>
+<td>5</td>
+<td>1.9e+00 (<span class="arithmatex">\(N_q=4\)</span>)</td>
+<td><strong>4.6e-02</strong></td>
+<td>differencing wins 42×</td>
+</tr>
+</tbody>
+</table>
+<p><em>(relative error at the lowest excited tone; the paper's trend, 92 V p-p)</em></p>
+<p>The paper's own comparison is the <span class="arithmatex">\(N_q = 2\)</span> column of this picture: at that
+order parametric removal does fail, by 1.35 against differencing's 7.8e-03.
+Raise <span class="arithmatex">\(N_q\)</span> and the conclusion reverses, because a joint fit does not distort
+and a larger basis simply models the trend better.</p>
+<p>What flips the table at <span class="arithmatex">\(N_p = 8\)</span> is eq. (49),
+<span class="arithmatex">\(N_q + 3N_p + N_a + 1 &lt; 2P - 1\)</span>. A high <span class="arithmatex">\(N_p\)</span> — fine time resolution — eats
+the budget, capping <span class="arithmatex">\(N_q\)</span> at 5, and at that order the trend is unmodellable:
+<span class="arithmatex">\(N_q = 4\)</span> gives 1.9e+00, <span class="arithmatex">\(N_q = 3\)</span> gives 5.4e+00. Differencing replaces the
+whole <span class="arithmatex">\(N_q\)</span> block with <span class="arithmatex">\(d-1\)</span> boundary columns — 15 columns per band instead of
+20, for <span class="arithmatex">\(N_p=2, N_q=5, N_a=8\)</span> — and those freed columns are the entire point.
+The <span class="arithmatex">\(N_p = 8\)</span> configuration is not otherwise broken: on a trend-free record it
+reaches 2.0e-04.</p>
+<p><strong>So: reach for a generous <span class="arithmatex">\(N_q\)</span> first. Use differencing when eq. (49) will
+not let you afford the trend order you need, which in practice means when you
+want fine time resolution.</strong></p>
+<h3 id="movingaverage"><code>MovingAverage</code><a class="headerlink" href="#movingaverage" title="Permanent link">&para;</a></h3>
+<p>Subtract a centred boxcar average of <span class="arithmatex">\(L\)</span> samples. The response is one minus
+the Dirichlet kernel:</p>
+<div class="arithmatex">\[
+F(k) = 1 - \frac{\sin(\pi k L/N)}{L \sin(\pi k /N)}
+\]</div>
+<p><span class="arithmatex">\(L\)</span> must be odd, so the window has a true centre and <span class="arithmatex">\(F\)</span> carries no phase.</p>
+<p><strong>A boxcar is a poor filter and this is where it shows.</strong> <span class="arithmatex">\(F\)</span> has sidelobes,
+overshoots above 1, and is not monotone — so checking <span class="arithmatex">\(|F|\)</span> <em>at</em> a tone is
+worthless. <code>MovingAverage(20001)</code> on a 160 000-sample record has
+<span class="arithmatex">\(|F| = 1.00005\)</span> at bin 8 and swings from <strong>0.363 to 1.214</strong> over the <span class="arithmatex">\(\pm 4\)</span>
+bins either side, a 3.3× ripple. That band is exactly what DMFA reconstructs
+the time variation from, so the ripple is an uncorrected envelope distortion.
+Use <code>band_response</code> and judge by <code>ripple</code>, never by the centre value.</p>
+<p>Measured on DMFA at the lowest tone, against a clean baseline of 4.1e-03:</p>
+<table>
+<thead>
+<tr>
+<th>record</th>
+<th>no filter</th>
+<th>with it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>no trend</td>
+<td>4.1e-03</td>
+<td><strong>1.9e-02</strong></td>
+</tr>
+<tr>
+<td>trended, <span class="arithmatex">\(L = 20001\)</span></td>
+<td>8.7e-02</td>
+<td>5.0e-02</td>
+</tr>
+<tr>
+<td>trended, <span class="arithmatex">\(L = 40001\)</span></td>
+<td>8.7e-02</td>
+<td>9.7e-02</td>
+</tr>
+</tbody>
+</table>
+<p>Those three rows have to be read together. <span class="arithmatex">\(L = 20001\)</span> <em>does</em> improve the
+trended record, by 1.7× — per-bin invariance does not forbid that, because a
+filter can still reweight which bins dominate a band fit even though it cannot
+change the ratio within any one of them. But <span class="arithmatex">\(L = 40001\)</span> makes it worse, so
+the direction is not consistent across settings, and the win is paid for by
+raising the trend-free floor 4.5×. Nothing is gained here that <code>PolynomialFit</code>
+does not gain better, and more predictably, on the same record.</p>
+<p>Present for completeness; <code>LowPassRemoval</code> is strictly the better shape.</p>
+<h3 id="lowpassremoval"><code>LowPassRemoval</code><a class="headerlink" href="#lowpassremoval" title="Permanent link">&para;</a></h3>
+<p>Subtract the low-pass content, with a Butterworth magnitude:</p>
+<div class="arithmatex">\[
+F(k) = \frac{r^n}{\sqrt{1 + r^{2n}}}, \qquad r = |f_k| / f_c
+\]</div>
+<p>Defined <em>by</em> this magnitude and applied as such, so it is zero-phase and has
+no startup transient — unlike the same Butterworth run as a time-domain
+recursion, which would have both and would then need boundary regressors it
+cannot afford.</p>
+<p>The cutoff is in <strong>cycles per record</strong>, which is the DFT bin index: bin <span class="arithmatex">\(k\)</span> is
+<span class="arithmatex">\(k/T\)</span> Hz. That keeps the strategy independent of the sampling rate, and it is
+the only unit <code>frequency_response(k, N)</code> can resolve. A cutoff of 3 means
+"treat anything slower than three cycles over the whole record as trend".</p>
+<p>Unlike the boxcar it is monotone and never exceeds 1, so a cutoff a few times
+below the slowest tone gives a genuinely flat band: at <code>cutoff = 2</code> over
+<span class="arithmatex">\(\pm 4\)</span> bins around bin 8, ripple 1.03× and a DMFA error of 5.8e-03 on a
+trend-free record against the 4.1e-03 baseline.</p>
+<p>It still does not remove a trend that <em>overlaps</em> the tones — 8.7e-02 before,
+8.8e-02 after at <code>cutoff = 2</code>, and 1.2e-01 at <code>cutoff = 4, order = 6</code>. What it
+does well is remove a trend genuinely slower than everything excited, which is
+the case the cutoff describes. Whether your trend is that case is an empirical
+question; <code>band_response</code> answers it.</p>
+<h3 id="polynomialfit"><code>PolynomialFit</code><a class="headerlink" href="#polynomialfit" title="Permanent link">&para;</a></h3>
+<div class="arithmatex">\[
+y_d = \left(I - b (b^Tb)^{-1} b^T\right) y
+\]</div>
+<p>with <span class="arithmatex">\(b\)</span> the Legendre basis on the record — the same basis BLTVA uses for its
+trend block. Legendre rather than monomial because the monomial Vandermonde is
+hopeless beyond degree ~15.</p>
+<p>This is the one strategy with <strong>no frequency response at all</strong>, and not for
+want of deriving it. Subtracting a least-squares fit is an orthogonal
+projection: a rank-<span class="arithmatex">\((q+1)\)</span> operator whose frequency-domain kernel is
+<span class="arithmatex">\(\sum_q B_q(k) B_q(k')^*\)</span>, dense in <span class="arithmatex">\((k,k')\)</span>. It mixes bins, so no <span class="arithmatex">\(F(k)\)</span>
+exists, step 2 cannot be carried out, and <code>frequency_response</code> raises.</p>
+<p>Being non-diagonal is also exactly what makes it the <strong>only</strong> strategy that
+helps DMFA or STFT. On a trended record it takes the lowest tone from 8.7e-02
+to <strong>7.9e-03</strong>, where both diagonal filters leave it at 8.8e-02 or worse.</p>
+<p>The price is paid silently, and it is the thing to understand before using it.
+Applying the same subtraction to a record with <strong>no trend</strong> — so that
+everything removed is signal — gives, at the lowest tone against a clean error
+of 4.1e-03:</p>
+<table>
+<thead>
+<tr>
+<th>degree</th>
+<th>DMFA error at the lowest tone</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>4.9e-03</td>
+</tr>
+<tr>
+<td>3</td>
+<td>7.9e-03</td>
+</tr>
+<tr>
+<td>8</td>
+<td>4.0e-02</td>
+</tr>
+<tr>
+<td>12</td>
+<td>6.2e-02</td>
+</tr>
+</tbody>
+</table>
+<p>The distortion grows with the degree and <strong>there is nothing to correct it
+with</strong>. That is both why the 2022 paper reaches for differencing and why BLTVA
+fits this basis instead of subtracting it. Keep the degree as low as the trend
+allows, and read the result as a trade rather than a cleanup.</p>
+<div class="admonition tip">
+<p class="admonition-title">Inside BLTVA, use <code>Nq</code> instead</p>
+<p>The <span class="arithmatex">\(N_q\)</span> drift block of eq. (58) is this same Legendre basis, <em>fitted
+jointly with the impedance rather than subtracted first</em>. The trend is
+then separated from the signal using the whole band of data, and the
+distortion above does not arise at all. <code>PolynomialFit</code> exists for the
+estimators that have no such block, and for measuring what its absence
+costs.</p>
+</div>
+<h2 id="worked-example">Worked example<a class="headerlink" href="#worked-example" title="Permanent link">&para;</a></h2>
+<p><a href="https://github.com/federicoscarpioni/DEIStools/blob/main/examples/09_detrending.py"><code>examples/09_detrending.py</code></a>
+runs all four strategies on one drifting record and plots what the user
+usually wants to see first: the original and detrended signals, and the
+effect on the DFT spectrum. It also reproduces the three tables on this page
+— the trend-to-signal ratio per bin, the damage to the excited bins, and the
+DMFA error before and after — and shows BLTVA accepting exactly one of the
+four.</p>
+<p>The record there has 8 periods rather than the 20 used elsewhere, which puts
+the lowest tone at bin 8 instead of bin 20 and so much closer to the drift's
+skirt. That is the situation detrending exists for, and it is where the
+numbers on this page come from.</p>
+<h2 id="checking-a-strategy">Checking a strategy<a class="headerlink" href="#checking-a-strategy" title="Permanent link">&para;</a></h2>
+<p><code>check_response</code> verifies step 1 of the protocol — that <code>apply</code> is what
+<code>frequency_response</code> claims:</p>
+<div class="arithmatex">\[
+\mathrm{DFT}(\texttt{apply}(y)) = F(k)\,\mathrm{DFT}(y) + \big(\text{something
+in the span of } \texttt{extra\_regressors}\big)
+\]</div>
+<p>It returns the part of the residual the boundary regressors cannot absorb. All
+four implemented strategies return <span class="arithmatex">\(\sim 10^{-15}\)</span>:</p>
+<table>
+<thead>
+<tr>
+<th>strategy</th>
+<th>residual</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Differencing(1)</code></td>
+<td>2.9e-15</td>
+</tr>
+<tr>
+<td><code>Differencing(4)</code></td>
+<td>9.6e-16</td>
+</tr>
+<tr>
+<td><code>MovingAverage(401)</code></td>
+<td>6.8e-13</td>
+</tr>
+<tr>
+<td><code>LowPassRemoval(3, 2)</code></td>
+<td>4.2e-16</td>
+</tr>
+</tbody>
+</table>
+<p>Anything larger means the strategy is reporting a response that does not
+describe what it did, and an estimator built on it is biased with no warning.
+A constant column joins the projection, because the estimator has one:
+eq. (21) omits the <span class="arithmatex">\(m=0\)</span> boundary term on the grounds that the transient
+polynomial already spans a constant.</p>
+<p>This is the test that decides which category a new strategy falls into, and it
+is worth running on anything added later.</p>
+<h2 id="in-practice">In practice<a class="headerlink" href="#in-practice" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>A polynomial trend, with BLTVA.</strong> Use <code>Nq</code>. Nothing else, no detrending.</li>
+<li><strong>A trend no polynomial captures, with BLTVA.</strong> Still try <span class="arithmatex">\(N_q\)</span> first, as
+  generously as eq. (49) allows — it beat <code>Differencing(1)</code> by 60× on the
+  2022 paper's own trend. Reach for <code>Differencing(d)</code> when <span class="arithmatex">\(N_p\)</span> has eaten the
+  budget and the <span class="arithmatex">\(N_q\)</span> cap is below what the trend needs, with <span class="arithmatex">\(d\)</span> from
+  <code>select_differencing_order</code> as a starting point, checked against the
+  spectrum. See <a href="#what-it-buys-is-columns-not-accuracy">what it buys</a>.</li>
+<li><strong>Any trend, with DMFA or STFT.</strong> <code>PolynomialFit</code> at the lowest degree that
+  works, accepting the distortion in the table above — or, for the tones the
+  drift actually overlaps, use BLTVA instead. The
+  <a href="../dmfa/#trends-why-bltvas-detrending-does-not-transfer">DMFA page</a> has the
+  measurements and the joint-solve alternative.</li>
+<li><strong>To study what naive detrending costs</strong>, apply the strategy yourself and
+  call <code>bltva</code> with <code>detrend=None</code>. That is the honest way to reproduce what a
+  user who filters first would get, and it needs no escape hatch.</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../goertzel/" class="btn btn-neutral float-left" title="Goertzel filter"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../implementation/" class="btn btn-neutral float-right" title="Implementation notes">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/federicoscarpioni/DEIStools" class="fa fa-code-fork" style="color: #fcfcfc"> federicoscarpioni/DEIStools</a>
+        </span>
+    
+    
+      <span><a href="../goertzel/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../implementation/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../javascripts/mathjax.js"></script>
+      <script src="https://unpkg.com/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
