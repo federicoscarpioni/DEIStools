@@ -63,7 +63,18 @@ sigma = result.std_H_p                               # and an uncertainty
 ```
 
 The record must hold a **whole number of multisine periods** — a fractional
-period leaks, and the leakage is indistinguishable from time variation.
+period leaks, and the leakage is indistinguishable from time variation. Run
+the check below first; it is the cheapest way to find out that it does not:
+
+```python
+from deistools.processing.consistency import check_consistency, visualize_consistency
+
+report = check_consistency(voltage, current, frequencies, 1 / fs,
+                           period=Tp, n_periods=P)
+print(report)                      # the numbers, and the verdict
+if not report.ok:
+    visualize_consistency(report)  # six panels of evidence
+```
 
 ## Subpackages
 
@@ -91,6 +102,11 @@ Signal processing and impedance estimation.
   `PolynomialFit`, with `check_response` to verify a strategy against the
   protocol. Only differencing may be used as a BLTVA weighting factor; the
   module documents why.
+- **`consistency`** — `check_consistency`, which asks whether a record agrees
+  with the metadata describing it: `N = P * Tp * fs`, every tone on a DFT bin,
+  every tone actually present, nothing present that is not listed. When they
+  disagree it measures the tone positions to say *which* of the four is wrong,
+  and `visualize_consistency` shows the evidence.
 - **`mfa`** — `MultiFrequencyAnalysis`, a class wrapping the above for
   interactive use.
 

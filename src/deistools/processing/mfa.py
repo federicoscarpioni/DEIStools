@@ -11,6 +11,9 @@ from deistools.processing.bltva import (
     bltva, visualize_bltva_fit, estimate_noise_variance,
     select_na, check_identifiability,
 )
+from deistools.processing.consistency import (
+    check_consistency, visualize_consistency,
+)
 from deistools.processing.goertzel import goertzel_eis, cost_ratio
 from deistools.processing.bla import bla_eis
 from deistools.processing.lock_in_amp import (
@@ -34,6 +37,49 @@ class MultiFrequencyAnalysis:
         self.ft_voltage = fftshift(fft(self.voltage)) / self.voltage.size
         self.ft_current = fftshift(fft(self.current)) / self.current.size
     
+    def check_consistency(self, period=None, n_periods=None, plot=True,
+                          **kwargs):
+        """Check the record against the metadata, before estimating anything.
+
+        The first thing to run on a new dataset, and the thing to run when an
+        estimate comes back looking like a cell that cannot exist. It answers
+        one question -- do ``N``, ``P``, ``T_p`` and ``f_s`` agree with each
+        other and with the signals? -- and when they do not, it says which of
+        them the signals disagree with. See
+        :mod:`deistools.processing.consistency` for how.
+
+        Parameters
+        ----------
+        period : float, optional
+            The multisine period in seconds: the ``period`` of
+            :meth:`run_stft_eis` and the ``P`` of :meth:`run_bltva`. Pass it.
+            Without it the fundamental is inferred from ``self.frequencies``,
+            which can only show that the tone list is self-consistent.
+        n_periods : int, optional
+            How many periods you believe the record holds.
+        plot : bool
+            Draw :func:`~deistools.processing.consistency.visualize_consistency`.
+
+        Returns
+        -------
+        :class:`~deistools.processing.consistency.ConsistencyReport`
+            ``print`` it for the numbers, ``.ok`` for one boolean,
+            ``.findings`` for the verdicts.
+
+        Notes
+        -----
+        Deliberately independent of the rest of the object: it builds its own
+        spectra and takes the period as an argument, so it works on a freshly
+        constructed instance and before :meth:`compute_freq_indexes`, which is
+        itself one of the things that raises when the metadata is wrong.
+        """
+        report = check_consistency(
+            self.voltage, self.current, self.frequencies, self.sampling_time,
+            period=period, n_periods=n_periods, **kwargs)
+        if plot:
+            visualize_consistency(report)
+        return report
+
     def run_fft_eis(self):
         return self.ft_voltage[self.freq_indexes] / self.ft_current[self.freq_indexes]
     

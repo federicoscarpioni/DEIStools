@@ -34,6 +34,10 @@ Signal processing and impedance estimation.
 
 ::: deistools.processing.detrending
 
+## Record consistency check
+
+::: deistools.processing.consistency
+
 ## Multi-frequency analysis
 
 ::: deistools.processing.mfa

@@ -27,6 +27,32 @@ trying to measure. `bltva` refuses a record that is not an integer number of
 periods rather than returning something plausible and wrong; STFT and DMFA
 will not complain, so trim the record yourself before using them.
 
+## Check the record before you estimate anything
+
+`N`, the number of periods `P`, the period `Tp` and the rate `fs` are tied
+together by `N = P * Tp * fs`. When one of them is wrong the estimators do not
+stop; they return an impedance that moves in time because the arithmetic is
+wrong, not because the cell is. One call says whether the four agree with each
+other and with the signals, and when they do not, which one the tones disagree
+with:
+
+```python
+from deistools.processing.consistency import check_consistency, visualize_consistency
+
+report = check_consistency(voltage, current, frequencies, 1 / fs,
+                           period=Tp, n_periods=P)
+print(report)
+if not report.ok:
+    visualize_consistency(report)
+```
+
+It separates the two faults that look the same in the arithmetic: a record cut
+mid-period leaves the lines where they are, while a wrong sampling rate or
+period moves every line in proportion to its harmonic number — and the size of
+that movement gives the rate the record was really taken at. It also says
+whether every listed tone is present, whether anything is present that is not
+listed, and whether the channels are clipping.
+
 ## The shortest path to a result
 
 Each estimator is called differently, because each works in a different
