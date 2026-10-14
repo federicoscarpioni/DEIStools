@@ -20,6 +20,7 @@ not only on signals from a particular lab setup.
 | method | status | validated against |
 |---|---|---|
 | **STFT** | usable | analytic ground truth on four simulated systems |
+| **BLA per burst** | usable | predicted noise within 0.3% of the observed scatter; no false distortion alarm on a linear cell |
 | **DMFA** | ⚠️ **provisional** | definition, filter and variance now checked against the source papers; an end-to-end check against an independent implementation is still open |
 | **BLTVA** | usable | the source papers' algorithms, plus exact-recovery tests |
 | **Lock-in** | usable | agrees with STFT to 9e-14 at the window centres |
@@ -75,6 +76,9 @@ Signal processing and impedance estimation.
   an uncertainty. Also `estimate_noise_variance`, `select_na`,
   `check_identifiability`, and the slider diagnostic `visualize_bltva_fit`.
 - **`stft_functions`** — short-time Fourier estimation (`estimate_impedance`).
+- **`bla`** — the same windows, with the discarded bins used to report the
+  noise level, the odd and even nonlinear distortion, and whether the residual
+  is noise or the cell moving (`bla_eis`, `burst_bla`, `classify_bins`).
 - **`dmfa_functions`** — demodulated multi-frequency analysis
   (`extract_impedance` and its helpers), plus `visualize_dmfa_filtering`.
 - **`passband_filters`** — passband filters for DMFA: the Fermi-Dirac family

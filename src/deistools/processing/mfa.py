@@ -12,6 +12,7 @@ from deistools.processing.bltva import (
     select_na, check_identifiability,
 )
 from deistools.processing.goertzel import goertzel_eis, cost_ratio
+from deistools.processing.bla import bla_eis
 from deistools.processing.lock_in_amp import (
     lia_eis, lia_impedance_optim, lia_impedance_ls,
     integrator_length, integrator_kernel, tone_rejection, valid_mask,
@@ -107,6 +108,44 @@ class MultiFrequencyAnalysis:
             Npts_elab
         )
         return impedance, variance, voltage, current, time
+
+    def run_bla(self, period, *, periods_per_window=4, n_local=30):
+        """Per-burst impedance with the error attributed to its source.
+
+        The short-time Fourier estimate, plus what the bins it discards say
+        about *why* it is wrong: measurement noise, nonlinear distortion, or
+        the cell changing while the burst was open.
+
+        Parameters
+        ----------
+        period : float
+            One multisine period in seconds.
+        periods_per_window : int
+            Multisine periods per burst. **At least 2**: at one period every
+            bin of the burst is a harmonic of the multisine, so noise and
+            distortion land in the same places. The uncertainty is paid for
+            in time resolution.
+        n_local : int
+            Bins averaged for each level at each tone.
+
+        Returns
+        -------
+        (results, t) : list of :class:`~deistools.processing.bla.BurstBLA`, ndarray
+            One entry per burst, stamped at the burst midpoint.
+
+        Notes
+        -----
+        Check ``r_ntv`` before reading the levels. On a cell that varies, the
+        non-harmonic bins carry the time-variation skirt as well as the
+        noise, so ``std_noise`` is an upper bound and the distortion cannot
+        be resolved at all. :meth:`run_bltva` is the estimator that models
+        the variation and separates them.
+        """
+        harmonics = np.round(
+            self.frequencies / self.frequencies.min()).astype(int)
+        return bla_eis(self.voltage, self.current, period, self.sampling_time,
+                       harmonics, periods_per_window=periods_per_window,
+                       n_local=n_local)
 
     def run_goertzel(self, period):
         """Impedance per block, evaluated with the Goertzel recurrence.

@@ -21,6 +21,7 @@ Research software is only as useful as it is honest about its own maturity.
 | method | status | validated against |
 |---|---|---|
 | **STFT** | usable | analytic ground truth on four simulated systems |
+| **BLA per burst** | usable | predicted noise within 0.3% of the observed scatter over three noise decades; no false distortion alarm on a linear cell |
 | **DMFA** | :warning: **provisional** | definition and filter now verified against the source papers; an end-to-end check against an independent implementation is still open |
 | **BLTVA** | usable | the source papers' algorithms, plus exact-recovery tests on a prescribed Legendre system |
 | **Lock-in** | usable | agrees with STFT to 9e-14 at the window centres |
@@ -90,6 +91,19 @@ The methods implemented here come from:
   differencing, the weighting of eq. (26), the rule for $N_a$ in eq. (22).
 - Breugelmans *et al.*, *Electrochim. Acta* **76** (2012) 375 - the short-time
   Fourier approach, and the transistor circuit of Fig. 7.
+
+For the per-burst BLA:
+
+- Lataire, Louarroudi and Pintelon, *IEEE TIM* **61** (2012) 2132 — the best
+  linear time-invariant approximation of a time-varying system, and the
+  frequency-correlation test that tells noise from time variation.
+- Pintelon, Louarroudi and Lataire, *IEEE TIM* **61** (2012) 3387 — the
+  multiple-input time-invariant equivalent of a slowly varying system.
+- Pintelon, Louarroudi and Lataire, *IEEE TIM* **62** (2013) 3361 — the
+  periodic-excitation procedure: which bins carry noise, which carry
+  distortion, and why two periods per burst are the minimum.
+- Pintelon and Schoukens, *System Identification: A Frequency Domain
+  Approach*, 2nd ed., Wiley-IEEE Press (2012) — the underlying framework.
 
 For DMFA:
 

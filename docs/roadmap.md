@@ -9,6 +9,7 @@ be compared and each one's limitations studied. That makes the list of methods
 
 | | item | outcome |
 |---|---|---|
+| 2 | BLA-style short-time Fourier method | [per-burst BLA](methods/bla.md): noise level calibrated to 0.3% against the observed scatter, odd/even distortion with no false alarm on a linear cell, and a frequency-correlation test that separates noise from time variation (9–19 against 0.73). *The varying-cell case is item 2b.* |
 | 1 | Lock-in amplifier and Goertzel filter | both implemented, with [examples](https://github.com/federicoscarpioni/DEIStools/tree/main/examples) 07 and 08 and 15 tests. Both turned out to be the [STFT](methods/stft.md) by another route — Goertzel to 1e-10, the lock-in to 9e-14 — which makes them independent checks on it rather than fourth and fifth methods |
 | 4 | Variance estimation for DMFA | `extract_impedance_with_error`, following Chukwu 2022 eq. (19)–(20). Predicted/observed = 0.997 across three noise configurations. *The comparison against traditional band filtering is still open.* |
 | 6 | Other detrending strategies | moving average, Butterworth low-pass removal and polynomial fit, measured against differencing, with [example 09](https://github.com/federicoscarpioni/DEIStools/blob/main/examples/09_detrending.py). Conclusion: only differencing can be a BLTVA weighting factor, and only the polynomial fit helps DMFA — and differencing buys columns rather than accuracy. See [detrending](methods/detrending.md) |
@@ -17,7 +18,7 @@ be compared and each one's limitations studied. That makes the list of methods
 
 | | item | why |
 |---|---|---|
-| 2 | **BLA-style short-time Fourier method**, with noise and nonlinearities estimated | would give STFT the uncertainty and distortion diagnostics BLTVA has |
+| 2b | **The three-step estimator of Pintelon 2013 §V-B** | [the per-burst BLA](methods/bla.md) reports noise and distortion on a cell that is steady inside a burst, but on a varying one the time-variation skirt swamps both. Modelling the variation first — fitting the $H_p$ branches at the non-harmonic bins — would lift that. Blocked on one thing: its step 3 reconstructs $G_\text{BLTI}$ by central differences over *neighbouring excited harmonics*, which its Assumption 3 needs equispaced, and this package's grid is quasi-logarithmic |
 | 3 | **End-to-end check of DMFA against an independent implementation** | the definition, filter and variance are now verified against Koster 2017, Battistel 2016/2019 and Chukwu 2022, and three bugs were fixed; what is left is a comparison against code that is not this code — see the [notes](implementation/dmfa.md) |
 | 4b | **Slepian-basis DMFA** | the Fourier basis forces a periodicity that band-limitedness does not require; a DPSS basis is 5× better at the leading edge for the same cost |
 | 5 | **BLTVA with the Gaussian method** for automatic $N_q$ and $N_p$ selection | would remove the two parameters that currently need judgement — and [the $N_q$ result](methods/detrending.md#what-it-buys-is-columns-not-accuracy) makes this more valuable than it looked, since $N_q$ matters more than the detrending choice |
