@@ -146,6 +146,21 @@ mkdocs gh-deploy      # publish to GitHub Pages
 - Breugelmans *et al.*, *Electrochim. Acta* **76** (2012) 375 — the short-time
   Fourier approach and the transistor circuit.
 
+For DMFA:
+
+- Battistel, Du and La Mantia, *Electroanalysis* **28** (2016) 2346 — the first
+  statement of DMFA, with the first-order expansion of eq. (11) that the later
+  papers replace.
+- Koster, Du, Battistel and La Mantia, *Electrochim. Acta* **246** (2017) 553 —
+  the quadrature-filter definition of eq. (9), which is what this package
+  implements, and the bandwidth ceiling set by the multisine spacing.
+- Battistel and La Mantia, *Electrochim. Acta* **304** (2019) 513 — the
+  physical definition via a Volterra series, and the Fermi-Dirac filter of
+  eq. (12).
+- Chukwu, Mugisa, Brogioli and La Mantia, *ChemElectroChem* **9** (2022)
+  e202200109 — the variance of the error on the admittance, eq. (19)–(20), and
+  the correlation between neighbouring instants.
+
 Where a paper is ambiguous, or this implementation makes a choice the paper
 does not dictate, it is recorded in the
 [implementation notes](https://federicoscarpioni.github.io/DEIStools/implementation/).
