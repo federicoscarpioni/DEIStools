@@ -21,12 +21,31 @@ and run, from ``s1 = s2 = 0``,
 
 After the last sample the DFT value is recovered from the final two states::
 
-    X[k] = (s[N-1] - exp(-1j*w) * s[N-2]) * exp(-1j*2*pi*k)
+    X[k] = (exp(1j*w) * s[N-1] - s[N-2]) * exp(-1j*2*pi*k)
+
+That combination is asymmetric, and the symmetric-looking rearrangement is
+wrong::
+
+    X[k] = (s[N-1] - exp(-1j*w) * s[N-2]) * exp(-1j*2*pi*k)    # WRONG
+
+It has the right *magnitude* and is out by exactly ``exp(-1j*w)`` in phase.
+The error cancels in any ratio -- including ``V/I`` -- so an impedance test
+will not catch it; only a comparison against the DFT itself will, which is
+what ``test_output_formula_is_not_the_tempting_rearrangement`` does. The
+correct form is what one further iteration with a zero input would give,
+``s[N] - exp(-1j*w)*s[N-1]``, written closed-form.
 
 The trailing factor is unity whenever ``k`` is an integer, which is the usual
 presentation. Keeping it is the *generalised* Goertzel of Sysel and Rajmic,
 and it makes the result correct for a non-integer ``k`` as well -- useful when
 a tone does not fall exactly on a bin of the block you chose.
+
+References
+----------
+Goertzel, *Am. Math. Monthly* **65** (1958) 34 -- the original recurrence.
+
+Sysel and Rajmic, *EURASIP J. Adv. Signal Process.* (2012) 56 -- the
+generalisation to non-integer bins, which is the form implemented here.
 
 Only two state variables are carried, so nothing but the recurrence has to be
 stored. That is what makes the filter usable on a stream, one sample at a

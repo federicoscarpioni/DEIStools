@@ -71,8 +71,12 @@ the longest window, that is itself a useful signal about your cell.
   would not fit in a shorter window. This is a hard floor.
 - **The skirts are not used.** All the information about how the system changed
   between windows is discarded.
-- **No uncertainty.** A single window gives no way to estimate the variance of
-  its own estimate.
+- **No uncertainty** from the excited bins alone. A window of two or more
+  multisine periods *does* carry it, in the bins this estimator discards — see
+  [BLA per burst](bla.md), which reads the noise and nonlinear distortion off
+  them. The catch is in the window length: at one period every bin is a
+  harmonic of the multisine and the separation is impossible, so the error
+  bars cost at least half the time resolution.
 
 ## When to use it
 

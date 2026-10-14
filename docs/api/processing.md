@@ -26,9 +26,17 @@ Signal processing and impedance estimation.
 
 ::: deistools.processing.passband_filters
 
+## Best linear approximation per burst
+
+::: deistools.processing.bla
+
 ## Detrending
 
 ::: deistools.processing.detrending
+
+## Record consistency check
+
+::: deistools.processing.consistency
 
 ## Multi-frequency analysis
 

@@ -20,6 +20,7 @@ not only on signals from a particular lab setup.
 | method | status | validated against |
 |---|---|---|
 | **STFT** | usable | analytic ground truth on four simulated systems |
+| **BLA per burst** | usable | predicted noise within 0.3% of the observed scatter; no false distortion alarm on a linear cell |
 | **DMFA** | ⚠️ **provisional** | definition, filter and variance now checked against the source papers; an end-to-end check against an independent implementation is still open |
 | **BLTVA** | usable | the source papers' algorithms, plus exact-recovery tests |
 | **Lock-in** | usable | agrees with STFT to 9e-14 at the window centres |
@@ -62,7 +63,18 @@ sigma = result.std_H_p                               # and an uncertainty
 ```
 
 The record must hold a **whole number of multisine periods** — a fractional
-period leaks, and the leakage is indistinguishable from time variation.
+period leaks, and the leakage is indistinguishable from time variation. Run
+the check below first; it is the cheapest way to find out that it does not:
+
+```python
+from deistools.processing.consistency import check_consistency, visualize_consistency
+
+report = check_consistency(voltage, current, frequencies, 1 / fs,
+                           period=Tp, n_periods=P)
+print(report)                      # the numbers, and the verdict
+if not report.ok:
+    visualize_consistency(report)  # six panels of evidence
+```
 
 ## Subpackages
 
@@ -75,6 +87,9 @@ Signal processing and impedance estimation.
   an uncertainty. Also `estimate_noise_variance`, `select_na`,
   `check_identifiability`, and the slider diagnostic `visualize_bltva_fit`.
 - **`stft_functions`** — short-time Fourier estimation (`estimate_impedance`).
+- **`bla`** — the same windows, with the discarded bins used to report the
+  noise level, the odd and even nonlinear distortion, and whether the residual
+  is noise or the cell moving (`bla_eis`, `burst_bla`, `classify_bins`).
 - **`dmfa_functions`** — demodulated multi-frequency analysis
   (`extract_impedance` and its helpers), plus `visualize_dmfa_filtering`.
 - **`passband_filters`** — passband filters for DMFA: the Fermi-Dirac family
@@ -87,6 +102,11 @@ Signal processing and impedance estimation.
   `PolynomialFit`, with `check_response` to verify a strategy against the
   protocol. Only differencing may be used as a BLTVA weighting factor; the
   module documents why.
+- **`consistency`** — `check_consistency`, which asks whether a record agrees
+  with the metadata describing it: `N = P * Tp * fs`, every tone on a DFT bin,
+  every tone actually present, nothing present that is not listed. When they
+  disagree it measures the tone positions to say *which* of the four is wrong,
+  and `visualize_consistency` shows the evidence.
 - **`mfa`** — `MultiFrequencyAnalysis`, a class wrapping the above for
   interactive use.
 
@@ -145,6 +165,31 @@ mkdocs gh-deploy      # publish to GitHub Pages
 - Hallemans *et al.*, *IEEE TIM* **71** (2022) 6501711 — trend removal.
 - Breugelmans *et al.*, *Electrochim. Acta* **76** (2012) 375 — the short-time
   Fourier approach and the transistor circuit.
+
+For DMFA:
+
+- Battistel, Du and La Mantia, *Electroanalysis* **28** (2016) 2346 — the first
+  statement of DMFA, with the first-order expansion of eq. (11) that the later
+  papers replace.
+- Koster, Du, Battistel and La Mantia, *Electrochim. Acta* **246** (2017) 553 —
+  the quadrature-filter definition of eq. (9), which is what this package
+  implements, and the bandwidth ceiling set by the multisine spacing.
+- Battistel and La Mantia, *Electrochim. Acta* **304** (2019) 513 — the
+  physical definition via a Volterra series, and the Fermi-Dirac filter of
+  eq. (12).
+- Chukwu, Mugisa, Brogioli and La Mantia, *ChemElectroChem* **9** (2022)
+  e202200109 — the variance of the error on the admittance, eq. (19)–(20), and
+  the correlation between neighbouring instants.
+
+For Goertzel:
+
+- Goertzel, *Am. Math. Monthly* **65** (1958) 34 — the original recurrence.
+- Sysel and Rajmic, *EURASIP J. Adv. Signal Process.* (2012) 56 — the
+  generalisation to non-integer bins, which is the form implemented here.
+
+The lock-in has no source listed because it is the textbook demodulator; what
+is specific to a multisine is the integrator design, and that is derived in
+the [documentation](https://federicoscarpioni.github.io/DEIStools/methods/lock-in/).
 
 Where a paper is ambiguous, or this implementation makes a choice the paper
 does not dictate, it is recorded in the

@@ -11,7 +11,11 @@ from deistools.processing.bltva import (
     bltva, visualize_bltva_fit, estimate_noise_variance,
     select_na, check_identifiability,
 )
+from deistools.processing.consistency import (
+    check_consistency, visualize_consistency,
+)
 from deistools.processing.goertzel import goertzel_eis, cost_ratio
+from deistools.processing.bla import bla_eis
 from deistools.processing.lock_in_amp import (
     lia_eis, lia_impedance_optim, lia_impedance_ls,
     integrator_length, integrator_kernel, tone_rejection, valid_mask,
@@ -33,6 +37,49 @@ class MultiFrequencyAnalysis:
         self.ft_voltage = fftshift(fft(self.voltage)) / self.voltage.size
         self.ft_current = fftshift(fft(self.current)) / self.current.size
     
+    def check_consistency(self, period=None, n_periods=None, plot=True,
+                          **kwargs):
+        """Check the record against the metadata, before estimating anything.
+
+        The first thing to run on a new dataset, and the thing to run when an
+        estimate comes back looking like a cell that cannot exist. It answers
+        one question -- do ``N``, ``P``, ``T_p`` and ``f_s`` agree with each
+        other and with the signals? -- and when they do not, it says which of
+        them the signals disagree with. See
+        :mod:`deistools.processing.consistency` for how.
+
+        Parameters
+        ----------
+        period : float, optional
+            The multisine period in seconds: the ``period`` of
+            :meth:`run_stft_eis` and the ``P`` of :meth:`run_bltva`. Pass it.
+            Without it the fundamental is inferred from ``self.frequencies``,
+            which can only show that the tone list is self-consistent.
+        n_periods : int, optional
+            How many periods you believe the record holds.
+        plot : bool
+            Draw :func:`~deistools.processing.consistency.visualize_consistency`.
+
+        Returns
+        -------
+        :class:`~deistools.processing.consistency.ConsistencyReport`
+            ``print`` it for the numbers, ``.ok`` for one boolean,
+            ``.findings`` for the verdicts.
+
+        Notes
+        -----
+        Deliberately independent of the rest of the object: it builds its own
+        spectra and takes the period as an argument, so it works on a freshly
+        constructed instance and before :meth:`compute_freq_indexes`, which is
+        itself one of the things that raises when the metadata is wrong.
+        """
+        report = check_consistency(
+            self.voltage, self.current, self.frequencies, self.sampling_time,
+            period=period, n_periods=n_periods, **kwargs)
+        if plot:
+            visualize_consistency(report)
+        return report
+
     def run_fft_eis(self):
         return self.ft_voltage[self.freq_indexes] / self.ft_current[self.freq_indexes]
     
@@ -107,6 +154,44 @@ class MultiFrequencyAnalysis:
             Npts_elab
         )
         return impedance, variance, voltage, current, time
+
+    def run_bla(self, period, *, periods_per_window=4, n_local=30):
+        """Per-burst impedance with the error attributed to its source.
+
+        The short-time Fourier estimate, plus what the bins it discards say
+        about *why* it is wrong: measurement noise, nonlinear distortion, or
+        the cell changing while the burst was open.
+
+        Parameters
+        ----------
+        period : float
+            One multisine period in seconds.
+        periods_per_window : int
+            Multisine periods per burst. **At least 2**: at one period every
+            bin of the burst is a harmonic of the multisine, so noise and
+            distortion land in the same places. The uncertainty is paid for
+            in time resolution.
+        n_local : int
+            Bins averaged for each level at each tone.
+
+        Returns
+        -------
+        (results, t) : list of :class:`~deistools.processing.bla.BurstBLA`, ndarray
+            One entry per burst, stamped at the burst midpoint.
+
+        Notes
+        -----
+        Check ``r_ntv`` before reading the levels. On a cell that varies, the
+        non-harmonic bins carry the time-variation skirt as well as the
+        noise, so ``std_noise`` is an upper bound and the distortion cannot
+        be resolved at all. :meth:`run_bltva` is the estimator that models
+        the variation and separates them.
+        """
+        harmonics = np.round(
+            self.frequencies / self.frequencies.min()).astype(int)
+        return bla_eis(self.voltage, self.current, period, self.sampling_time,
+                       harmonics, periods_per_window=periods_per_window,
+                       n_local=n_local)
 
     def run_goertzel(self, period):
         """Impedance per block, evaluated with the Goertzel recurrence.
