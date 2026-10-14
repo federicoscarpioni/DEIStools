@@ -210,5 +210,11 @@ restriction above — distortion on a varying cell — and is roadmap item 2b.
 One thing blocks a direct transcription: step 3 reconstructs $G_\text{BLTI}$
 from $H_0$ by central differences over *neighbouring excited harmonics*, which
 Assumption 3 of that paper requires to be equispaced. This package's grid is
-quasi-logarithmic (1, 3, 5, 9, 13, …, 301), so those differences are not
-available and the $O(T^{-1})$ correction needs another route.
+quasi-logarithmic, with a 50x spread in the gaps between neighbouring tones,
+and on it that differentiation costs 156x on the first derivative while the
+second-difference formula *diverges* under refinement.
+
+The [implementation note](../implementation/bla.md) works through why, with
+the measurements, and gives the replacement: the local polynomial fit already
+produces the derivatives as its own coefficients, over consecutive DFT bins
+that are equispaced whatever the tones do.
