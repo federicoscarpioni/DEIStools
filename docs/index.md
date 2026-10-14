@@ -105,3 +105,13 @@ For DMFA:
 - Chukwu, Mugisa, Brogioli and La Mantia, *ChemElectroChem* **9** (2022)
   e202200109 - the variance of the error on the admittance, eq. (19), and the
   correlation between neighbouring instants.
+
+For Goertzel:
+
+- Goertzel, *Am. Math. Monthly* **65** (1958) 34 — the original recurrence.
+- Sysel and Rajmic, *EURASIP J. Adv. Signal Process.* (2012) 56 — the
+  generalisation to non-integer bins, which is the form implemented here.
+
+The lock-in has no source listed because it is the textbook demodulator; what
+is specific to a multisine is the integrator design, derived in
+[Lock-in amplifier](methods/lock-in.md).

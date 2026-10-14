@@ -44,9 +44,10 @@ X[k] \;=\; \Big(e^{\mathrm{j}\omega}\,s[N-1] - s[N-2]\Big)\,e^{-\mathrm{j}2\pi k
 
 The trailing $e^{-\mathrm{j}2\pi k}$ is unity whenever $k$ is an integer,
 which is why most presentations omit it. Keeping it is the **generalised**
-Goertzel of Sysel and Rajmic, and it makes the result correct for a
-non-integer $k$ — a tone that does not land exactly on a bin of the block you
-chose, which is the ordinary case rather than an exotic one.
+Goertzel of Sysel and Rajmic (*EURASIP J. Adv. Signal Process.* 2012, 56), and
+it makes the result correct for a non-integer $k$ — a tone that does not land
+exactly on a bin of the block you chose, which is the ordinary case rather
+than an exotic one.
 
 ## Calling it
 
@@ -124,6 +125,12 @@ a one-period block:
 Its limits are STFT's limits: time resolution is the block length, with a
 floor of one multisine period; the skirts are not used; no uncertainty is
 reported. See [STFT](stft.md).
+
+## Sources
+
+- Goertzel, *Am. Math. Monthly* **65** (1958) 34 — the original recurrence.
+- Sysel and Rajmic, *EURASIP J. Adv. Signal Process.* (2012) 56 — the
+  generalisation to non-integer bins, which is the form implemented here.
 
 ## Worked example
 

@@ -161,6 +161,16 @@ For DMFA:
   e202200109 — the variance of the error on the admittance, eq. (19)–(20), and
   the correlation between neighbouring instants.
 
+For Goertzel:
+
+- Goertzel, *Am. Math. Monthly* **65** (1958) 34 — the original recurrence.
+- Sysel and Rajmic, *EURASIP J. Adv. Signal Process.* (2012) 56 — the
+  generalisation to non-integer bins, which is the form implemented here.
+
+The lock-in has no source listed because it is the textbook demodulator; what
+is specific to a multisine is the integrator design, and that is derived in
+the [documentation](https://federicoscarpioni.github.io/DEIStools/methods/lock-in/).
+
 Where a paper is ambiguous, or this implementation makes a choice the paper
 does not dictate, it is recorded in the
 [implementation notes](https://federicoscarpioni.github.io/DEIStools/implementation/).
