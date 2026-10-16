@@ -337,6 +337,36 @@ the lowest tone at bin 8 instead of bin 20 and so much closer to the drift's
 skirt. That is the situation detrending exists for, and it is where the
 numbers on this page come from.
 
+## Trends to check a strategy against
+
+[`deistools.simulation.trends`](../api/simulation.md#standard-drifts) carries
+three standard drifts so that a comparison is reproducible rather than
+written inline:
+
+| | removable by a polynomial? |
+|---|---|
+| `polynomial_trend` | exactly, at its own order |
+| `relaxation_trend` -- Hallemans 2022 eq. (31)-(32) | only if enough of its ringing fits the record |
+| `logit_trend` -- the Nernst term of an insertion electrode | no, at any order |
+
+Residue left by a least-squares Legendre fit, relative to the trend, on the
+160 s record of example 09:
+
+| trend | q = 3 | q = 8 | q = 15 |
+|---|---|---|---|
+| polynomial | 7.3e-16 | 7.5e-16 | 1.1e-15 |
+| relaxation | 6.9e-04 | 8.7e-11 | 6.9e-16 |
+| logit | 3.1e-02 | 2.6e-03 | 3.3e-05 |
+
+!!! warning "The paper's trend is only hard on a long enough record"
+    The relaxation shape rings with a period near 1000 s at its published
+    coefficients. The 160 s record above sees only its smooth leading edge,
+    so a degree-8 polynomial removes it to 8.7e-11 -- on a 2000 s record the
+    same trend leaves 3.2e-02, nine orders of magnitude apart. A study that
+    changes its record length silently changes how hard its trend was. The
+    `logit_trend` has no such dependence: its shape is fixed in normalised
+    time, so the residue above holds at any record length.
+
 ## Checking a strategy
 
 `check_response` verifies step 1 of the protocol — that `apply` is what

@@ -9,6 +9,14 @@ practice.
 
 ::: deistools.simulation.engine
 
+## Standard drifts
+
+Additive disturbances for testing trend removal: the thing
+[detrending](../methods/detrending.md) has to get rid of. The models that
+follow are the opposite -- the system an estimator is trying to measure.
+
+::: deistools.simulation.trends
+
 ## Stationary R + (R‖C)
 
 ::: deistools.simulation.models.r_rc
@@ -16,6 +24,10 @@ practice.
 ## Transistor-gated R + (R_ct(t)‖C)
 
 ::: deistools.simulation.models.r_rc_transistor
+
+## Charging insertion electrode with diffusion
+
+::: deistools.simulation.models.randles_diffusion
 
 ## Prescribed Legendre expansion
 

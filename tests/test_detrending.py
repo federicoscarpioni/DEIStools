@@ -24,6 +24,7 @@ from deistools.processing.bltva import (
     bltva, build_regressors, estimate_noise_variance, legendre_basis,
     legendre_spectra, select_na,
 )
+from deistools.simulation.trends import relaxation_trend
 from deistools.processing.detrending import (
     Detrending, DiagonalDetrending, Differencing, LowPassRemoval,
     MovingAverage, PolynomialFit, check_response, select_differencing_order,
@@ -34,21 +35,16 @@ FIT = dict(Np=2, harmonics="excited", band_halfwidth=5 * ORACLE_P)
 
 
 def hallemans_2022_trend(t):
-    """The trend of 2022 eq. (31)-(32): step response of
+    """The trend of 2022 eq. (31)-(32), from
+    :mod:`deistools.simulation.trends`.
 
-        C(s) = 5.92e-4 / (s^2 + 1.25e-3 s + 9.87e-6)
-
-    evaluated at 2t. The paper chooses it precisely because it "cannot be
-    exactly captured by a finite number of polynomials", which is what makes
-    parametric trend removal struggle with it.
+    Kept as a one-line wrapper rather than inlined at the call sites so that
+    the tests below read the same as before, and so that any change to the
+    shared implementation is caught here as well as in ``test_trends.py``.
+    The paper chooses this shape precisely because it "cannot be exactly
+    captured by a finite number of polynomials".
     """
-    K, c1, c0 = 5.92e-4, 1.25e-3, 9.87e-6
-    wn = np.sqrt(c0)
-    zeta = c1 / (2 * wn)
-    wd = wn * np.sqrt(1 - zeta ** 2)
-    tt = 2.0 * np.asarray(t)
-    return (K / c0) * (1 - np.exp(-zeta * wn * tt) *
-                       (np.cos(wd * tt) + zeta / np.sqrt(1 - zeta ** 2) * np.sin(wd * tt)))
+    return relaxation_trend(t, remove_mean=False)
 
 
 @pytest.fixture

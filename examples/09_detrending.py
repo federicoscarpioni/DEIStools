@@ -23,6 +23,8 @@ from deistools.processing.dmfa_functions import (
     elaboration_time_axis)
 from deistools.processing.passband_filters import create_fermi_dirac_fun
 from deistools.processing.bltva import bltva
+from deistools.simulation.trends import (
+    HARD_CUBIC, TRENDS, polynomial_trend)
 from deistools.simulation.models.r_rc import simulate_r_rc
 from deistools.simulation.models.r_rc_transistor import simulate_r_rc_transistor
 
@@ -57,13 +59,48 @@ current = sim["current_A"]
 clean = sim["voltage_V"].copy()
 Z_true = sim["Z_true"]
 
-x = time / T
-trend = 48.0 * (0.5 * x ** 3 - 1.1 * x ** 2 + 0.7 * x)
-trend = trend - trend.mean()
+# The drifts live in deistools.simulation.trends, so that a study can sweep
+# them instead of writing one inline. This cubic is the one this example
+# carried before that module existed: chosen by hand to be severe, and not
+# from any paper, which is why it is a named constant rather than a default.
+trend = polynomial_trend(time, coefficients=HARD_CUBIC, basis="monomial",
+                         scale=48.0)
 trended = clean + trend
 
 print(f"  signal {clean.std():.2f} V rms, drift {np.ptp(trend):.1f} V p-p "
       f"over {T:.0f} s")
+
+
+# --------------------------------------------------------------------------
+# The three standard drifts, and how hard each one is
+# --------------------------------------------------------------------------
+# A trend is only interesting if a polynomial cannot already remove it, so
+# that is what to measure: the residue left by a least-squares Legendre fit,
+# relative to the trend itself.
+
+from numpy.polynomial.legendre import legvander           # noqa: E402
+
+xi = 2.0 * time / T - 1.0
+
+
+def polynomial_residue(values, order):
+    basis = legvander(xi, order)
+    fitted, *_ = np.linalg.lstsq(basis, values, rcond=None)
+    return np.std(values - basis @ fitted) / np.std(values)
+
+
+print(f"\n  residue after fitting a Legendre polynomial of order q:")
+print(f"    {'trend':<14} {'q=3':>9} {'q=8':>9} {'q=15':>9}")
+for name, make in TRENDS.items():
+    shape = make(time, peak_to_peak=np.ptp(trend))
+    residues = [polynomial_residue(shape, q) for q in (3, 8, 15)]
+    print(f"    {name:<14} " + " ".join(f"{r:>9.1e}" for r in residues))
+
+print("\n  The polynomial one is gone at its own order, as it must be. The")
+print("  relaxation trend of the 2022 paper looks easy here only because this")
+print("  record is 160 s and it rings with a period near 1000 s -- on a 2000 s")
+print("  record the same trend leaves 3.2e-02 at q=8 instead of 8.7e-11.")
+print("  The logit is the one whose difficulty does not depend on that.")
 
 
 # --------------------------------------------------------------------------
