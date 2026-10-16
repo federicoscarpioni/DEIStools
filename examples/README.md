@@ -1,6 +1,6 @@
 # DEIStools examples
 
-Twenty self-contained scripts. Each one builds its own simulation, calls the
+Twenty-one self-contained scripts. Each one builds its own simulation, calls the
 estimators directly, and prints what it found. There is no shared science
 module to look through: everything a script does is in that script, in the
 order it happens, so it can be read top to bottom and copied from.
@@ -14,7 +14,7 @@ python examples/12_dmfa_parameters.py --no-widgets  # skip the interactive slide
 
 Nothing needs an instrument, a data file or a network connection. Every seed is
 fixed, so the numbers you see are the numbers in this README. The whole set
-takes about five minutes and produces 57 figures.
+takes about five minutes and produces 59 figures.
 
 The only shared file is [`_plotting.py`](_plotting.py), which holds matplotlib
 boilerplate — axis labels, colours, the two standard figure layouts — so that
@@ -29,6 +29,7 @@ sixty lines of formatting do not bury the four lines that matter.
 | **09** | trend removal | the four strategies: what each does to the signal, its spectrum and the estimate |
 | **10–15** | one estimator per pair | its parameters swept against known truth, then applied to all four systems |
 | **20–23** | one system per script | all three estimators side by side |
+| **25** | drifts | generating a trend and adding it to a system, and who pays for it |
 
 If you are new to the package, read 00–01 and then 04–08. That is enough to
 run every estimator on your own data. The rest is about choosing their
@@ -46,6 +47,22 @@ parameters well.
 All four use the same excitation: 13 odd harmonics on a quasi-log grid,
 0.05–15.05 Hz, 10 mA per tone, sampled at 1 kHz. Each script defines it again
 at the top, so you can change one without touching the others.
+
+### 25 · Drifts
+
+| | script | what it shows |
+|---|---|---|
+| [25](25_synth_trends.py) | trends | the two ways to put a drift on a record, the three standard shapes, and what each costs three different estimators |
+
+Two routes to a drift, and they are for different jobs.
+`simulate_legendre(..., drift_coefficients=...)` builds one in the *same
+Legendre basis BLTVA fits*, so it is inside the estimator's model by
+construction. `deistools.simulation.trends` builds any shape and you add it
+yourself. The script checks the two agree where they overlap — to 6.7e-16 —
+and then prices the shapes the first route cannot make.
+
+The Legendre system is used because its ground truth is exact, so the cost of
+a drift is a measurement rather than a comparison between two estimates.
 
 ### 04–08 · One estimation with each method
 
@@ -134,6 +151,12 @@ settings. Run them without `--save`.
 - **A boxcar integrator over whole base periods rejects the other tones by
   307 dB** — round-off, not a real limit — because its nulls land exactly on
   the harmonics. One extra sample detunes them and costs about 230 dB.
+- **A drift is not hard in itself — it is hard for an estimator that does not
+  model it.** Across a hundredfold range of drift size, BLTVA never leaves its
+  1.2e-06 floor, because `Nq` fits the trend jointly with the impedance. STFT
+  goes 8.0e-04 → 1.4e-01 over the same range and DMFA 6.9e-05 → 1.2e-03. The
+  *shape* of the drift barely matters to any of them; the size and the
+  estimator do.
 - **A trend overlaps the lowest tones, and no filter can separate them
   there.** A filter scales a bin's trend and signal by the same number, so
   their ratio is untouched. Only the polynomial fit — the one strategy that
