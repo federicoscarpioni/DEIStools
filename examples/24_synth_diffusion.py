@@ -17,13 +17,13 @@ Two things make it unlike the other four:
   a curve that happens to need a polynomial of some order, and the last
   figure prices it. Over this record a cubic still leaves 4% of it, and the
   examples use Nq = 2. Start the charge nearer the OCV inflection at SOC 0.52
-  and it gets dearer -- `tests/test_randles_diffusion.py` runs that case.
+  and it gets dearer.
 
 Unlike `r_rc_transistor` this model does not integrate an ODE: both varying
 parameters multiply the output of a fixed subsystem, so the frozen-time
 synthesis is very nearly what the circuit actually does. What is left is the
-double-layer loop, measured in `tests/test_randles_diffusion.py` at 3.5e-3
-rms on a 20C record and confirmed there to be first order in the drift rate.
+double-layer loop, measured during development at 3.5e-3 rms on a 20C record
+and found to be first order in the drift rate (see simulation/README.md).
 This record is 40x gentler, which puts it near 1e-4 by that law -- an
 extrapolation, not a measurement: integrating 2000 s at the step the stiff
 modes need is far more expensive than the simulation it would check.

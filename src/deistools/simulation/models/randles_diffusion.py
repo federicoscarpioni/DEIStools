@@ -56,15 +56,15 @@ sits inside a feedback loop. Both parameters here are in branch form:
 What is left is the double-layer loop, which both parameters do sit inside, so
 the quasi-static error is not zero -- it is of order ``tau_loop`` times the
 rate at which the parameters drift, with
-``tau_loop = C_dl (R_ct + R_d/3)``. ``test_randles_diffusion.py`` measures it
-by integrating the circuit as a genuine time-varying ODE, through the modal
+``tau_loop = C_dl (R_ct + R_d/3)``. During development it was measured by
+integrating the circuit as a genuine time-varying ODE, through the modal
 expansion of the element,
 
     coth(x)/x = 1/x^2 + sum_{m>=1} 2/(x^2 + m^2 pi^2),   x = sqrt(s tau_d)
 
 in which every mode is one scalar ODE, and confirms that it is first order in
 the drift rate and first order in ``C_dl``, as that estimate requires. On the
-hardest record the tests use -- a 20C charge across the OCV inflection, where
+hardest record measured -- a 20C charge across the OCV inflection, where
 ``R_d`` swings by a factor of eight and ``tau_loop`` is 0.14 s -- it is
 3.5e-03 rms. Divide by the ratio of C rates for anything gentler: a 0.5C
 charge of the same cell is of order 1e-04, which is two to three orders below
@@ -73,9 +73,12 @@ the ODE that ``r_rc_transistor`` cannot.
 
 So ``voltage_V`` here *is* the frozen-time synthesis, and ``Z_true`` is exactly
 the impedance it was built from. There is no ``voltage_quasistatic_V`` to
-compare against, because there is no second response: if you need the true
-one at a rate where the difference matters, the integrator in the test file is
-the worked example.
+compare against, because there is no second response.
+
+The integrator that made those measurements was removed with the test suite
+and has not been re-run on this branch, so treat the numbers as development
+results, not as verified ones. ``simulation/README.md`` gives the derivation
+and describes how to rebuild the measurement.
 
 The other thing that would break it is letting ``tau_d`` drift, which
 modulates the kernel rather than its gain. That is deliberately not offered,

@@ -1,89 +1,326 @@
-# deistools.simulation
+# `deistools.simulation` — models, engines and their mathematics
 
-Synthetic signal generator for testing non-stationary impedance estimation algorithms (BLTVA, DMFA, LIA-EIS).
+This subpackage makes synthetic measurements whose impedance is known, so that
+an estimator's output can be compared against a ground truth. This document
+explains what each piece computes, why it is correct, where it is only
+approximately correct and by how much, and which paper each piece comes from.
 
-## Structure
+It is meant to be read before the code. If you can follow the derivations
+here, you can defend the code.
 
+**Status of the claims in this document.** Every derivation here can be
+checked by hand. Each numerical claim is labelled as one of:
+
+- **verified** — re-run on branch `refactor/owned-code`, with code you can
+  reproduce from [§8](#8-reproducing-the-two-engine-checks);
+- **development result** — measured while the code was being written, with
+  code that has since been deleted along with the test suite, and not re-run.
+
+Attributions to specific equations, figures or coefficients in a paper
+were copied from the code's docstrings and could not be checked against the
+PDFs. They are collected in [§6](#6-attributions-to-check-against-the-papers)
+for you to confirm.
+
+---
+
+## Contents
+
+1. [The common setting](#1-the-common-setting)
+2. [The three engines](#2-the-three-engines)
+3. [When frozen time is exact, and when it is not](#3-when-frozen-time-is-exact-and-when-it-is-not)
+4. [The models](#4-the-models)
+5. [Trends: disturbances, not systems](#5-trends-disturbances-not-systems)
+6. [Attributions to check against the papers](#6-attributions-to-check-against-the-papers)
+7. [What to test](#7-what-to-test)
+8. [Reproducing the two engine checks](#8-reproducing-the-two-engine-checks)
+9. [References](#9-references)
+
+---
+
+## 1. The common setting
+
+### Excitation
+
+Every model is driven **galvanostatically** by a multisine current:
+
+```math
+i(t) = \sum_{k=1}^{K} A_k \cos(\omega_k t + \phi_k), \qquad \omega_k = 2\pi f_k .
 ```
-simulation/
-├── engine.py          — multisine generator and voltage synthesis
-├── trends.py          — additive drifts, for testing trend removal
-└── models/
-    ├── r_rc.py            — stationary R + RC (reference baseline)
-    ├── r_rc_transistor.py — non-stationary R + (R+T)||C
-    └── legendre.py        — Legendre polynomial oracle model
+
+`engine.generate_multisine` builds it directly from the lists of frequencies,
+amplitudes and phases. The simulation does not care how the tones are chosen.
+The estimators do, though. They need every $f_k$ to sit exactly on a DFT bin of
+the record, which means the record length $T = N\,\Delta t$ must be a whole
+number of multisine periods. The examples always build records that way.
+
+### Time axis
+
+`N = round(duration_s / sampling_time_s)` samples at $t_n = n\,\Delta t$,
+$n = 0,\dots,N-1$. The record length is $T = N\,\Delta t$, **not** $t_{N-1}$,
+which is one sample shorter. This matters wherever time is normalised to
+$[-1, 1)$, as the Legendre basis does.
+
+### Noise
+
+Every model adds independent, white Gaussian noise to the **recorded**
+voltage and current *after* computing the response (`noise_std_V`,
+`noise_std_A`, `seed`). Current noise therefore models a noisy ammeter: it
+corrupts the measurement but never drives the system. The voltage is always
+computed from the noise-free current.
+
+### What "frozen-time impedance" means
+
+For a system whose parameters $\theta(t)$ change with time, the **frozen-time
+impedance** at instant $t$ is the ordinary LTI impedance of the system with its
+parameters frozen at their values at that instant:
+
+```math
+Z(f, t) \;=\; Z_{\text{LTI}}\big(f;\ \theta(t)\big).
 ```
 
-## Systems against disturbances
+That is the quantity every estimator in this package tries to recover, so
+every model returns it as `Z_true`, of shape `(n_freq, N)`. Whether the
+system's *actual* response matches the frozen-time impedance is a separate
+question, and it is the subject of [§3](#3-when-frozen-time-is-exact-and-when-it-is-not).
 
-The models below are the *system* -- what an estimator is trying to measure.
-`trends.py` is the opposite: additive drift laid on top of the response, the
-disturbance that detrending has to remove. Three shapes, chosen to fail a
-polynomial fit in different ways:
+---
 
-| | source | removable by a polynomial? |
+## 2. The three engines
+
+Three different calculations produce a voltage from the current. Knowing which
+one a model uses tells you what its ground truth means.
+
+### 2.1 Frozen-time synthesis — `engine.simulate`
+
+Given a model's `impedance_fn(f, t)`, which returns $Z(f_k, t_n)$ as an array
+of shape `(n_freq, N)`, the engine writes the voltage tone by tone:
+
+```math
+v(t) \;=\; \sum_{k} A_k\, \big|Z(f_k,t)\big| \cos\!\Big(\omega_k t + \phi_k + \arg Z(f_k,t)\Big)
+\;=\; \sum_k A_k\, \operatorname{Re}\!\Big\{ Z(f_k,t)\, e^{j(\omega_k t+\phi_k)} \Big\}.
+```
+
+That is `engine.synthesize_voltage`. It is the steady-state response of an LTI
+system with impedance $Z$, applied instant by instant. There is no ODE and no
+time stepping, so the cost is $O(KN)$.
+
+**Used by:** `r_rc`, `legendre`, `randles_diffusion`, and the
+`voltage_quasistatic_V` reference inside `r_rc_transistor`.
+
+### 2.2 Time-domain ODE integration — `r_rc_transistor`
+
+When the frozen-time synthesis is not the true response (see
+[§3.2](#32-a-time-varying-parameter-inside-a-loop-is-only-approximately-handled)),
+the circuit equation is integrated directly. For the transistor model the state
+is the voltage $v_C$ across the parallel branch:
+
+```math
+C\,\frac{dv_C}{dt} + \frac{v_C}{R_{ct}(t)} = i(t), \qquad v(t) = R_s\, i(t) + v_C(t).
+```
+
+This is integrated with the classical fixed-step **fourth-order Runge–Kutta**
+method on the output grid. Two details keep it honest:
+
+- RK4 needs $i$ and $R_{ct}$ at the half steps $t_n + \Delta t/2$. They are
+  **evaluated analytically** there, not interpolated, because interpolating
+  would quietly drop the method's order.
+- The **initial state** is the frozen-time steady state at $t = 0$,
+  $v_C(0) = \sum_k A_k \operatorname{Re}\{Z_p(f_k,0)\,e^{j\phi_k}\}$ with
+  $Z_p = R_{ct}/(1+j\omega R_{ct} C)$. Starting from $v_C = 0$ would add a
+  startup transient lasting about $5R_{ct}C$ that has nothing to do with the
+  time variation. The frozen state is still not quite the true time-varying
+  state at $t=0$, since that would depend on the history before the record.
+  The leftover transient has the size of the first-order term in §3.2 and
+  decays with $R_{ct}C$.
+
+The step must stay small against the fastest time constant, and the code
+warns when $\Delta t > 0.1\,\min_t R_{ct}(t)\,C$.
+
+### 2.3 Periodic steady-state filtering in the DFT domain — `block_oriented`
+
+The block-oriented model needs an LTI filter applied to a *nonlinear*
+function of the input. A signal that is a static function of a periodic
+multisine is itself periodic with the same period. So the filter's
+steady-state output is periodic too, and its Fourier coefficients are
+$H(j\omega_k)X_k$. The code therefore filters in the DFT domain:
+
+```math
+y = \operatorname{IDFT}\!\Big( H(j2\pi f_{\text{bin}}) \cdot \operatorname{DFT}(x) \Big),
+```
+
+with $H$ evaluated at the signed DFT bin frequencies (`np.fft.fftfreq`), so that
+$H(-f)=\overline{H(f)}$ and the output is real.
+
+This is **exact for the periodic steady state** under two conditions, and both
+are worth stating whenever you defend it:
+
+1. **The record must hold a whole number of periods.** Otherwise the DFT's
+   circular convolution is not the steady state, and the error appears as
+   wrap-around at the record edges.
+2. **The signal entering the filter must be band-limited below $f_s/2$.** The
+   input $x = f_1(u)$ has passed a static nonlinearity, which creates
+   harmonics. A polynomial of degree $d$ applied to a multisine with top tone
+   $f_{\max}$ has content up to $d\,f_{\max}$. Above $f_s/2$ those harmonics alias
+   and the simulation no longer represents the continuous-time system. A tanh
+   nonlinearity has infinitely many harmonics, but at these coefficients they
+   decay fast. A nonlinearity *after* the filter ($f_2$) is applied sample by
+   sample, so its samples are exact; its harmonics alias only in the *DFT* of
+   the output, just as they would at a real ADC with no anti-aliasing filter.
+
+No startup transient is produced, by construction. The papers model the
+transient separately, as a polynomial in the estimator, rather than as part of
+the signal.
+
+---
+
+## 3. When frozen time is exact, and when it is not
+
+This is the most important section. The frozen-time impedance $Z(f,t)$ is
+always well defined. Whether the system's *actual* response is the
+frozen-time synthesis of $Z(f,t)$ depends on **where in the system the time
+variation sits**, not on how fast or how slow the system is.
+
+### 3.1 A time-varying gain on the output of LTI branches is handled exactly
+
+Suppose the system is a sum of LTI branches, each followed by a real,
+time-varying gain. This is the structure of Hallemans *et al.* (2021):
+
+```math
+y(t) = \sum_{p} b_p(t)\, \big(h_p * u\big)(t), \qquad b_p(t) \in \mathbb{R}.
+```
+
+Drive it with the multisine, in steady state. Each LTI branch gives
+
+```math
+(h_p * u)(t) = \sum_k A_k \operatorname{Re}\!\Big\{ H_p(j\omega_k)\, e^{j(\omega_k t + \phi_k)} \Big\}.
+```
+
+Multiply by the real $b_p(t)$ and sum over $p$. Because $b_p$ is real it can be
+moved inside $\operatorname{Re}\{\cdot\}$, and the two sums commute:
+
+```math
+y(t) = \sum_k A_k \operatorname{Re}\!\Big\{ \underbrace{\Big(\sum_p H_p(j\omega_k)\, b_p(t)\Big)}_{Z(f_k,t)} e^{j(\omega_k t + \phi_k)} \Big\}.
+```
+
+That is exactly the frozen-time synthesis of §2.1 with
+$Z(f,t) = \sum_p H_p(j\omega)\, b_p(t)$. **No approximation was made**, and in
+particular *no assumption that $b_p$ varies slowly*. The derivation needs only
+two things: $b_p$ real, and the branches in periodic steady state.
+
+**Verified:** a linear block-oriented system computed by DFT filtering (§2.3)
+and the same system computed by frozen-time synthesis of
+$Z = \sum_p H_p b_p$ (§2.1) agree to **4.5e-14** relative, which is round-off.
+These are two independent engines that agree on one system ([§8](#8-reproducing-the-two-engine-checks)).
+
+Note what this means for "memory". The branches $h_p$ can have arbitrarily
+long memory and the result still holds, because the variation is applied
+*after* the memory, to the output.
+
+### 3.2 A time-varying parameter inside a loop is only approximately handled
+
+Now put the varying parameter inside the dynamics. The transistor circuit is
+the simplest case: $R_{ct}(t)$ sits in parallel with $C$, so the state $v_C$
+feeds back through the varying resistance. With $g(t) = 1/R_{ct}(t)$,
+
+```math
+C\,\dot v_C + g(t)\, v_C = i(t).
+```
+
+Take one tone, $i = \operatorname{Re}\{I e^{j\omega t}\}$, and look for
+$v_C = \operatorname{Re}\{V(t)\, e^{j\omega t}\}$ with a slowly varying phasor
+$V(t)$. Substituting gives $C(\dot V + j\omega V) + gV = I$, that is,
+
+```math
+V = Z_p(t)\,\big(I - C\,\dot V\big), \qquad Z_p(t) = \frac{1}{g(t) + j\omega C}.
+```
+
+Iterate this equation:
+
+- **Zeroth order** ignores $\dot V$: $V^{(0)} = Z_p(t)\, I$. That *is* the
+  frozen-time response.
+- **First order** substitutes $V^{(0)}$ back in. Using
+  $\dot Z_p = -\dot g\, Z_p^2$:
+
+```math
+V^{(1)} = -C\,Z_p\,\dot V^{(0)} = C\,\dot g\, Z_p^{3}\, I .
+```
+
+So the relative error of the frozen-time response at frequency $\omega$ is
+
+```math
+\frac{V^{(1)}}{V^{(0)}} = C\,\dot g\,Z_p^2
+\quad\Longrightarrow\quad
+\left|\frac{V^{(1)}}{V^{(0)}}\right| = \frac{\tau\,\big|\tfrac{d}{dt}\ln R_{ct}\big|}{1+(\omega\tau)^2},
+\qquad \tau = R_{ct}C .
+```
+
+Three things follow, and they are what you would say to defend the transistor
+model:
+
+- The error is **first order in the drift rate**. Halve the ramp and the
+  error halves.
+- It is **largest at low frequency**, where it approaches
+  $\tau\,|d\ln R_{ct}/dt|$, and it falls off as $1/(\omega\tau)^2$ above the arc.
+- The expansion is valid while $\tau\,|d\ln R_{ct}/dt| \ll 1$, meaning the
+  parameter changes little within one time constant.
+
+**Verified:** adding the first-order term $V^{(1)}$ to the frozen-time
+synthesis reproduces the RK4 solution of §2.2.
+
+| record | ODE − frozen (rms) | left after adding $V^{(1)}$ |
 |---|---|---|
-| `polynomial_trend` | this package | exactly, at its own order |
-| `relaxation_trend` | Hallemans 2022 eq. (31)-(32), its coefficients | only if little of its ringing fits the record |
-| `logit_trend` | built here, Nernst relation | no, at any order or record length |
+| example 01's settings (gate ramp over 400 s) | 0.012 % | ≈ 0 % of it |
+| same circuit, ramp 10× faster (over 40 s) | 0.119 % | 0.2 % of it |
 
-Every one takes its shape parameters by keyword, so the published defaults
-can be changed one at a time, and `peak_to_peak=` puts them all at the same
-severity for a sweep.
+(The 0.014 % that example 01 prints includes the measurement noise it adds;
+the 0.012 % here is noise-free.)
 
-Worth knowing before trusting the second row: at the published coefficients
-that trend rings with a period near 1000 s, so a 160 s record sees only its
-smooth leading edge and a degree-8 polynomial removes it to 8.7e-11. On a
-2000 s record the same trend leaves 3.2e-02. The difficulty is a property of
-the record as much as of the trend.
+This is why `r_rc_transistor` integrates its ODE rather than using the engine,
+and why it returns both responses. `voltage_V` is the ODE solution and
+`voltage_quasistatic_V` is the frozen-time synthesis, so their difference is
+exactly this error.
 
-## How it works
+### 3.3 The rule of thumb
 
-The **engine** (`engine.py`) handles the three steps common to the frozen-time models:
+> Ask **where** a varying parameter sits, not how much memory the system has.
+> A parameter that scales the output of a fixed subsystem costs nothing,
+> however slow that subsystem is. A parameter inside a loop costs roughly the
+> loop's time constant times the rate of drift, however fast the loop is.
 
-1. Build the multisine current from the specified frequencies, amplitudes, and phases.
-2. Compute the voltage response tone-by-tone using the frozen-time impedance `Z(f, t)`.
-3. Add Gaussian noise to voltage and current if requested.
+The diffusion model ([§4.5](#45-randles_diffusion--charging-insertion-electrode))
+is the clearest illustration. Its diffusion element has a memory of seconds to
+hours, yet its frozen-time error is smaller than the transistor's.
 
-Each such **model** provides an `impedance_fn(f, t)` returning a `(n_freq, N)` complex array. The engine does not know or care how the impedance varies with time — that is entirely the model's concern.
+---
 
-### When frozen-time synthesis is exact, and when it is not
+## 4. The models
 
-For a **linear time-varying** system expanded in *real* basis functions, the frozen-time synthesis is not an approximation — it is algebraically identical to the block-diagram model of Hallemans TIM 2021 Fig. 1. Because `b_p(t)` is real the two sums commute:
+### Summary
 
-```
-Σ_p b_p(t)·Σ_k A_k Re{G_p(jω_k)e^{jθ}}  ==  Σ_k A_k Re{(Σ_p G_p(jω_k)b_p(t))·e^{jθ}}
-```
+| model | engine | ground truth `Z_true` | is the response exactly the synthesis of `Z_true`? |
+|---|---|---|---|
+| `r_rc` | frozen-time | analytic, constant | yes (LTI) |
+| `r_rc_transistor` | RK4 ODE | frozen-time | no — first-order error, §3.2 |
+| `legendre` | frozen-time | prescribed $\sum_p a_p(f)b_p(t)$ | yes — branch form, §3.1 |
+| `block_oriented` | DFT filtering | best linear approximation, by Monte Carlo | linear branches: yes. Nonlinear: the response contains distortion by design |
+| `randles_diffusion` | frozen-time | frozen-time Randles | by construction yes; against the physical circuit, approximately (§4.5) |
 
-so `legendre.py` reproduces the exact LTV response with no ODE solve. This is what makes it usable as an oracle.
+### 4.1 `r_rc` — stationary reference
 
-It does **not** hold when a time-varying parameter sits inside a feedback loop. In `r_rc_transistor.py`, `Z` is a nonlinear function of `R_ct(t)` and `R_ct` sits inside the C loop, so the frozen-time response is merely a quasi-static approximation of the governing equation — wrong by 1–2% rms at realistic gate-ramp rates. That model therefore bypasses the engine and integrates the circuit ODE directly.
-
-Between those two sits `randles_diffusion.py`, and it is worth knowing why, because the intuition that long memory makes frozen time worse turns out to be wrong. Both of its varying parameters are in branch form, so the diffusion element's memory — seconds to hours, against milliseconds for an RC — never enters the error at all. What is left is only the double-layer loop:
-
-```
-residual ~ tau_loop * |d(ln p)/dt|,     tau_loop = C_dl * (R_ct + R_d/3)
-```
-
-measured to be first order in each factor separately. On the hardest record its tests use, a 20C charge across the OCV inflection, that is 3.5e-03 rms; a realistic 0.5C charge is of order 1e-04. So it uses the engine, and its error is documented rather than integrated away.
-
-The rule of thumb that follows: ask *where* a varying parameter sits, not how much memory the system has. A parameter multiplying a subsystem's output costs nothing however slow that subsystem is; a parameter inside a loop costs the loop's time constant times the drift rate, however fast the loop is.
-
-## Models
-
-### `r_rc` — stationary reference
-
-Series resistance `R_s` plus a parallel RC element with constant parameters:
-
-```
-Z(f) = R_s + R_p / (1 + j·2π·f·R_p·C)
+```math
+Z(f) = R_s + \frac{R_p}{1 + j\omega R_p C}.
 ```
 
-Use this to verify that the estimator recovers a known, time-invariant impedance spectrum correctly.
+All parameters are constant, so the system is LTI and the frozen-time
+synthesis is its exact steady-state response. Use it to check that an
+estimator recovers a constant spectrum and **does not invent time
+variation**. Ground truth is analytic. No paper is needed: this is the
+textbook parallel RC with a series resistance.
 
-### `r_rc_transistor` — transistor-gated R_ct
+### 4.2 `r_rc_transistor` — transistor-gated charge-transfer resistance
 
-The parallel branch contains `R_p` in series with a transistor `T`:
+**Circuit.** A transistor $T$ sits in series with $R_p$ inside the parallel
+branch:
 
 ```
 R_s ---+--- R_p --- T ---+
@@ -91,168 +328,406 @@ R_s ---+--- R_p --- T ---+
        +------- C -------+
 ```
 
-The transistor is modelled as a voltage-controlled resistance:
+The transistor is modelled as a voltage-controlled resistance with a
+**piecewise-linear** characteristic:
 
-- `V_gate >= V_on (2.5 V)`: T is a short circuit → `R_ct = R_p`
-- `V_gate <= V_off (1.6 V)`: T is fully blocking → `R_ct = R_p + R_T_max`
-- Between `V_off` and `V_on`: linear interpolation
-
-Driving `V_gate` with a linear ramp (`V_gate(t) = V_gate_start + V_gate_rate * t`) produces a continuously time-varying `R_ct(t)` without any artificial parameter forcing — the variation comes from the circuit topology.
-
-This is the circuit of Breugelmans et al., Electrochim. Acta 76 (2012) 375, Fig. 7, and it is the only model here that can be **built on the bench as well as simulated**.
-
-**It is solved as a genuine time-varying ODE**, not by frozen-time synthesis. Under galvanostatic excitation, with `v_C` across the parallel branch:
-
-```
-dv_C/dt = (i(t) − v_C/R_ct(t)) / C
-v(t)    = R_s·i(t) + v_C(t)
+```math
+R_T(V_g) = R_{T,\max}\,\big(1-\alpha\big), \quad
+\alpha = \operatorname{clip}\!\left(\frac{V_g - V_\text{off}}{V_\text{on}-V_\text{off}},\,0,\,1\right),
+\qquad R_{ct} = R_p + R_T .
 ```
 
-a scalar linear ODE with a time-varying coefficient, integrated with fixed-step RK4 from the quasi-static initial state (so no startup transient is injected). The step size must stay well below `τ = R_ct·C`; a warning is raised otherwise.
+The gate is a linear ramp, $V_g(t) = V_{g,0} + \dot V_g\, t$, so $R_{ct}(t)$
+changes continuously. The defaults are $V_\text{off} = 1.6$ V and
+$V_\text{on} = 2.5$ V.
 
-Two extra keys come back:
+**Engine and ground truth.** The ODE of §2.2 gives `voltage_V`. `Z_true` is the
+frozen-time impedance $R_s + R_{ct}(t)/(1+j\omega R_{ct}(t)C)$, and
+`voltage_quasistatic_V` is its synthesis. The error of the frozen-time
+approximation is derived in §3.2.
 
-- `voltage_quasistatic_V` — the frozen-time synthesis, so `voltage_V − voltage_quasistatic_V` is the quasi-static modelling error directly.
-- `Z_true` — still the **frozen-time** impedance. That is the quantity an estimator is asked to recover, so it stays the ground truth even though it is not the response the circuit produces.
+**Things to know when defending it:**
 
-Because the response does not satisfy the estimators' model assumptions, this model is the one to use when asking *how far* a method degrades on a physically real system. Note `noise_std_A` models a noisy ammeter: it perturbs the recorded current, not the current driving the circuit.
+- The characteristic has **kinks** at $V_\text{off}$ and $V_\text{on}$, where
+  $dR_{ct}/dt$ jumps. Example 01 keeps the ramp between 5 % and 95 % of the
+  window so that $R_{ct}(t)$ is smooth. A ramp that crosses a threshold makes
+  the variation non-smooth, which no smooth-variation estimator should be
+  asked to follow.
+- The linear characteristic and the threshold values are modelling choices.
+  They are *not* known to come from a paper ([§6](#6-attributions-to-check-against-the-papers)).
+- Its value is that it is a circuit you can **build on the bench**. That makes
+  it the bridge between simulation and measurement.
 
-### `randles_diffusion` — charging insertion electrode
+**Source.** The code attributes the circuit to Breugelmans *et al.* (2012),
+Fig. 7. The paper is confirmed to exist and to concern time-varying ORP-EIS
+with an instantaneous impedance. That **its Fig. 7 is this circuit has not
+been checked.**
 
-The first system here with any diffusion in it, and the one most
-electrochemists would want to validate against:
+### 4.3 `legendre` — prescribed time-varying impedance (the oracle)
+
+**Model.** The impedance at each excited frequency is a Legendre expansion in
+normalised time:
+
+```math
+Z(f_k, t) = \sum_{p=0}^{P} a_p(f_k)\, b_p(t), \qquad
+b_p(t_n) = L_p(x_n) - \overline{L_p(x)}\ \ (p\ge1),\quad b_0 = 1,\quad x_n = \frac{2n}{N}-1 .
+```
+
+There is an optional additive drift with its own expansion,
+$v_\text{drift}(t) = \sum_q c_q\, b_q(t)$. You supply the complex coefficients
+`impedance_coefficients[k, p]` $= a_p(f_k)$ and the real
+`drift_coefficients[q]` $= c_q$.
+
+**Why it is exact.** It is a sum of LTI "branches" $a_p(f)$ each scaled by a
+real $b_p(t)$, which is exactly the form of §3.1. So the frozen-time synthesis
+is the exact response, for any coefficients and any order. That is what makes
+it an **oracle**. An estimator that fits this model, as BLTVA does, should get
+back $a_p$ itself, limited only by noise.
+
+**The mean subtraction, and why it matters for your BLTVA.** On a finite
+sampled record, $\frac{1}{N}\sum_n L_p(x_n)$ is not exactly zero for $p\ge1$.
+Without correcting for it, every time-varying column leaks a little into the
+DC bin. `legendre_basis` subtracts the sample mean from every $p\ge1$. The
+code attributes this step to Hallemans *et al.* (2021), after eq. (26).
+
+The oracle and the estimator **must use the identical basis, mean subtraction
+included**. Otherwise they disagree by $O(1/N)$, which looks like an estimator
+error but is not one. During development this showed up as a floor of about
+2e-5 under every recovery test at $N=10^5$. `legendre_basis` now lives in
+`models/legendre.py`. When you write your BLTVA, import it from there or
+reproduce it exactly.
+
+**Source.** Hallemans *et al.* (2021): the BLTVA model, with the time-varying
+transfer function expanded in Legendre polynomials.
+
+### 4.4 `block_oriented` — nonlinear branches, and the best linear approximation
+
+**Model.** Parallel branches, each a Wiener–Hammerstein block followed by a
+Legendre gain:
+
+```math
+y(t) = \sum_p b_p(t)\; f_{2,p}\!\Big( h_p * f_{1,p}\big(u(t)\big) \Big),
+\qquad H_p(s) = \frac{G_p\,\omega_{n,p}^2}{s^2 + 2\zeta_p\omega_{n,p} s + \omega_{n,p}^2}.
+```
+
+Making $f_1$ or $f_2$ the identity gives a Wiener branch, a Hammerstein branch,
+or a purely linear one. `hallemans_2021_system()` returns three branches, one
+of each kind. The code attributes them to the paper's Section VII, with
+natural frequencies 0.7, 1.0 and 1.5 Hz.
+
+**Engine.** DFT filtering, §2.3. Both of its conditions apply: a whole number
+of periods, and the harmonics of $f_1$ kept below $f_s/2$.
+
+**Ground truth: the BLA, not the linear part.** With nonlinear branches the
+response contains distortion, and no linear model reproduces it. The quantity
+an estimator should recover is the **best linear approximation** (BLA) of
+each branch. Because the static nonlinearities shift it, the BLA is **not**
+$H_p$ (which is returned as `H_linear` and is only the BLA when the branch is
+linear). `best_linear_approximation` computes it the standard way, by Monte
+Carlo over random-phase realisations of the multisine:
+
+```math
+G_p(f_k) = \mathbb{E}_{\phi}\!\left[ \frac{Y_p(k)}{U(k)} \right]
+\approx \frac{1}{R}\sum_{r=1}^{R} \frac{Y_p^{[r]}(k)}{U^{[r]}(k)} .
+```
+
+Each branch is driven separately, before its gain. With random phases, the
+nonlinear distortion is uncorrelated with the input and averages away, while
+the linear response does not. This is the BLA framework of Pintelon and
+Schoukens (2012). The function also returns the standard error of the mean,
+`scatter`, so you can check that $R$ was large enough.
+
+The time-varying target is then $Z(f,t) = \sum_p G_p(f)\,b_p(t)$
+(`frozen_impedance`). For linear branches $G_p = H_p$ and this reduces exactly
+to the Legendre model. That is the identity checked in §3.1.
+
+**Source.** Hallemans *et al.* (2021), Sections II and VII. See §6 for the
+equation numbers and coefficients to confirm.
+
+### 4.5 `randles_diffusion` — charging insertion electrode
+
+**Circuit.** A Randles cell whose faradaic branch contains finite-space
+diffusion with a **blocking** far boundary, the case of a battery particle
+that stores lithium rather than passing it through:
 
 ```
 R_s ---+--- R_ct(t) --- Z_d(f,t) ---+
        |                            |
        +---------- C_dl ------------+
-
-Z_d(f,t) = R_d(t) * coth(sqrt(j*w*tau_d)) / sqrt(j*w*tau_d),   tau_d = L^2/D
 ```
 
-`Z_d` is finite-space diffusion with a **blocking** far boundary — a battery
-particle, which stores lithium rather than passing it on. That gives a
-45-degree Warburg tail which turns up into the intercalation capacitance
-(`Z_d -> R_d/3 + R_d/(j w tau_d)`), so unlike every other model here `|Z|`
-grows without limit towards DC instead of settling on a resistance.
-
-A DC current charges the electrode, so SOC drifts through the record and takes
-two parameters with it:
-
-- `R_d` is proportional to the OCV slope `dU/dSOC`, since
-  `R_d = (dU/dc) L / (n F D)` and everything but the slope is constant. On a
-  plateau the slope is small, so the diffusion resistance is small and the
-  intercalation capacitance large — correct physics, and it makes `R_d(t)`
-  **non-monotone** when the record crosses a slope minimum.
-
-  This makes the OCV curve the most load-bearing choice in the model: it sets
-  the trend *and*, through its slope, the whole impedance variation. The
-  built-in `default_ocv` is **synthetic, not fitted to any material** — one
-  plateau and one step, in a graphite-like voltage window. Real graphite
-  stages, with three or four plateaus, and substituting such a curve via
-  `ocv_fn` swings `R_d` by ~90x with features narrower than the lowest tone's
-  period, which breaks the slowly-varying premise the estimators need. The
-  smooth default keeps the system inside that premise on purpose; see
-  `default_ocv`'s docstring.
-- `R_ct` follows the Butler-Volmer concentration factor `i_0 ~ sqrt(x(1-x))`.
-
-The capacity is not a free parameter: the low-frequency limit fixes
-`Q = tau_d |dU/dSOC| / R_d`, which is the same at every SOC precisely because
-`R_d` was defined proportional to the slope.
-
-Two things it gives that nothing else here does. The **impedance is not
-RC-shaped**, and the time variation is strongly frequency-dependent — about
-6x at the bottom tone and 1.0x at the top on the example record, so it is a
-low-frequency problem by construction. And the **trend is a charge curve**,
-not a polynomial: `legendre.py`'s drift is written in BLTVA's own trend basis
-and so costs nothing, while this one has to be bought in `Nq`.
-
-It uses the frozen-time engine. See the previous section for why that is
-legitimate here and not for the transistor, and
-`tests/test_randles_diffusion.py` for the measurement.
-
-### `legendre` — Legendre polynomial oracle
-
-The transfer function at each excited frequency is a Legendre polynomial expansion in time:
-
-```
-H(f_k, t) = Σ_{p=0}^{P}  a_p(f_k) · L_p(2t/T - 1)
+```math
+Z_d(f,t) = R_d(t)\,\frac{\coth\sqrt{j\omega\tau_d}}{\sqrt{j\omega\tau_d}}, \qquad \tau_d = \frac{L^2}{D},
+\qquad
+Z(f,t) = R_s + \left(j\omega C_{dl} + \frac{1}{R_{ct}(t)+Z_d(f,t)}\right)^{-1}.
 ```
 
-An optional additive voltage drift follows its own Legendre expansion:
+**The diffusion element, and its two limits** (derive these and you can defend
+the element):
 
-```
-v_drift(t) = Σ_{q=0}^{Q}  b_q · L_q(2t/T - 1)
-```
+- At high frequency, $\coth\to1$ and $Z_d \to R_d/\sqrt{j\omega\tau_d}$: phase
+  −45°, magnitude $\propto f^{-1/2}$. This is the semi-infinite Warburg tail.
+- At low frequency, $\coth(x)/x = 1/x^2 + 1/3 + O(x^2)$, so
+  $Z_d \to R_d/3 + R_d/(j\omega\tau_d)$: a resistance in series with the
+  **intercalation capacitance** $\tau_d/R_d$. So unlike every other model
+  here, $|Z|$ grows without bound towards DC.
 
-This is exactly the signal model that BLTVA assumes. Running BLTVA on a signal from this model is an oracle test: the estimated coefficients should match the input `impedance_coefficients` and `drift_coefficients` exactly (up to noise).
+**What drives the time variation.** A DC charging current moves the state of
+charge linearly, $x(t) = x_0 + \text{C-rate}\cdot t/3600$, and two parameters
+follow it:
 
-## Usage
+- $R_d \propto |dU/dx|$, the slope of the open-circuit voltage. This is
+  because $R_d = (dU/dc)\,L/(nFD)$ and only the slope changes during a charge.
+  On a plateau the slope is small, so $R_d$ is small and the capacitance
+  large. When the record crosses a slope minimum, $R_d(t)$ is non-monotone.
+- $R_{ct} \propto 1/\sqrt{x(1-x)}$, the Butler–Volmer concentration
+  dependence of the exchange current, $i_0 \propto \sqrt{x(1-x)}$.
+
+Both are normalised to their values at $x_0$ (`R_ct_ref`, `R_d_ref`), so only
+the *shapes* of the curves enter.
+
+**The capacity is not a free parameter.** The low-frequency capacitance is
+$\tau_d/R_d = dQ/dU = Q/|dU/dx|$, so $Q = \tau_d|dU/dx|/R_d$. That is the same
+at every state of charge, precisely because $R_d$ was defined proportional to
+the slope. The DC current is then $\text{C-rate}\cdot Q/3600$.
+
+**The trend.** With `include_dc=True` the record carries the DC current, and
+the voltage carries $U(x(t)) - U(x_0)$ plus the change in DC polarisation,
+$i_\text{dc}\,(R_{ct} + R_d/3)$. That makes it a real charge curve rather than
+a polynomial.
+
+**Is the frozen-time synthesis the true response?** Apply §3:
+
+- $R_d(t)$ multiplies the output of a *fixed* diffusion kernel, because $\tau_d$
+  is constant. On its own, that is branch form and exact (§3.1), however long
+  the kernel's memory.
+- $R_{ct}(t)$ is memoryless.
+- Both sit inside the **double-layer loop**. That is the part that is not
+  exact, with an error of order $\tau_\text{loop}\,|d\ln p/dt|$ where
+  $\tau_\text{loop} = C_{dl}(R_{ct}+R_d/3)$, by analogy with §3.2.
+
+*Development result:* integrating the circuit as a true time-varying ODE (via
+the modal expansion $\coth x/x = 1/x^2 + \sum_{m\ge1}2/(x^2+m^2\pi^2)$, one scalar
+ODE per mode) gave 3.5e-3 rms on a 20C charge across the OCV inflection, with
+$\tau_\text{loop} = 0.14$ s. The error was first order in both the drift rate
+and $C_{dl}$, as the estimate predicts. A realistic 0.5C charge is then of order
+1e-4. That integrator was removed with the test suite, so these numbers are
+**not verified on this branch**.
+
+**Caveats you must state:**
+
+- **The OCV curve is synthetic.** `default_ocv` has one plateau and one step
+  in a graphite-like voltage window. It is not fitted to any material, and
+  real graphite has three or four staging plateaus. A staged curve makes $R_d$
+  swing far more, with features narrower than the lowest tone's period, which
+  breaks the slow-variation premise of the estimators. That is why the
+  default is smooth. Pass a real curve via `ocv_fn`.
+- $\tau_d$, $R_s$ and $C_{dl}$ are held constant. Letting $\tau_d$ drift would
+  modulate the kernel itself and break the branch-form argument. *Development
+  result:* the effect was small, 0.05 % for a threefold change in $D$.
+- This model has no measured counterpart. It is not the transistor's bench
+  circuit, and its parameter set is illustrative.
+
+**Sources.** Ho, Raistrick and Huggins (1980) for the planar finite-space
+diffusion impedance with a blocking boundary. Jacobsen and West (1995) for the
+same element in planar, cylindrical and spherical symmetry; only the planar
+case is implemented.
+
+---
+
+## 5. Trends: disturbances, not systems
+
+`trends.py` provides slow voltage excursions to **add** to a response. Unlike
+the models, they are not part of the system: they are the disturbance a
+trend-removal step must take out from under the lowest tones. Each function
+takes the time axis first and returns volts. By default the mean is removed
+(the estimators all ignore the DC bin), and `peak_to_peak` rescales the trend
+so that shapes can be compared at equal severity.
+
+| trend | form | source | removable by a polynomial? |
+|---|---|---|---|
+| `polynomial_trend` | Legendre (or monomial) polynomial | this package's coefficients | exactly, at its own order |
+| `relaxation_trend` | step response of $K/(s^2+c_1s+c_0)$, at time $2t$ | Hallemans *et al.* (2022) | depends on the record length |
+| `logit_trend` | Nernst term $\tfrac{RT}{F}\ln\frac{x}{1-x}$ with $x$ linear in $t$ | built from first principles | no — infinite slope at the ends |
+
+Two points to make when defending these:
+
+- **The relaxation trend's difficulty depends on the record length.** At its
+  published coefficients it rings with a period near 1000 s. A short record
+  sees only the smooth leading edge, which a polynomial removes easily; a long
+  one sees whole cycles. The code's docstring tabulates the residue left by a
+  degree-8 fit: 8.7e-11 at 160 s, 3.2e-2 at 2000 s (development result).
+- **The logit trend is hard reproducibly.** Its shape is fixed in normalised
+  time, so its difficulty does not change with the record length. That makes
+  it the fair one to compare across studies.
+
+The underdamped, critically damped and overdamped branches of the step
+response are all implemented, so changing the coefficients never returns NaN.
+
+---
+
+## 6. Attributions to check against the papers
+
+These were written into the code's docstrings during the generated
+development and **could not be checked against the PDFs**. You studied the
+BLTVA papers yourself, so you are better placed to confirm them. Correct the
+code where any of them is wrong.
+
+| # | claim in the code | where | check |
+|---|---|---|---|
+| 1 | the transistor circuit is Breugelmans *et al.* (2012) **Fig. 7** | `r_rc_transistor.py` | figure number, and whether the paper's circuit matches |
+| 2 | transistor thresholds $V_\text{off}=1.6$ V, $V_\text{on}=2.5$ V and a linear characteristic | `r_rc_transistor.py` | almost certainly a modelling choice; say so |
+| 3 | mean subtraction of the Legendre basis, quoted from Hallemans (2021) **after eq. (26)** | `legendre.py` | the quotation and the equation number |
+| 4 | block-oriented class = Hallemans (2021) **Section II, Fig. 2**; Wiener–Hammerstein = **Fig. 7** | `block_oriented.py` | figure numbers |
+| 5 | the three branches and their coefficients = **Section VII, eq. (90)–(91g)**, natural frequencies read as Hz | `block_oriented.py` | every coefficient, and the Hz/rad·s⁻¹ reading |
+| 6 | relaxation trend = Hallemans (2022) **eq. (31)–(32)**, $K=5.92\times10^{-4}$, $c_1=1.25\times10^{-3}$, $c_0=9.87\times10^{-6}$, evaluated at $2t$ | `trends.py` | the coefficients and the factor 2 |
+| 7 | BLTVA models the trend as a Legendre expansion, **eq. (58)** | `trends.py` | equation number |
+| 8 | article numbers **6503814** (2021) and **6501711** (2022) | old top-level README | neither was found. The 2021 DOI is confirmed (see §9) |
+
+---
+
+## 7. What to test
+
+These are the properties that pin each piece down. They are listed here so
+that you can write the tests yourself. Each comes with a closed form or an
+independent check to test against, so none of them needs a magic tolerance.
+
+**Engine**
+- One tone through a constant $Z$: the output amplitude is $A|Z|$ and the phase
+  shift is $\arg Z$.
+- The same seed gives the same noise, and a different seed gives different noise.
+- `noise_std_A` leaves the voltage unchanged.
+
+**`r_rc`**
+- FFT-EIS on a whole-period record returns the analytic $Z(f)$ to round-off.
+
+**`r_rc_transistor`**
+- A static gate makes the system LTI: FFT-EIS must return the analytic
+  impedance, which also confirms the initial state.
+- Under step refinement, RK4 converges at fourth order. Compare at a fixed
+  *instant*, not at the last sample, because the grids differ.
+- Halving the ramp rate halves `voltage_V - voltage_quasistatic_V`, with the
+  ramp kept inside $(V_\text{off}, V_\text{on})$.
+- Adding the first-order term of §3.2 removes the residual (§8 shows how).
+
+**`legendre`**
+- `legendre_basis`: column 0 is all ones, and columns $p\ge1$ have zero mean.
+- With $P=0$ the model reduces to a stationary one.
+- Two engines agree: a linear `block_oriented` system and `simulate_legendre`
+  with $a_p = H_p$ match to round-off (§8).
+
+**`block_oriented`**
+- For linear branches, `best_linear_approximation` returns `H_linear`.
+- `scatter` falls as $1/\sqrt{R}$.
+- Aliasing: doubling $f_s$ does not change the excited bins, provided
+  $d\,f_{\max} < f_s/2$.
+
+**`randles_diffusion`**
+- The two limits of $Z_d$: $R_d/3 + R_d/(j\omega\tau_d)$ at low frequency, and
+  phase −45° with $|Z_d|\propto f^{-1/2}$ at high frequency.
+- $R_d/|dU/dx|$ and $R_{ct}\sqrt{x(1-x)}$ are constant over a record.
+- The implied capacity is the same at every instant of a record.
+- A state of charge leaving $(0,1)$ raises an error.
+
+**`trends`**
+- A polynomial trend is removed exactly by a fit of its own order.
+- The logit trend's residue after a fixed-order fit is independent of the
+  record length.
+
+---
+
+## 8. Reproducing the two engine checks
+
+The two **verified** numbers in §3 come from this script. Run it from the
+repository root.
 
 ```python
 import numpy as np
-from deistools.simulation import (simulate_r_rc, simulate_r_rc_transistor,
-                                  simulate_randles_diffusion, simulate_legendre)
+from deistools.simulation import (simulate_legendre, simulate_block_oriented,
+                                  simulate_r_rc_transistor, Branch, SecondOrderLowpass)
 
-frequencies = np.array([0.1, 0.5, 1.0, 5.0, 10.0])
-amplitudes  = np.full(5, 0.01)
-phases      = np.zeros(5)
+# 1. Branch form is exact: DFT filtering + gain  vs  frozen-time synthesis
+Tp, P, fs = 20.0, 4, 200.0
+f = np.array([1, 3, 5, 9, 13, 17, 27]) / Tp
+A = np.full(f.size, 0.01)
+ph = np.random.default_rng(3).uniform(0, 2 * np.pi, f.size)
+branches = [Branch(SecondOrderLowpass.from_hz(0.7, 0.15, 1.0)),
+            Branch(SecondOrderLowpass.from_hz(1.0, 0.10, 0.2)),
+            Branch(SecondOrderLowpass.from_hz(1.5, 0.15, 0.2))]
+bo = simulate_block_oriented(Tp * P, 1 / fs, f, A, ph, branches)
+lg = simulate_legendre(Tp * P, 1 / fs, f, A, ph, bo["H_linear"])
+print(np.abs(bo["voltage_V"] - lg["voltage_V"]).max() / np.abs(lg["voltage_V"]).max())
+# -> ~4.5e-14
 
-# Stationary reference
-result = simulate_r_rc(
-    duration_s=100, sampling_time_s=1e-3,
-    frequencies=frequencies, amplitudes=amplitudes, phases=phases,
-    R_s=0.01, R_p=0.05, C=1.0,
-    noise_std_V=1e-5,
-)
-
-# Transistor-gated non-stationary
-result = simulate_r_rc_transistor(
-    duration_s=100, sampling_time_s=1e-3,
-    frequencies=frequencies, amplitudes=amplitudes, phases=phases,
-    R_s=0.01, R_p=0.05, C=1.0,
-    V_gate_start=1.4, V_gate_rate=0.012,   # ramps from blocking to conducting
-    R_T_max=10.0,
-    noise_std_V=1e-5,
-)
-
-# Charging insertion electrode, with diffusion
-result = simulate_randles_diffusion(
-    duration_s=2000, sampling_time_s=0.02,
-    frequencies=frequencies, amplitudes=amplitudes, phases=phases,
-    R_s=0.02, C_dl=1.0, R_ct_ref=0.015, R_d_ref=0.08, tau_d=20.0,
-    soc_start=0.2, c_rate=0.5,       # 0.5C, so SOC runs 0.20 -> 0.48
-    include_dc=True,                 # the charging current and the charge curve
-    noise_std_V=2e-5,
-)
-
-# Legendre oracle (order 2 in time)
-coeffs = np.array([
-    [0.06 + 0j,   0.01 + 0j,  0.002 + 0j],   # f=0.1 Hz
-    [0.05 + 0j,   0.008 + 0j, 0.001 + 0j],   # f=0.5 Hz
-    # ...one row per frequency
-])
-result = simulate_legendre(
-    duration_s=100, sampling_time_s=1e-3,
-    frequencies=frequencies, amplitudes=amplitudes, phases=phases,
-    impedance_coefficients=coeffs,
-    drift_coefficients=[0.0, 0.002, 0.0],   # linear drift
-    noise_std_V=1e-5,
-)
+# 2. A loop is first order: the correction V1 = C g' Zp^3 I reproduces ODE - frozen
+Tp, P, fs = 20.0, 20, 1000.0
+f = np.array([1, 3, 5, 9, 13, 17, 27, 39, 59, 89, 133, 201, 301]) / Tp
+A = np.full(f.size, 0.01)
+ph = np.random.default_rng(3).uniform(0, 2 * np.pi, f.size)
+T, C = Tp * P, 1e-3
+s = simulate_r_rc_transistor(T, 1 / fs, f, A, ph, 10.0, 30.0, C, 1.645, 0.81 / T, 70.0)
+t, R = s["time_s"], s["R_ct_t"]
+g, gdot = 1 / R, np.gradient(1 / R, t)
+Zp = 1.0 / (g[None, :] + 1j * 2 * np.pi * f[:, None] * C)
+V1 = (A[:, None] * np.real(C * gdot * Zp**3
+      * np.exp(1j * (2 * np.pi * f[:, None] * t + ph[:, None])))).sum(0)
+resid = s["voltage_V"] - s["voltage_quasistatic_V"]
+m = slice(t.size // 20, 19 * t.size // 20)          # skip the record edges
+print(np.std(resid[m]) / np.std(s["voltage_V"][m]),  # -> ~1.2e-4  (0.012 %)
+      np.std(resid[m] - V1[m]) / np.std(resid[m]))   # -> ~0: V1 is the whole error
 ```
 
-All `simulate_*` functions return a dict with at minimum:
-- `time_s` — sample times, shape `(N,)`
-- `voltage_V` — simulated voltage, shape `(N,)`
-- `current_A` — multisine current, shape `(N,)`
-- `Z_true` — ground-truth (frozen-time) impedance, shape `(n_freq, N)`
-- `frequencies_Hz` — excited frequencies
+---
 
-Model-specific keys are added by each model: `R_ct_t`, `V_gate_t`, `voltage_quasistatic_V` (transistor); `soc_t`, `R_ct_t`, `R_d_t`, `drift_V`, `current_dc_A`, `capacity_As` (diffusion); `drift_V`, `impedance_coefficients`, `drift_coefficients` (Legendre); `R_s` and the remaining circuit parameters (all three circuit models).
+## 9. References
 
-## Adding a new model
+Each entry is marked with how far it was checked in October 2026.
 
-1. Create `models/your_model.py`.
-2. Write an `impedance_fn(f, t)` that returns `(n_freq, N)` complex.
-3. Call `from ..engine import simulate` and pass your function.
-4. Export `simulate_your_model` from `models/__init__.py` and `simulation/__init__.py`.
+- **Hallemans, N., Pintelon, R., *et al.*, Lataire, J.** (2021). Best linear
+  time-varying approximation of a general class of nonlinear time-varying
+  systems. *IEEE Trans. Instrum. Meas.* **70**.
+  doi:[10.1109/TIM.2021.3086891](https://doi.org/10.1109/TIM.2021.3086891).
+  *Title, volume and DOI confirmed.* The BLTVA model; the basis of
+  `legendre` and `block_oriented`.
+- **Hallemans, N., Pintelon, R., Zhu, X., Collet, T., Dabiri Havigh, M.,
+  Wouters, B., Revilla, R. I., Claessens, R., Ramharter, K., Hubin, A., &
+  Lataire, J.** (2022). Trend removal in measurements of best linear
+  time-varying approximations—with application to operando electrochemical
+  impedance spectroscopy. *IEEE Trans. Instrum. Meas.* **71**, 1–11.
+  *Title, authors and volume confirmed; article number not.* The source of
+  `relaxation_trend`.
+- **Breugelmans, T., Lataire, J., Muselle, T., Tourwé, E., Pintelon, R., &
+  Hubin, A.** (2012). Odd random phase multisine electrochemical impedance
+  spectroscopy to quantify a non-stationary behaviour: theory and validation
+  by calculating an instantaneous impedance value. *Electrochim. Acta* **76**,
+  375–382. doi:[10.1016/j.electacta.2012.05.051](https://doi.org/10.1016/j.electacta.2012.05.051).
+  *Confirmed; the figure number in §6 is not.* Cited for the transistor circuit.
+- **Pintelon, R., & Schoukens, J.** (2012). *System Identification: A Frequency
+  Domain Approach*, 2nd ed. Wiley–IEEE Press. *Standard reference, not
+  re-checked.* The best linear approximation and random-phase multisines.
+- **Ho, C., Raistrick, I. D., & Huggins, R. A.** (1980). *J. Electrochem. Soc.*
+  **127**, 343. *Volume and page from the code, not re-checked.* Planar
+  finite-space diffusion impedance with a blocking boundary.
+- **Jacobsen, T., & West, K.** (1995). Diffusion impedance in planar,
+  cylindrical and spherical symmetry. *Electrochim. Acta* **40**(2), 255–262.
+  doi:[10.1016/0013-4686(94)E0192-3](https://doi.org/10.1016/0013-4686(94)E0192-3).
+  *Confirmed.*
+
+---
+
+## Adding a model
+
+Decide the engine with §3, before writing any code:
+
+1. Write the system so that every time-varying parameter is visible. If each
+   one scales the **output** of a time-invariant subsystem, frozen time is
+   exact: write an `impedance_fn(f, t) -> (n_freq, N)` and call
+   `engine.simulate`.
+2. If a varying parameter sits **inside a loop**, estimate
+   $\tau_\text{loop}\,|d\ln p/dt|$. If it is far below the precision you need,
+   use the engine anyway and *state the estimate*. Otherwise integrate the
+   equation, as `r_rc_transistor` does, and return the frozen-time synthesis
+   alongside so the gap stays visible.
+3. If the system is nonlinear, the target is a BLA, not an impedance you
+   prescribe. Follow `block_oriented`.
+4. Export the new `simulate_*` from `models/__init__.py` and `simulation/__init__.py`.

@@ -2,7 +2,7 @@
 Standard additive drifts, for testing trend removal.
 
 A trend here is a slow voltage excursion **added to the measured response**:
-the disturbance that :mod:`deistools.processing.detrending` exists to remove,
+the disturbance that a trend-removal step exists to remove,
 and that the lowest excited tones have to be recovered from underneath. It is
 not part of the system. That distinction matters because the package also has
 a system-level voltage curve --
