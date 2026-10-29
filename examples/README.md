@@ -1,6 +1,6 @@
 # DEIStools examples
 
-Twenty-one self-contained scripts. Each one builds its own simulation, calls the
+Twenty-two self-contained scripts. Each one builds its own simulation, calls the
 estimators directly, and prints what it found. There is no shared science
 module to look through: everything a script does is in that script, in the
 order it happens, so it can be read top to bottom and copied from.
@@ -14,7 +14,7 @@ python examples/12_dmfa_parameters.py --no-widgets  # skip the interactive slide
 
 Nothing needs an instrument, a data file or a network connection. Every seed is
 fixed, so the numbers you see are the numbers in this README. The whole set
-takes about five minutes and produces 59 figures.
+takes about five minutes and produces 62 figures.
 
 The only shared file is [`_plotting.py`](_plotting.py), which holds matplotlib
 boilerplate — axis labels, colours, the two standard figure layouts — so that
@@ -29,13 +29,14 @@ sixty lines of formatting do not bury the four lines that matter.
 | **09** | trend removal | the four strategies: what each does to the signal, its spectrum and the estimate |
 | **10–15** | one estimator per pair | its parameters swept against known truth, then applied to all four systems |
 | **20–23** | one system per script | all three estimators side by side |
+| **24** | a fifth system | the one with diffusion in it, added after the rest |
 | **25** | drifts | generating a trend and adding it to a system, and who pays for it |
 
 If you are new to the package, read 00–01 and then 04–08. That is enough to
 run every estimator on your own data. The rest is about choosing their
 parameters well.
 
-### 00–03 · The four systems
+### 00–03 and 24 · The five systems
 
 | | system | ground truth |
 |---|---|---|
@@ -43,10 +44,18 @@ parameters well.
 | [01](01_synth_transistor.py) | transistor-gated R_ct(t) | frozen-time, accurate to 0.014 % |
 | [02](02_synth_legendre.py) | prescribed Legendre expansion | **exact**, and time-varying |
 | [03](03_synth_block_oriented.py) | block-oriented nonlinear | best linear approximation |
+| [24](24_synth_diffusion.py) | charging insertion electrode | frozen-time; 3.5e-3 measured at 20C, and first order in rate |
 
-All four use the same excitation: 13 odd harmonics on a quasi-log grid,
+The first four use the same excitation: 13 odd harmonics on a quasi-log grid,
 0.05–15.05 Hz, 10 mA per tone, sampled at 1 kHz. Each script defines it again
 at the top, so you can change one without touching the others.
+
+24 cannot, and the reason is worth reading: finite diffusion only appears
+around `w*tau_d ~ 1`, which is millihertz, so its grid has to start at 5 mHz
+and its record runs 2000 s — over which a cell charges appreciably. Looking
+lower in frequency *forces* more non-stationarity. It is also at cell scale,
+tens of milliohms rather than tens of ohms, because otherwise the charge
+curve would be microvolts against volts of excitation.
 
 ### 25 · Drifts
 
@@ -136,6 +145,16 @@ settings. Run them without `--save`.
   impedance is a rational function of time rather than a polynomial.
 - The **bottom decade is always the least reliable part** of a time-varying
   spectrum, whichever method produced it.
+- On the **charging electrode the impedance moves 6x at the bottom tone and
+  not at all at the top**. Every estimator needs a long window to reach a low
+  tone and a short one to track variation, and this system puts both demands
+  on the same tones.
+- **Long memory does not make frozen time worse.** The diffusion element's
+  memory is seconds to hours against milliseconds for an RC, yet its
+  frozen-time ground truth is ~100x better than the transistor's. What costs
+  is a varying parameter inside a *loop*, not a slow subsystem: the residual
+  scales as the loop time constant times the drift rate, and diffusion's
+  parameters are in branch form.
 - **DMFA output must be decimated to 0.5/bandwidth before fitting.** Reported
   more densely than that, neighbouring errors are correlated — 84% at the
   spacing these examples used to report.

@@ -118,6 +118,10 @@ Synthetic measurements with known ground truth, for testing estimators.
 - **`simulate_r_rc_transistor`** — a transistor sweeps `R_ct(t)`; solved as a
   true time-varying ODE, so the frozen-time ground truth is approximate and
   the script measures by how much.
+- **`simulate_randles_diffusion`** — a charging insertion electrode: Randles
+  with finite-space diffusion, whose `R_d` and `R_ct` are driven by the state
+  of charge. The only non-RC spectrum here, and the only trend that is a real
+  charge curve rather than a polynomial.
 - **`simulate_legendre`** — a prescribed Legendre expansion. The only exactly
   known *time-varying* ground truth here.
 - **`simulate_block_oriented`** — nonlinear branches; the target is a best
@@ -130,12 +134,12 @@ Interactive plotting helpers: `plot_technique`, `inspect_spectrum`,
 
 ## Examples
 
-[`examples/`](examples/) holds twenty self-contained scripts — each builds
+[`examples/`](examples/) holds twenty-one self-contained scripts — each builds
 its own simulation, calls the estimators directly and prints what it found.
 
 | | |
 |---|---|
-| **00–03** | one simulated system per script |
+| **00–03**, **24** | one simulated system per script |
 | **04–08** | one estimation with each method: how to call it, what comes back |
 | **09** | trend removal: the four strategies, and what each costs |
 | **10–15** | each estimator's parameters, swept against known truth |
@@ -165,6 +169,15 @@ mkdocs gh-deploy      # publish to GitHub Pages
 - Hallemans *et al.*, *IEEE TIM* **71** (2022) 6501711 — trend removal.
 - Breugelmans *et al.*, *Electrochim. Acta* **76** (2012) 375 — the short-time
   Fourier approach and the transistor circuit.
+
+For the diffusion model:
+
+- Ho, Raistrick and Huggins, *J. Electrochem. Soc.* **127** (1980) 343 — the
+  planar finite-space diffusion impedance with a blocking boundary, which is
+  the `coth` form implemented here.
+- Jacobsen and West, *Electrochim. Acta* **40** (1995) 255 — the same element
+  in planar, cylindrical and spherical symmetry; only the planar case is
+  implemented.
 
 For DMFA:
 

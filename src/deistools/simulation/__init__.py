@@ -5,6 +5,10 @@ from .trends import (
 )
 from .models import simulate_r_rc, simulate_r_rc_transistor, simulate_legendre
 from .models import (
+    simulate_randles_diffusion, diffusion_impedance, default_ocv,
+    default_ocv_slope,
+)
+from .models import (
     simulate_block_oriented, best_linear_approximation, frozen_impedance,
     Branch, SecondOrderLowpass, hallemans_2021_system,
 )
