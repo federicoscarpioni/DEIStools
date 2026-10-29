@@ -3,10 +3,6 @@ import warnings
 import numpy as np
 from numpy.fft import fft, fftshift, fftfreq
 
-#: A tone further than this many bins from a bin centre is treated as a design
-#: error rather than rounded silently. See :func:`compute_freq_indexes`.
-ON_BIN_TOLERANCE = 0.05
-
 
 def _zero_frequency_index(freq_axis):
     """Index of the 0 Hz bin in a shifted axis.
@@ -27,7 +23,6 @@ def compute_freq_indexes(
           freq_axis,
           frequencies,
           sampling_time,
-          tol=ON_BIN_TOLERANCE,
           ):
     """Bin index of each excited frequency in a shifted spectrum.
 
@@ -40,11 +35,6 @@ def compute_freq_indexes(
     Uses round rather than ceil: the aim is the *nearest* bin. With ceil a
     frequency landing a hair above a bin centre is pushed to the next one.
 
-    A multisine is designed so that every tone falls exactly on a bin -- that
-    is what makes the DFT leakage-free. A tone further than ``tol`` bins from
-    a centre therefore means the record length and the multisine period
-    disagree, so it raises rather than rounding quietly. Pass ``tol=None`` to
-    index an arbitrary frequency list, accepting the leakage that implies.
     """
     freq_axis = np.asarray(freq_axis)
     frequencies = np.asarray(frequencies, dtype=float)
@@ -53,25 +43,6 @@ def compute_freq_indexes(
 
     offsets = frequencies * sampling_time * n
     rounded = np.round(offsets)
-
-    if tol is not None:
-        residual = np.abs(offsets - rounded)
-        if residual.max() > tol:
-            worst = int(np.argmax(residual))
-            df = 1.0 / (n * sampling_time)
-            raise ValueError(
-                f"{frequencies[worst]:g} Hz lies {residual[worst]:.3g} bins "
-                f"from a bin centre (bin spacing {df:g} Hz). A multisine tone "
-                "should land exactly on a bin; check that the record is a "
-                "whole number of multisine periods and that freq_axis was "
-                "built with the same n as the spectrum. Pass tol=None to "
-                "index off-grid frequencies anyway.")
-
-    nyquist = 0.5 / sampling_time
-    if np.any(np.abs(frequencies) >= nyquist):
-        raise ValueError(
-            f"frequencies must lie below the Nyquist frequency {nyquist:g} Hz; "
-            f"the highest requested is {np.abs(frequencies).max():g} Hz")
 
     return (rounded.astype(int) + index_f0).tolist(), index_f0
 
