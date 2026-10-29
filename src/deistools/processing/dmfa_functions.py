@@ -248,9 +248,8 @@ def extract_impedance_with_error(
     variance_voltage, variance_current : float
         Variances (**not** standard deviations) of the noise on the two
         channels. They can be measured from the instrument, or -- better --
-        taken from bins the excitation never reaches, as
-        :func:`deistools.processing.bltva.estimate_noise_variance` does, which
-        also captures the noise colour.
+        estimated from DFT bins the excitation never reaches, which also
+        captures the noise colour.
 
     Returns
     -------
