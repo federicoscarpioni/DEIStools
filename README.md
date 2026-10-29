@@ -6,29 +6,37 @@ them.
 Classical EIS assumes the cell is the same at the end of the sweep as at the
 start. A cell that is charging, ageing or relaxing is not, and what comes back
 is a plausible-looking spectrum that belongs to no single instant. DEIStools
-collects the published methods for recovering `Z(f, t)` from a single
+collects published methods for recovering `Z(f, t)` from a single
 multi-frequency record, so that they can be compared rather than chosen on
 faith.
 
 It is hardware-agnostic: it works on any suitably sampled voltage/current pair,
 not only on signals from a particular lab setup.
 
-**📖 [Documentation](https://federicoscarpioni.github.io/DEIStools/)**
+> **The package is being rebuilt.** It has been cut back to code that has been
+> reviewed and can be defended. Tests, examples and documentation are being
+> rewritten by hand, and BLTVA is being reimplemented. See
+> [Next steps](#next-steps).
 
-## Status of each method
+## Current state
 
-| method | status | validated against |
+| subpackage | module | what it does |
 |---|---|---|
-| **STFT** | usable | analytic ground truth on four simulated systems |
-| **BLA per burst** | usable | predicted noise within 0.3% of the observed scatter; no false distortion alarm on a linear cell |
-| **DMFA** | ⚠️ **provisional** | definition, filter and variance now checked against the source papers; an end-to-end check against an independent implementation is still open |
-| **BLTVA** | usable | the source papers' algorithms, plus exact-recovery tests |
-| **Lock-in** | usable | agrees with STFT to 9e-14 at the window centres |
-| **Goertzel** | usable | reproduces numpy's DFT and the STFT estimator to 1e-10 |
-| **Detrending** | usable | four strategies, each measured against the others; only differencing is accepted by BLTVA |
+| `processing` | `stft_functions` | short-time Fourier estimate of `Z(f, t)`, plus the bin-index helpers |
+| | `dmfa_functions` | dynamic multi-frequency analysis, with and without an error estimate |
+| | `passband_filters` | the DMFA passband filters: Fermi–Dirac, raised cosine and standard windows |
+| | `mfa` | `MultiFrequencyAnalysis`, a class that wraps the above for interactive use |
+| | `data_loader` | file-dialog loaders for impedance sets and recorded signals |
+| | `data_preparation` | trimming the head or tail of a signal |
+| `simulation` | `engine`, `models`, `trends` | synthetic records with a known ground truth — see [its README](src/deistools/simulation/README.md) |
+| `visualise` | `fourier_space`, `impedance`, `raw_data` | interactive plots of spectra, impedance sets and raw signals |
 
-Uncertainty estimation exists for BLTVA only. See the
-[roadmap](https://federicoscarpioni.github.io/DEIStools/roadmap/).
+There are no tests and no examples at the moment.
+
+**Inputs are the caller's responsibility.** STFT and DMFA assume that the
+record holds a whole number of multisine periods and that every excited tone
+falls on a DFT bin. They do not check either. A record that breaks these
+assumptions leaks, and the leakage looks like time variation.
 
 ## Install
 
@@ -38,175 +46,160 @@ cd DEIStools
 pip install -e .
 ```
 
-Requires only `numpy` and `matplotlib`.
+Requires `numpy` and `matplotlib`. `data_loader` also needs `pandas` and
+`tkinter`, which are not declared yet (see [Next steps](#next-steps)).
 
-## Quick start
+## Methods: theory and sources
 
-```python
-import numpy as np
-from deistools.processing.bltva import bltva, legendre_basis
+### STFT — short-time Fourier transform
 
-# a record of P whole periods of a multisine on these odd harmonics
-harmonics = np.array([1, 3, 5, 9, 13, 17, 27, 39, 59, 89, 133, 201, 301])
+The record is cut into consecutive windows, each a whole number of multisine
+periods long, and each window is transformed on its own. In each window, the
+impedance at an excited frequency is the ratio of the voltage and current DFT
+coefficients at that tone's bin:
 
-result = bltva(
-    voltage, current, fs, P, harmonics,
-    Np=8,                   # order of the Legendre expansion of Z(f,t)
-    Nq=2,                   # order of the trend polynomial
-    Na=None,                # transient order: chosen for you
-    harmonics="excited",
-    band_halfwidth=50,
-)
-
-Z = result.H_p @ legendre_basis(len(voltage), 8).T   # (n_freq, n_samples)
-sigma = result.std_H_p                               # and an uncertainty
+```
+Z(f_k, t_i) = V_i(k) / I_i(k),      t_i = centre of window i
 ```
 
-The record must hold a **whole number of multisine periods** — a fractional
-period leaks, and the leakage is indistinguishable from time variation. Run
-the check below first; it is the cheapest way to find out that it does not:
+Because each window holds whole periods, every tone falls exactly on a bin and
+nothing leaks between tones. The price is time resolution: one value per
+window, and the cell is assumed stationary *within* each window. A longer
+window resolves lower frequencies and averages more noise, but it follows the
+time variation more coarsely.
 
-```python
-from deistools.processing.consistency import check_consistency, visualize_consistency
+*Source:* Breugelmans *et al.* (2012) compute an instantaneous impedance by
+resolving the impedance over fractions of an odd-random-phase multisine record.
 
-report = check_consistency(voltage, current, frequencies, 1 / fs,
-                           period=Tp, n_periods=P)
-print(report)                      # the numbers, and the verdict
-if not report.ok:
-    visualize_consistency(report)  # six panels of evidence
+### DMFA — dynamic multi-frequency analysis
+
+DMFA transforms the *whole* record once, then treats each excited tone
+separately:
+
+1. Take a band of `Npts_elab` bins centred on the tone.
+2. Multiply it by a passband filter centred on the tone (a quadrature filter).
+3. Inverse-transform the band. This gives the complex envelope of the voltage
+   and of the current at that tone, as functions of time.
+4. Take their ratio, `Z(f_k, t) = V_k(t) / I_k(t)`.
+
+The filter bandwidth sets the time resolution: a wider band follows faster
+changes but admits more noise. The bandwidth is also limited by the spacing of
+the excited tones, because neighbouring bands must not overlap.
+`extract_zero_frequency` applies the same filtering around 0 Hz and returns
+the slow, DC part of the signals. `extract_impedance_with_error` also
+propagates the noise variance of the two channels into a variance on `Z`.
+
+The default filter is the Fermi–Dirac shape
+
+```
+Y = cosh(n) / (cosh(n X) + cosh(n)),      X = (f - f_c) / bw
 ```
 
-## Subpackages
+which is flat in the pass band and falls off steeply at the edges, with the
+sharpness set by `n`.
 
-### `deistools.processing`
+*Sources:*
+- Battistel, Du and La Mantia (2016): DMFA introduced, for the analysis of
+  non-stationary impedance spectra.
+- Koster, Du, Battistel and La Mantia (2017): dynamic impedance redefined
+  with quadrature filters, and the design of multisines for it.
+- Battistel and La Mantia (2019): the physical definition of dynamic
+  impedance through Volterra series, and the strategy for extracting it,
+  including the filter.
+- Chukwu, Mugisa, Brogioli and La Mantia (2022): the statistics of the
+  measurement noise on dynamic impedance spectra, which is what the error
+  estimate follows.
 
-Signal processing and impedance estimation.
+### BLTVA — best linear time-varying approximation *(being reimplemented)*
 
-- **`bltva`** — best linear time-varying approximation. Fits `Z(f,t)` as a
-  Legendre expansion in the frequency domain and returns the coefficients with
-  an uncertainty. Also `estimate_noise_variance`, `select_na`,
-  `check_identifiability`, and the slider diagnostic `visualize_bltva_fit`.
-- **`stft_functions`** — short-time Fourier estimation (`estimate_impedance`).
-- **`bla`** — the same windows, with the discarded bins used to report the
-  noise level, the odd and even nonlinear distortion, and whether the residual
-  is noise or the cell moving (`bla_eis`, `burst_bla`, `classify_bins`).
-- **`dmfa_functions`** — demodulated multi-frequency analysis
-  (`extract_impedance` and its helpers), plus `visualize_dmfa_filtering`.
-- **`passband_filters`** — passband filters for DMFA: the Fermi-Dirac family
-  and the standard DSP windows, plus `rejection_db`.
-- **`lock_in_amp`** — digital lock-in (`lia_eis`), with two demodulators and
-  the integrator design helpers that make the tone rejection exact.
-- **`goertzel`** — the generalised Goertzel recurrence (`goertzel_eis`), batch
-  and streaming.
-- **`detrending`** — `Differencing`, `MovingAverage`, `LowPassRemoval` and
-  `PolynomialFit`, with `check_response` to verify a strategy against the
-  protocol. Only differencing may be used as a BLTVA weighting factor; the
-  module documents why.
-- **`consistency`** — `check_consistency`, which asks whether a record agrees
-  with the metadata describing it: `N = P * Tp * fs`, every tone on a DFT bin,
-  every tone actually present, nothing present that is not listed. When they
-  disagree it measures the tone positions to say *which* of the four is wrong,
-  and `visualize_consistency` shows the evidence.
-- **`mfa`** — `MultiFrequencyAnalysis`, a class wrapping the above for
-  interactive use.
+BLTVA writes the time-varying transfer function as a sum of fixed spectra
+times Legendre polynomials in time:
 
-### `deistools.simulation`
-
-Synthetic measurements with known ground truth, for testing estimators.
-
-- **`simulate_r_rc`** — stationary R + (R‖C). Ground truth is analytic.
-- **`simulate_r_rc_transistor`** — a transistor sweeps `R_ct(t)`; solved as a
-  true time-varying ODE, so the frozen-time ground truth is approximate and
-  the script measures by how much.
-- **`simulate_randles_diffusion`** — a charging insertion electrode: Randles
-  with finite-space diffusion, whose `R_d` and `R_ct` are driven by the state
-  of charge. The only non-RC spectrum here, and the only trend that is a real
-  charge curve rather than a polynomial.
-- **`simulate_legendre`** — a prescribed Legendre expansion. The only exactly
-  known *time-varying* ground truth here.
-- **`simulate_block_oriented`** — nonlinear branches; the target is a best
-  linear approximation, obtained by Monte Carlo.
-
-### `deistools.visualise`
-
-Interactive plotting helpers: `plot_technique`, `inspect_spectrum`,
-`visualise_peaks`, `plot_impedance_set` and variants.
-
-## Examples
-
-[`examples/`](examples/) holds twenty-one self-contained scripts — each builds
-its own simulation, calls the estimators directly and prints what it found.
-
-| | |
-|---|---|
-| **00–03**, **24** | one simulated system per script |
-| **04–08** | one estimation with each method: how to call it, what comes back |
-| **09** | trend removal: the four strategies, and what each costs |
-| **10–15** | each estimator's parameters, swept against known truth |
-| **20–23** | the three main methods side by side, one system per script |
-
-If you are new, read `00`, `01`, then `04`–`08`. See
-[`examples/README.md`](examples/README.md).
-
-```bash
-python examples/04_stft_first_run.py --save
+```
+Z(f, t) = sum_p  G_p(f) * b_p(t)
 ```
 
-## Documentation
+A polynomial trend is added, and the coefficients are fitted in the frequency
+domain from the bins around each excited tone. Because the time variation
+spreads every tone into its neighbouring bins, those bins carry the
+information about how `Z` changes.
 
-Built with MkDocs:
+The simulation's Legendre oracle is built on exactly this model.
+Any implementation must use the *same* basis, including the subtraction of
+the sample mean from every order p ≥ 1, or it will disagree with the oracle at
+the O(1/N) level. That basis is `deistools.simulation.models.legendre.legendre_basis`.
 
-```bash
-pip install -e ".[docs]"
-mkdocs serve          # live preview at http://127.0.0.1:8000
-mkdocs gh-deploy      # publish to GitHub Pages
-```
+*Sources:* Hallemans *et al.* (2021) for the model and the estimator;
+Hallemans *et al.* (2022) for trend removal.
 
-## Sources
+### Simulation
 
-- Hallemans *et al.*, *IEEE TIM* **70** (2021) 6503814 — the BLTVA model,
-  Algorithms 1 and 2, Sections V and VI.
-- Hallemans *et al.*, *IEEE TIM* **71** (2022) 6501711 — trend removal.
-- Breugelmans *et al.*, *Electrochim. Acta* **76** (2012) 375 — the short-time
-  Fourier approach and the transistor circuit.
+The engines (frozen-time synthesis, ODE integration and DFT-domain
+filtering), the conditions under which each one is exact, every model's
+mathematics and its sources are in
+[`src/deistools/simulation/README.md`](src/deistools/simulation/README.md).
 
-For the diffusion model:
+## Next steps
 
-- Ho, Raistrick and Huggins, *J. Electrochem. Soc.* **127** (1980) 343 — the
-  planar finite-space diffusion impedance with a blocking boundary, which is
-  the `coth` form implemented here.
-- Jacobsen and West, *Electrochim. Acta* **40** (1995) 255 — the same element
-  in planar, cylindrical and spherical symmetry; only the planar case is
-  implemented.
+- [ ] **Reimplement BLTVA** from Hallemans *et al.* (2021, 2022), on
+  `legendre_basis` as described above.
+- [ ] **Write the test suite.** Targets for the simulation are listed in §7 of
+  [its README](src/deistools/simulation/README.md#7-what-to-test).
+- [ ] **Write the examples**, one at a time.
+- [ ] **Validate DMFA end to end** against an implementation that is not this
+  one.
+- [ ] **Back up or drop an unsupported claim in `dmfa_functions`.** The
+  docstring of `extract_impedance_with_error` says the predicted variance
+  agrees with the scatter of 200 noise realisations to better than 1%. The
+  code that checked this went with the old test suite.
+- [ ] **`data_loader`: declare or remove its dependencies.** It imports
+  `pandas`, which is not in `pyproject.toml`, so the module fails to import on
+  a clean install. It also opens a Tkinter file dialog and takes no path
+  argument, so it cannot be used from a script or a test. Because it loads
+  *experimental* data, consider moving it to
+  [`elma`](https://github.com/federicoscarpioni/elma).
+- [ ] **`data_preparation`: finish `cut_signal_extemes`.** It is an
+  unimplemented stub, and its name is misspelled.
+- [ ] **Confirm the paper attributions** listed in §6 of the
+  [simulation README](src/deistools/simulation/README.md#6-attributions-to-check-against-the-papers)
+  against the PDFs: equation numbers, figure numbers and coefficients.
+- [ ] **Documentation site.** The MkDocs site on the `gh-pages` branch is
+  still online and describes the previous version of the package. Rebuild it
+  or take it down.
 
-For DMFA:
+## References
 
-- Battistel, Du and La Mantia, *Electroanalysis* **28** (2016) 2346 — the first
-  statement of DMFA, with the first-order expansion of eq. (11) that the later
-  papers replace.
-- Koster, Du, Battistel and La Mantia, *Electrochim. Acta* **246** (2017) 553 —
-  the quadrature-filter definition of eq. (9), which is what this package
-  implements, and the bandwidth ceiling set by the multisine spacing.
-- Battistel and La Mantia, *Electrochim. Acta* **304** (2019) 513 — the
-  physical definition via a Volterra series, and the Fermi-Dirac filter of
-  eq. (12).
-- Chukwu, Mugisa, Brogioli and La Mantia, *ChemElectroChem* **9** (2022)
-  e202200109 — the variance of the error on the admittance, eq. (19)–(20), and
-  the correlation between neighbouring instants.
+- Battistel, A., Du, G., & La Mantia, F. (2016). On the analysis of
+  non-stationary impedance spectra. *Electroanalysis* **28**, 2346.
+  doi:[10.1002/elan.201600260](https://doi.org/10.1002/elan.201600260)
+- Koster, D., Du, G., Battistel, A., & La Mantia, F. (2017). Dynamic impedance
+  spectroscopy using dynamic multi-frequency analysis: a theoretical and
+  experimental investigation. *Electrochim. Acta* **246**, 553–563.
+- Battistel, A., & La Mantia, F. (2019). On the physical definition of dynamic
+  impedance: how to design an optimal strategy for data extraction.
+  *Electrochim. Acta* **304**, 513–520.
+  doi:[10.1016/j.electacta.2019.03.033](https://doi.org/10.1016/j.electacta.2019.03.033)
+- Chukwu, R., Mugisa, J., Brogioli, D., & La Mantia, F. (2022). Statistical
+  analysis of the measurement noise in dynamic impedance spectra.
+  *ChemElectroChem* **9**, e202200109.
+  doi:[10.1002/celc.202200109](https://doi.org/10.1002/celc.202200109)
+- Breugelmans, T., Lataire, J., Muselle, T., Tourwé, E., Pintelon, R., &
+  Hubin, A. (2012). Odd random phase multisine electrochemical impedance
+  spectroscopy to quantify a non-stationary behaviour: theory and validation
+  by calculating an instantaneous impedance value. *Electrochim. Acta* **76**,
+  375–382. doi:[10.1016/j.electacta.2012.05.051](https://doi.org/10.1016/j.electacta.2012.05.051)
+- Hallemans, N., Pintelon, R., *et al.*, & Lataire, J. (2021). Best linear
+  time-varying approximation of a general class of nonlinear time-varying
+  systems. *IEEE Trans. Instrum. Meas.* **70**.
+  doi:[10.1109/TIM.2021.3086891](https://doi.org/10.1109/TIM.2021.3086891)
+- Hallemans, N., Pintelon, R., Zhu, X., Collet, T., Dabiri Havigh, M.,
+  Wouters, B., Revilla, R. I., Claessens, R., Ramharter, K., Hubin, A., &
+  Lataire, J. (2022). Trend removal in measurements of best linear
+  time-varying approximations — with application to operando electrochemical
+  impedance spectroscopy. *IEEE Trans. Instrum. Meas.* **71**, 1–11.
 
-For Goertzel:
-
-- Goertzel, *Am. Math. Monthly* **65** (1958) 34 — the original recurrence.
-- Sysel and Rajmic, *EURASIP J. Adv. Signal Process.* (2012) 56 — the
-  generalisation to non-integer bins, which is the form implemented here.
-
-The lock-in has no source listed because it is the textbook demodulator; what
-is specific to a multisine is the integrator design, and that is derived in
-the [documentation](https://federicoscarpioni.github.io/DEIStools/methods/lock-in/).
-
-Where a paper is ambiguous, or this implementation makes a choice the paper
-does not dictate, it is recorded in the
-[implementation notes](https://federicoscarpioni.github.io/DEIStools/implementation/).
+The simulation's own references are listed in
+[its README](src/deistools/simulation/README.md#9-references).
 
 ## History note
 
