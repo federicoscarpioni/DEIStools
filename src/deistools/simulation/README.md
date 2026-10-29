@@ -51,7 +51,7 @@ i(t) = \sum_{k=1}^{K} A_k \cos(\omega_k t + \phi_k), \qquad \omega_k = 2\pi f_k 
 amplitudes and phases. The simulation does not care how the tones are chosen.
 The estimators do, though. They need every $f_k$ to sit exactly on a DFT bin of
 the record, which means the record length $T = N\,\Delta t$ must be a whole
-number of multisine periods. The examples always build records that way.
+number of multisine periods. Build every record that way.
 
 ### Time axis
 
@@ -269,11 +269,10 @@ synthesis reproduces the RK4 solution of §2.2.
 
 | record | ODE − frozen (rms) | left after adding $V^{(1)}$ |
 |---|---|---|
-| example 01's settings (gate ramp over 400 s) | 0.012 % | ≈ 0 % of it |
+| $R_s=10\ \Omega$, $R_p=30\ \Omega$, $R_{T,\max}=70\ \Omega$, $C=1$ mF; gate ramp across 90 % of the window in 400 s | 0.012 % | ≈ 0 % of it |
 | same circuit, ramp 10× faster (over 40 s) | 0.119 % | 0.2 % of it |
 
-(The 0.014 % that example 01 prints includes the measurement noise it adds;
-the 0.012 % here is noise-free.)
+Both records are noise-free; the exact settings are in §8.
 
 This is why `r_rc_transistor` integrates its ODE rather than using the engine,
 and why it returns both responses. `voltage_V` is the ODE solution and
@@ -349,8 +348,8 @@ approximation is derived in §3.2.
 **Things to know when defending it:**
 
 - The characteristic has **kinks** at $V_\text{off}$ and $V_\text{on}$, where
-  $dR_{ct}/dt$ jumps. Example 01 keeps the ramp between 5 % and 95 % of the
-  window so that $R_{ct}(t)$ is smooth. A ramp that crosses a threshold makes
+  $dR_{ct}/dt$ jumps. Keep the ramp strictly inside the window -- from 5 % to
+  95 % of it, say -- so that $R_{ct}(t)$ is smooth. A ramp that crosses a threshold makes
   the variation non-smooth, which no smooth-variation estimator should be
   asked to follow.
 - The linear characteristic and the threshold values are modelling choices.
