@@ -33,15 +33,30 @@ drift_coefficients : array_like, shape (Q+1,), real, optional
 """
 import numpy as np
 from ..engine import simulate as _simulate
+from numpy.polynomial.legendre import legvander
 
-# The estimator's own basis, deliberately. Hallemans TIM 2021 after eq. (26):
-# on a finite record the continuous property (1/T)*int b_p dt = 0 does not
-# hold exactly, "therefore the mean values of the sampled and windowed b_p(t),
-# p >= 1 are subtracted". An oracle has to be built from the estimator's model
-# rather than a near neighbour of it; using the raw Legendre polynomials here
-# instead left an O(1/N) floor under every recovery test, which at N = 16000
-# showed up as a 5.9e-05 discrepancy against the block-oriented model.
-from deistools.processing.bltva import legendre_basis
+
+def legendre_basis(N: int, order: int) -> np.ndarray:
+    """Rescaled Legendre basis b_p(t) = L_p(2t/T - 1), sampled on N points.
+
+    Returns a real array of shape ``(N, order+1)``.
+
+    The sample mean is removed from every p >= 1. On a finite sampled window the
+    continuous property (1/T) int b_p dt = 0 does not hold exactly, so without this
+    every time-varying regressor leaks into the DC bin.
+
+    This is Hallemans TIM 2021, after eq. (26): "the mean values of the sampled
+    and windowed b_p(t), p >= 1 are subtracted". It used to live in the BLTVA
+    estimator and was imported from there, because an oracle has to be built
+    from the estimator's own model rather than a near neighbour of it. It now
+    lives here so that the simulation does not depend on the estimator; an
+    estimator that fits this model should import it from here, or reproduce it
+    exactly, mean subtraction included.
+    """
+    x = 2.0 * np.arange(N) / N - 1.0
+    b = legvander(x, order)                       # (N, order+1)
+    b[:, 1:] -= b[:, 1:].mean(axis=0, keepdims=True)
+    return b
 
 
 def legendre_impedance(f, t, T_window, impedance_coefficients):

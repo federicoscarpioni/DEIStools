@@ -14,7 +14,7 @@ Run:  python examples/02_synth_legendre.py [--save]
 import numpy as np
 import matplotlib.pyplot as plt
 
-from deistools.processing.bltva import legendre_basis
+from deistools.simulation.models.legendre import legendre_basis
 from deistools.simulation.models.legendre import simulate_legendre
 
 from _plotting import parse_args, finish, show_all, overview, time_colours
