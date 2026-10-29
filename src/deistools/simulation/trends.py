@@ -4,10 +4,7 @@ Standard additive drifts, for testing trend removal.
 A trend here is a slow voltage excursion **added to the measured response**:
 the disturbance that a trend-removal step exists to remove,
 and that the lowest excited tones have to be recovered from underneath. It is
-not part of the system. That distinction matters because the package also has
-a system-level voltage curve --
-:func:`~deistools.simulation.models.randles_diffusion.default_ocv` -- which
-drives the diffusion resistance and is therefore physics, not a disturbance.
+not part of the system.
 
 Three shapes are provided, and they are deliberately different in kind.
 Residue left by a least-squares Legendre fit of order ``q``, relative to the
@@ -278,10 +275,7 @@ def logit_trend(t, *, thermal_voltage=0.025693, soc_start=0.05, soc_end=0.95,
     configurational entropy of a lattice gas, so it is the part of a real OCV
     curve that is there regardless of material. What it leaves out is
     everything material-specific: staging plateaus, phase transitions, and
-    the enthalpic terms. For a system-level curve with those features see
-    :func:`~deistools.simulation.models.randles_diffusion.default_ocv`, which
-    is a different object -- part of the system rather than a disturbance on
-    it.
+    the enthalpic terms.
 
     Why it belongs in this suite: it has **no finite derivative at the ends
     of its range**, so a polynomial fit cannot follow it near the limits

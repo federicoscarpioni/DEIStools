@@ -104,7 +104,7 @@ That is `engine.synthesize_voltage`. It is the steady-state response of an LTI
 system with impedance $Z$, applied instant by instant. There is no ODE and no
 time stepping, so the cost is $O(KN)$.
 
-**Used by:** `r_rc`, `legendre`, `randles_diffusion`, and the
+**Used by:** `r_rc`, `legendre`, and the
 `voltage_quasistatic_V` reference inside `r_rc_transistor`.
 
 ### 2.2 Time-domain ODE integration — `r_rc_transistor`
@@ -286,10 +286,6 @@ exactly this error.
 > however slow that subsystem is. A parameter inside a loop costs roughly the
 > loop's time constant times the rate of drift, however fast the loop is.
 
-The diffusion model ([§4.5](#45-randles_diffusion--charging-insertion-electrode))
-is the clearest illustration. Its diffusion element has a memory of seconds to
-hours, yet its frozen-time error is smaller than the transistor's.
-
 ---
 
 ## 4. The models
@@ -302,7 +298,6 @@ hours, yet its frozen-time error is smaller than the transistor's.
 | `r_rc_transistor` | RK4 ODE | frozen-time | no — first-order error, §3.2 |
 | `legendre` | frozen-time | prescribed $\sum_p a_p(f)b_p(t)$ | yes — branch form, §3.1 |
 | `block_oriented` | DFT filtering | best linear approximation, by Monte Carlo | linear branches: yes. Nonlinear: the response contains distortion by design |
-| `randles_diffusion` | frozen-time | frozen-time Randles | by construction yes; against the physical circuit, approximately (§4.5) |
 
 ### 4.1 `r_rc` — stationary reference
 
@@ -443,95 +438,6 @@ to the Legendre model. That is the identity checked in §3.1.
 **Source.** Hallemans *et al.* (2021), Sections II and VII. See §6 for the
 equation numbers and coefficients to confirm.
 
-### 4.5 `randles_diffusion` — charging insertion electrode
-
-**Circuit.** A Randles cell whose faradaic branch contains finite-space
-diffusion with a **blocking** far boundary, the case of a battery particle
-that stores lithium rather than passing it through:
-
-```
-R_s ---+--- R_ct(t) --- Z_d(f,t) ---+
-       |                            |
-       +---------- C_dl ------------+
-```
-
-```math
-Z_d(f,t) = R_d(t)\,\frac{\coth\sqrt{j\omega\tau_d}}{\sqrt{j\omega\tau_d}}, \qquad \tau_d = \frac{L^2}{D},
-\qquad
-Z(f,t) = R_s + \left(j\omega C_{dl} + \frac{1}{R_{ct}(t)+Z_d(f,t)}\right)^{-1}.
-```
-
-**The diffusion element, and its two limits** (derive these and you can defend
-the element):
-
-- At high frequency, $\coth\to1$ and $Z_d \to R_d/\sqrt{j\omega\tau_d}$: phase
-  −45°, magnitude $\propto f^{-1/2}$. This is the semi-infinite Warburg tail.
-- At low frequency, $\coth(x)/x = 1/x^2 + 1/3 + O(x^2)$, so
-  $Z_d \to R_d/3 + R_d/(j\omega\tau_d)$: a resistance in series with the
-  **intercalation capacitance** $\tau_d/R_d$. So unlike every other model
-  here, $|Z|$ grows without bound towards DC.
-
-**What drives the time variation.** A DC charging current moves the state of
-charge linearly, $x(t) = x_0 + \text{C-rate}\cdot t/3600$, and two parameters
-follow it:
-
-- $R_d \propto |dU/dx|$, the slope of the open-circuit voltage. This is
-  because $R_d = (dU/dc)\,L/(nFD)$ and only the slope changes during a charge.
-  On a plateau the slope is small, so $R_d$ is small and the capacitance
-  large. When the record crosses a slope minimum, $R_d(t)$ is non-monotone.
-- $R_{ct} \propto 1/\sqrt{x(1-x)}$, the Butler–Volmer concentration
-  dependence of the exchange current, $i_0 \propto \sqrt{x(1-x)}$.
-
-Both are normalised to their values at $x_0$ (`R_ct_ref`, `R_d_ref`), so only
-the *shapes* of the curves enter.
-
-**The capacity is not a free parameter.** The low-frequency capacitance is
-$\tau_d/R_d = dQ/dU = Q/|dU/dx|$, so $Q = \tau_d|dU/dx|/R_d$. That is the same
-at every state of charge, precisely because $R_d$ was defined proportional to
-the slope. The DC current is then $\text{C-rate}\cdot Q/3600$.
-
-**The trend.** With `include_dc=True` the record carries the DC current, and
-the voltage carries $U(x(t)) - U(x_0)$ plus the change in DC polarisation,
-$i_\text{dc}\,(R_{ct} + R_d/3)$. That makes it a real charge curve rather than
-a polynomial.
-
-**Is the frozen-time synthesis the true response?** Apply §3:
-
-- $R_d(t)$ multiplies the output of a *fixed* diffusion kernel, because $\tau_d$
-  is constant. On its own, that is branch form and exact (§3.1), however long
-  the kernel's memory.
-- $R_{ct}(t)$ is memoryless.
-- Both sit inside the **double-layer loop**. That is the part that is not
-  exact, with an error of order $\tau_\text{loop}\,|d\ln p/dt|$ where
-  $\tau_\text{loop} = C_{dl}(R_{ct}+R_d/3)$, by analogy with §3.2.
-
-*Development result:* integrating the circuit as a true time-varying ODE (via
-the modal expansion $\coth x/x = 1/x^2 + \sum_{m\ge1}2/(x^2+m^2\pi^2)$, one scalar
-ODE per mode) gave 3.5e-3 rms on a 20C charge across the OCV inflection, with
-$\tau_\text{loop} = 0.14$ s. The error was first order in both the drift rate
-and $C_{dl}$, as the estimate predicts. A realistic 0.5C charge is then of order
-1e-4. That integrator was removed with the test suite, so these numbers are
-**not verified on this branch**.
-
-**Caveats you must state:**
-
-- **The OCV curve is synthetic.** `default_ocv` has one plateau and one step
-  in a graphite-like voltage window. It is not fitted to any material, and
-  real graphite has three or four staging plateaus. A staged curve makes $R_d$
-  swing far more, with features narrower than the lowest tone's period, which
-  breaks the slow-variation premise of the estimators. That is why the
-  default is smooth. Pass a real curve via `ocv_fn`.
-- $\tau_d$, $R_s$ and $C_{dl}$ are held constant. Letting $\tau_d$ drift would
-  modulate the kernel itself and break the branch-form argument. *Development
-  result:* the effect was small, 0.05 % for a threefold change in $D$.
-- This model has no measured counterpart. It is not the transistor's bench
-  circuit, and its parameter set is illustrative.
-
-**Sources.** Ho, Raistrick and Huggins (1980) for the planar finite-space
-diffusion impedance with a blocking boundary. Jacobsen and West (1995) for the
-same element in planar, cylindrical and spherical symmetry; only the planar
-case is implemented.
-
 ---
 
 ## 5. Trends: disturbances, not systems
@@ -621,13 +527,6 @@ independent check to test against, so none of them needs a magic tolerance.
 - Aliasing: doubling $f_s$ does not change the excited bins, provided
   $d\,f_{\max} < f_s/2$.
 
-**`randles_diffusion`**
-- The two limits of $Z_d$: $R_d/3 + R_d/(j\omega\tau_d)$ at low frequency, and
-  phase −45° with $|Z_d|\propto f^{-1/2}$ at high frequency.
-- $R_d/|dU/dx|$ and $R_{ct}\sqrt{x(1-x)}$ are constant over a record.
-- The implied capacity is the same at every instant of a record.
-- A state of charge leaving $(0,1)$ raises an error.
-
 **`trends`**
 - A polynomial trend is removed exactly by a fit of its own order.
 - The logit trend's residue after a fixed-order fit is independent of the
@@ -704,13 +603,6 @@ Each entry is marked with how far it was checked in October 2026.
 - **Pintelon, R., & Schoukens, J.** (2012). *System Identification: A Frequency
   Domain Approach*, 2nd ed. Wiley–IEEE Press. *Standard reference, not
   re-checked.* The best linear approximation and random-phase multisines.
-- **Ho, C., Raistrick, I. D., & Huggins, R. A.** (1980). *J. Electrochem. Soc.*
-  **127**, 343. *Volume and page from the code, not re-checked.* Planar
-  finite-space diffusion impedance with a blocking boundary.
-- **Jacobsen, T., & West, K.** (1995). Diffusion impedance in planar,
-  cylindrical and spherical symmetry. *Electrochim. Acta* **40**(2), 255–262.
-  doi:[10.1016/0013-4686(94)E0192-3](https://doi.org/10.1016/0013-4686(94)E0192-3).
-  *Confirmed.*
 
 ---
 
