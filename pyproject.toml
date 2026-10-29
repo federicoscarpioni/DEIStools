@@ -17,15 +17,6 @@ dependencies = [
 license = "MIT"
 license-files = ["LICENSE"]
 
-[project.optional-dependencies]
-docs = [
-    "mkdocs>=1.6",
-    # the readthedocs theme ships with mkdocs; pymdown-extensions supplies the
-    # arithmatex/superfences/highlight extensions used in mkdocs.yml
-    "pymdown-extensions>=10.0",
-    "mkdocstrings[python]>=0.26",
-]
-
 [project.urls]
 Repository = "https://github.com/federicoscarpioni/DEIStools.git"
 Issues = "https://github.com/federicoscarpioni/DEIStools/issues"
