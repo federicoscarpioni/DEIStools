@@ -78,8 +78,7 @@ def search_freq_indexes(
                 "axis, or the reverse, reads the wrong bins.")
         # tol=None: the whole point here is that the tones may be off-grid.
         guesses = np.asarray(
-            compute_freq_indexes(freq_axis, frequencies, sampling_time,
-                                 tol=None)[0], dtype=int)
+            compute_freq_indexes(freq_axis, frequencies, sampling_time)[0], dtype=int)
         index_f0 = _zero_frequency_index(freq_axis)
 
         # Distance in Hz to the nearer neighbouring excited frequency. The
