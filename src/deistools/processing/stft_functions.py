@@ -4,6 +4,13 @@ import numpy as np
 from numpy.fft import fft, fftshift, fftfreq
 
 from deistools.processing.peak_search import search_peaks_position
+
+def fft_eis(voltage, current, i_exc):
+    ft_voltage =  fft(voltage) /voltage.size
+    ft_current =  fft(current) / current.size
+    impedance = (ft_voltage[i_exc]/ft_current[i_exc])
+    voltage_avg = abs(ft_voltage[0])
+    current_avg = abs(ft_current[0])
     return impedance, voltage_avg, current_avg
 
 def estimate_impedance(
