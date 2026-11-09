@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.fft import fft, fftshift, fftfreq
+from numpy.fft import rfft
 
 
 def fft_eis(voltage, current, i_exc):
