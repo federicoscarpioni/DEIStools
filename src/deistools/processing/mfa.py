@@ -11,6 +11,9 @@ from deistools.processing.peak_search import search_peaks_position
 class EstimationResult:
     impedance : np.ndarray
     time : np.ndarray
+    voltage : np.ndarray
+    current : np.ndarray
+    method_name : str
 
 @dataclass
 class MultiFrequencyAnalysis:
