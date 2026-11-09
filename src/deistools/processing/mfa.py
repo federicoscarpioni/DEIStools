@@ -24,10 +24,9 @@ class MultiFrequencyAnalysis:
 
     def __post_init__(self) -> None:
         self.num_samples = self.voltage.size
-        self.harmonics = self.frequencies/self.frequencies[0]
+        self.harmonics = self.frequencies * self.period
         self.sampling_time = 1/self.sampling_frequency
-        self.i_exc =  (self.num_samples * self.frequencies) / self.sampling_frequency # Indexes of the array
-        self.i_exc = np.rint(self.i_exc).astype(np.int32)
+        self.i_exc = excited_bins(self.num_samples, self.frequencies, self.sampling_frequency)
     
     def compute_freq_axis(self) -> None:
         self.freq_axis = fftfreq(self.voltage.size, self.sampling_time)
