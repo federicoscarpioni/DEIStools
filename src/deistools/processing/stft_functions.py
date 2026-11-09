@@ -1,9 +1,6 @@
-import warnings
-
 import numpy as np
 from numpy.fft import fft, fftshift, fftfreq
 
-from deistools.processing.peak_search import search_peaks_position
 
 def fft_eis(voltage, current, i_exc):
     ft_voltage =  fft(voltage) /voltage.size
