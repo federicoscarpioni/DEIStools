@@ -4,9 +4,7 @@ import numpy as np
 
 from deistools.visualise import inspect_spectrum,inspect_spectrum_phase, visualise_peaks, visualise_peaks_phase
 from deistools.processing.dmfa_functions import extract_zero_frequency, extract_impedance, visualize_dmfa_filtering, extract_impedance_with_error
-from deistools.processing.stft_functions import (
-    estimate_impedance as stft_eis, 
-)
+from deistools.processing.stft_functions import excited_bins, stft_eis
 from deistools.processing.peak_search import search_peaks_position
 
 @dataclass
@@ -42,13 +40,14 @@ class MultiFrequencyAnalysis:
     def run_fft_eis(self):
         return self.ft_voltage[self.i_exc] / self.ft_current[self.i_exc]
     
-    def run_stft_eis(self, period):
+    def run_stft_eis(self, periods_per_window):
         impedance, voltage, current, time = stft_eis( 
             self.voltage,
             self.current,
             self.frequencies,
-            period,
-            self.sampling_time
+            self.sampling_frequency,
+            self.period,
+            periods_per_window,
         )
         return impedance, voltage, current, time
 
