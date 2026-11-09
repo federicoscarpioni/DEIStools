@@ -20,35 +20,14 @@ def extract_zero_frequency(
     return voltage, current, time
 
 def elaboration_frequency_axis(Npts_elab, measurement_time):
-    """Local frequency axis of an extracted band, in Hz offset from its centre.
-
-    The band is ``Npts_elab`` DFT bins wide and the bins are ``1/T`` apart, so
-    it spans ``Npts_elab / T`` Hz -- *not* the sampling rate. Build the
-    passband filter on this axis, or its bandwidth is scaled wrongly by
-    ``fs*T/Npts_elab``.
-    """
     return (np.arange(Npts_elab) - Npts_elab // 2) / float(measurement_time)
 
 
 def elaboration_time_axis(Npts_elab, measurement_time):
-    """Times at which ``extract_impedance`` reports, spanning [0, T).
-
-    The inverse transform of ``Npts_elab`` bins of width ``1/T`` returns
-    ``Npts_elab`` samples covering the whole record, so the step is
-    ``T / Npts_elab`` -- coarser than the acquisition, and the resolution at
-    which DMFA can follow a change.
-    """
     return np.arange(Npts_elab) * (float(measurement_time) / Npts_elab)
 
 
 def max_elaboration_points(indexes_multisine_freq, n_samples):
-    """Largest ``Npts_elab`` whose band fits inside the spectrum at every frequency.
-
-    Each frequency is extracted from a window of ``Npts_elab`` bins centred on
-    its peak, so the window must not run past either end of the spectrum. The
-    binding constraint is the frequency closest to an edge -- in practice the
-    highest one, since its bin sits ``max(index)`` from the top.
-    """
     lowest = min(indexes_multisine_freq)
     highest = max(indexes_multisine_freq)
     return 2 * min(lowest, n_samples - highest)
@@ -86,11 +65,11 @@ def extract_impedance(
     return impedance
 
 def visualize_dmfa_filtering(
-        filter : np.array,
-        ft_voltage : np.array, 
-        ft_current : np.array, 
-        freq_axis: np.array,
-        frequenies: list[float],
+        filter : np.ndarray,
+        ft_voltage : np.ndarray, 
+        ft_current : np.ndarray, 
+        freq_axis: np.ndarray,
+        frequencies: list[float],
         freq_indexes: list[int],
     ):
 
@@ -149,9 +128,9 @@ def visualize_dmfa_filtering(
         axs[0].set_ylabel('Voltage / V')
         axs[1].set_ylabel('Current / A')
         axs[1].set_xlabel('Frequency / Hz')
-        axs[0].set_title(f'Fourier Transform frequency {frequenies[val_frequency]} Hz')
-        line_freq_V = axs[0].axvline(frequenies[slider_frequency.val], color = 'green')
-        line_freq_I = axs[1].axvline(frequenies[slider_frequency.val], color = 'green')
+        axs[0].set_title(f'Fourier Transform frequency {frequencies[val_frequency]} Hz')
+        line_freq_V = axs[0].axvline(frequencies[slider_frequency.val], color = 'green')
+        line_freq_I = axs[1].axvline(frequencies[slider_frequency.val], color = 'green')
         return lineV, lineV_filt, lineI, lineI_filt, line_freq_V, line_freq_I, filter_V, filter_I, axfiltv, axfilti
         
     def get_visible_range(freq_val):
@@ -181,9 +160,9 @@ def visualize_dmfa_filtering(
         filter_V.set_xdata(freq_axis[visible_range])
         filter_I.set_xdata(freq_axis[visible_range])
 
-        axs[0].set_title(f'Fourier Transform frequency {frequenies[val]} Hz')
-        line_freq_V.set_xdata([frequenies[val]])
-        line_freq_I.set_xdata([frequenies[val]])
+        axs[0].set_title(f'Fourier Transform frequency {frequencies[val]} Hz')
+        line_freq_V.set_xdata([frequencies[val]])
+        line_freq_I.set_xdata([frequencies[val]])
         axs[0].relim()
         axs[0].autoscale_view()
         axs[1].relim()
@@ -203,7 +182,7 @@ def visualize_dmfa_filtering(
         ax=sliders_freq_ax,
         label="Frequency index",
         valmin=0,
-        valmax=len(frequenies)-1,
+        valmax=len(frequencies)-1,
         valinit=0,
         valstep = 1,
         )
@@ -224,45 +203,6 @@ def extract_impedance_with_error(
         filter,
         Npts_elab,
 ):
-    """Impedance and the variance of its error, per frequency and instant.
-
-    DMFA is a **linear** estimator of the envelope -- band selection, a
-    diagonal weighting by the filter, and an inverse transform are all linear
-    -- so the variance of its output is the covariance of a linear map applied
-    to the measurement noise. That is the same route BLTVA takes, and it gives
-    the expression of Chukwu et al. (2022) eq. (19)-(20):
-
-        var(Re Z) = [ var_v + |Z|^2 * var_i ] / ( 2 * N' * |I_filtered|^2 )
-
-        N' = N / sum(|g|^2)
-
-    with ``N`` the length of the whole record -- not of the extracted band --
-    and ``N'`` the usual equivalent noise bandwidth. The real and imaginary
-    parts have the same variance, which is why the factor of two appears.
-
-    Verified against the scatter of 200 noise realisations on a stationary
-    cell: predicted and observed agree to better than 1%.
-
-    Parameters
-    ----------
-    variance_voltage, variance_current : float
-        Variances (**not** standard deviations) of the noise on the two
-        channels. They can be measured from the instrument, or -- better --
-        estimated from DFT bins the excitation never reaches, which also
-        captures the noise colour.
-
-    Returns
-    -------
-    (impedance, variance) : ndarray, ndarray
-        Both ``(n_frequencies, Npts_elab)``. ``variance`` is that of either
-        the real or the imaginary part.
-
-    Notes
-    -----
-    This covers **noise only**. Nothing here knows about the band-limited
-    model being wrong, which near the record edges it badly is; compare the
-    prediction with the error you actually see, exactly as for BLTVA.
-    """
     _check_elaboration_range(indexes_multisine_freq, Npts_elab, ft_voltage.size)
     n_freq = len(indexes_multisine_freq)
     impedance = np.zeros((n_freq, Npts_elab), dtype="complex128")
