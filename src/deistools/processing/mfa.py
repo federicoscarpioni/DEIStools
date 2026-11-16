@@ -50,14 +50,6 @@ class MultiFrequencyAnalysis:
     def run_dmfa(self, 
                  filter,
         ):
-        # voltage, current, time = extract_zero_frequency(
-        #     self.ft_voltage,
-        #     self.ft_current,
-        #     self.freq_axis,
-        #     filter,
-        #     Npts_elab,
-        #     time_resolution,
-        # )
         frequency_response_function = dmfa(
             self.dft_excitation,
             self.dft_response,
