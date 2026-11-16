@@ -1,7 +1,7 @@
 import numpy as np
 import math
 
-def get_band_bins(ke: int, n_bins: int, n_record: int) -> np.ndarray:
+def get_band_bins(k_e: int, n_bins: int, n_record: int) -> np.ndarray:
     '''
     ke : excited frequency
     N : number of bins in the band. For DMFA is it dictated by the window width
@@ -11,7 +11,7 @@ def get_band_bins(ke: int, n_bins: int, n_record: int) -> np.ndarray:
     # else:   
     #     band_bins = np.arange(ke - math.floor(N/2), ke + math.ceil(N/2), 1) # Note: is this the right way to manage even?
     off = np.fft.fftfreq(n_bins, d=1/n_bins).astype(int)   # 0, 1, …, -1
-    band_bins = (ke + off) % n_record
+    band_bins = (k_e + off) % n_record
 
     return band_bins
 

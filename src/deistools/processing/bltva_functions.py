@@ -1,3 +1,17 @@
+"""
+Notation (code -> Hallemans et al., TIM 2021)
+---------------------------------------------
+k_exc, k_e      excited bins; k_e is the one being fitted        k_e
+k_band          bins of the local band around k_e                K_w (eq. 55)
+k_neighbours    other excited bins inside k_band                 k' in eq. (58)
+basis           sampled Legendre basis, (N, order+1)             b_p(t)
+basis_spectra   DFT of basis / N                                 B_p(k)
+regressors      regression matrix on k_band                      K (eq. 58)
+V_band          response spectrum on k_band                      Y_w
+theta           least-squares solution                           θ (eq. 64)
+
+"Window" always refers to the time domain and "band" to the frequency domain.
+"""
 import numpy as np
 from deistools.processing.frequency_band import get_band_bins_halfwidth
 from numpy.polynomial.legendre import legvander
@@ -29,7 +43,7 @@ def legendre_spectra(b: np.ndarray) -> np.ndarray:
     return np.fft.fft(b, axis=0) / b.shape[0]
 
 
-def build_regressors(K_w, k_e, centres, B, Np, Nq, Na):
+def build_regressors(k_e, k_band, centres, B, Np, Nq, Na):
     """
     TIM 2021 eq. (58)
     """
@@ -42,14 +56,14 @@ def build_regressors(K_w, k_e, centres, B, Np, Nq, Na):
         blocks.append(block)
         j += block.shape[1]
 
-    add("target", B[(K_w - k_e) % N, : Np + 1])
+    add("target", B[(k_band - k_e) % N, : Np + 1])
     for kp in centres:
-        add(f"h{kp}", B[(K_w - kp) % N, : Np + 1])
+        add(f"h{kp}", B[(k_band - kp) % N, : Np + 1])
 
     if Nq >= 1:
-        add("drift", B[K_w, 1 : Nq + 1])
+        add("drift", B[k_band, 1 : Nq + 1])
 
-    xi = 2.0 * (K_w - K_w[0]) / (K_w[-1] - K_w[0]) - 1.0
+    xi = 2.0 * (k_band - k_band[0]) / (k_band[-1] - k_band[0]) - 1.0
     add("transient", legvander(xi, Na).astype(complex))
     return np.hstack(blocks), cmap
 
@@ -75,11 +89,11 @@ def select_na(P, Np, d=0):
     return Na
 
 
-def solve_band(K, V_w):
+def solve_band(K, V_band):
     """
     eq. (64)/(67): theta = K^+ Y_w, the Moore-Penrose minimum-norm solution.
     """
-    theta, _, rank, _ = np.linalg.lstsq(K, V_w)
+    theta, _, rank, _ = np.linalg.lstsq(K, V_band)
     return theta, int(rank) 
 
 
@@ -90,15 +104,15 @@ def fit_band(
         k_w:np.ndarray, # bin band of the fitting
     ):
     n_theta = K.shape[1]
-    if n_theta >= k_w.size:
+    if n_theta >= k_band.size:
         raise ValueError(
             f"band at bin {k_e}: {n_theta} unknowns for {k_w.size} equations."
         )
-    V_w = V[k_w]
-    theta, rank = solve_band(K, V_w)
+    V_band = V[k_band]
+    theta, rank = solve_band(K, V_band)
     fit = K @ theta
-    res_abs = np.linalg.norm(V_w - fit) # I am not sure this is what I want
-    res_rel = np.linalg.norm(V_w - fit) / np.linalg.norm(V_w) # I am not sure this is what I want
+    res_abs = np.linalg.norm(V_band - fit) # I am not sure this is what I want
+    res_rel = np.linalg.norm(V_band - fit) / np.linalg.norm(V_band) # I am not sure this is what I want
     return theta, res_abs, res_rel, rank
 
 

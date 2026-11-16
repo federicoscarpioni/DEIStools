@@ -1,10 +1,6 @@
 import numpy as np
 from numpy.fft import rfft
 
-def get_excited_bins(n_samples, frequencies, fs)->np.ndarray:
-    i_exc = (n_samples * frequencies) / fs
-    i_exc = np.rint(i_exc).astype(np.int32)
-    return i_exc
 
 def fft_eis_2d(voltage, current, i_exc)->tuple[np.ndarray,np.ndarray,np.ndarray]:
     ft_voltage =  rfft(voltage) /voltage.shape[-1]
@@ -13,6 +9,10 @@ def fft_eis_2d(voltage, current, i_exc)->tuple[np.ndarray,np.ndarray,np.ndarray]
     voltage_avg = ft_voltage[..., 0].real
     current_avg = ft_current[..., 0].real
     return impedance, voltage_avg, current_avg
+def get_excited_bins(N, frequencies, fs)->np.ndarray:
+    k_exc = (N * frequencies) / fs
+    k_exc = np.rint(k_exc).astype(np.int32)
+    return k_exc
 
 def stft_eis(
         voltage,
