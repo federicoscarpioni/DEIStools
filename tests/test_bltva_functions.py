@@ -55,3 +55,27 @@ def test_bltva():
         impedance_expected = np.tile(impedance_ohm[:, None], (1, record_samples))
         assert impedance_expected.shape == impedance_est.shape
         np.testing.assert_allclose(impedance_est,impedance_expected, rtol = 1e-12)
+
+
+def test_bltva_time_varying():
+        # Z(f,t) = sum_p G_p(f) b_p(t), built on the estimator's own basis, so
+        # BLTVA must recover G_p exactly. A stationary record cannot check H_1, H_2.
+        Np, Nq = 2, 2
+        record_samples = periods * n_samples
+        t = np.arange(record_samples) / sampling_frequency_Hz
+        b = legendre_basis(record_samples, max(Np, Nq))
+        G = np.stack([impedance_ohm, 0.05 * impedance_ohm, -0.02 * impedance_ohm], axis=1)
+        current = sum(A * np.cos(2 * np.pi * f * t) for f, A in zip(frequencies_Hz, amplitudes_A))
+        voltage = sum((A * (G[m] @ b[:, :Np + 1].T) * np.exp(2j * np.pi * f * t)).real
+                      for m, (f, A) in enumerate(zip(frequencies_Hz, amplitudes_A)))
+        H_p, basis, res_abs, res_rel, rank = bltva(
+                V=fft(voltage) / record_samples,
+                U=fft(current) / record_samples,
+                k_exc=harmonics * periods,
+                P=periods,
+                halfband=25,
+                N=record_samples,
+                Np=Np,
+                Nq=Nq,
+        )
+        np.testing.assert_allclose(H_p, G, rtol=1e-11, atol=1e-11 * np.abs(impedance_ohm).max())
