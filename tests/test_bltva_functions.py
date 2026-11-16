@@ -1,32 +1,21 @@
 import numpy as np
 from numpy.fft import fft
-from deistools.processing.bltva_functions import bltva, evaluate_transfer_function, legendre_basis
+from deistools.processing.bltva_functions import bltva, evaluate_transfer_function
 from deistools.processing.stft_functions import get_excited_bins
+from synthetic_records import stationary_r_rc, legendre_oracle
 
 sampling_frequency_Hz = 20
+multisine_period_s = 1
 harmonics = np.array([1,3,5,7,9])
-base_frequency_Hz = 1
-multisine_period_s = 1/base_frequency_Hz
-frequencies_Hz = harmonics * base_frequency_Hz
-n_samples = int(sampling_frequency_Hz * multisine_period_s)
-time_s = np.linspace(0,1,n_samples, endpoint=False)
-amplitudes_A = np.ones_like(frequencies_Hz) * 1e-4
-R1 = 10
-R2 =10
-C = 5e-3
-omega = 2 * np.pi * frequencies_Hz
-impedance_ohm = R1 + R2 / (1+ 1j * omega * R2 * C)
-current_A = np.zeros(len(time_s))
-voltage_V = np.zeros(len(time_s))
-for k, (f, A) in enumerate(zip(frequencies_Hz, amplitudes_A)):
-        current_A += A * np.cos(2 * np.pi * f * time_s)
-        voltage_V += A * np.abs(impedance_ohm[k]) * np.cos(2 * np.pi * f * time_s +  np.angle(impedance_ohm[k]))
 periods = 50
-voltage_V = np.tile(voltage_V, periods)
-current_A = np.tile(current_A, periods)
-record_length_s = multisine_period_s * periods
 
 def test_bltva():
+        current_A, voltage_V, impedance_ohm, frequencies_Hz = stationary_r_rc(
+                fs=sampling_frequency_Hz,
+                multisine_period=multisine_period_s,
+                harmonics=harmonics,
+                periods=periods,
+        )
         record_samples = voltage_V.size
         ft_voltage = fft(voltage_V)/record_samples
         ft_current = fft(current_A)/record_samples
@@ -38,18 +27,17 @@ def test_bltva():
         halfband = 25
         Np = 2
         Nq = 1
-        H_p, basis, res_abs, res_rel, rank = bltva(
+        G_p, basis, res_abs, res_rel, rank = bltva(
+                ft_current,
                 ft_voltage,
-                ft_current, 
                 excited_bins,
-                periods, 
-                halfband, 
-                record_samples,
-                Np, 
-                Nq, 
+                periods,
+                halfband,
+                Np,
+                Nq,
         )
         impedance_est = evaluate_transfer_function(
-                H_p, 
+                G_p,
                 basis,
         )
         impedance_expected = np.tile(impedance_ohm[:, None], (1, record_samples))
@@ -61,21 +49,21 @@ def test_bltva_time_varying():
         # Z(f,t) = sum_p G_p(f) b_p(t), built on the estimator's own basis, so
         # BLTVA must recover G_p exactly. A stationary record cannot check H_1, H_2.
         Np, Nq = 2, 2
-        record_samples = periods * n_samples
-        t = np.arange(record_samples) / sampling_frequency_Hz
-        b = legendre_basis(record_samples, max(Np, Nq))
-        G = np.stack([impedance_ohm, 0.05 * impedance_ohm, -0.02 * impedance_ohm], axis=1)
-        current = sum(A * np.cos(2 * np.pi * f * t) for f, A in zip(frequencies_Hz, amplitudes_A))
-        voltage = sum((A * (G[m] @ b[:, :Np + 1].T) * np.exp(2j * np.pi * f * t)).real
-                      for m, (f, A) in enumerate(zip(frequencies_Hz, amplitudes_A)))
-        H_p, basis, res_abs, res_rel, rank = bltva(
-                V=fft(voltage) / record_samples,
+        current, voltage, G, frequencies_Hz = legendre_oracle(
+                fs=sampling_frequency_Hz,
+                multisine_period=multisine_period_s,
+                harmonics=harmonics,
+                periods=periods,
+                scales=(1, 0.05, -0.02),
+        )
+        record_samples = current.size
+        G_p, basis, res_abs, res_rel, rank = bltva(
                 U=fft(current) / record_samples,
+                V=fft(voltage) / record_samples,
                 k_exc=harmonics * periods,
                 P=periods,
                 halfband=25,
-                N=record_samples,
                 Np=Np,
                 Nq=Nq,
         )
-        np.testing.assert_allclose(H_p, G, rtol=1e-11, atol=1e-11 * np.abs(impedance_ohm).max())
+        np.testing.assert_allclose(G_p, G, rtol=1e-11, atol=1e-11 * np.abs(G[:, 0]).max())
