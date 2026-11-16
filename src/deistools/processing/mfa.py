@@ -3,8 +3,9 @@ from numpy.fft import fft, fftfreq
 import numpy as np
 
 from deistools.visualise import inspect_spectrum,inspect_spectrum_phase, visualise_peaks, visualise_peaks_phase
-from deistools.processing.dmfa_functions import extract_zero_frequency, extract_impedance, visualize_dmfa_filtering, extract_impedance_with_error
-from deistools.processing.stft_functions import excited_bins, stft_eis
+from deistools.processing.dmfa_functions import dmfa #, extract_zero_frequency
+from deistools.visualise.dmfa import visualize_dmfa_filtering
+from deistools.processing.stft_functions import get_excited_bins, stft_eis
 from deistools.processing.peak_search import search_peaks_position
 
 @dataclass
@@ -27,21 +28,21 @@ class MultiFrequencyAnalysis:
         self.num_samples = self.voltage.size
         self.harmonics = self.frequencies * self.period
         self.sampling_time = 1/self.sampling_frequency
-        self.i_exc = excited_bins(self.num_samples, self.frequencies, self.sampling_frequency)
+        self.k_exc = get_excited_bins(self.num_samples, self.frequencies, self.sampling_frequency)
     
     def compute_freq_axis(self) -> None:
         self.freq_axis = fftfreq(self.voltage.size, self.sampling_time)
 
     def compute_fft(self) -> None:
-        self.ft_voltage = fft(self.voltage) / self.voltage.size
-        self.ft_current = fft(self.current) / self.current.size
+        self.ft_voltage = fft(self.voltage) / self.num_samples
+        self.ft_current = fft(self.current) / self.num_samples
 
     def get_excited_freqs(self) -> np.ndarray:
-        self.frequencies_exact = (self.i_exc * self.sampling_frequency) / self.num_samples
+        self.frequencies_exact = (self.k_exc * self.sampling_frequency) / self.num_samples
         return self.frequencies_exact
 
     def run_fft_eis(self):
-        return self.ft_voltage[self.i_exc] / self.ft_current[self.i_exc]
+        return self.ft_voltage[self.k_exc] / self.ft_current[self.k_exc]
     
     def run_stft_eis(self, periods_per_window):
         impedance, voltage, current, time = stft_eis( 
@@ -55,26 +56,24 @@ class MultiFrequencyAnalysis:
         return impedance, voltage, current, time
 
     def run_dmfa(self, 
-                 filter, 
-                 time_resolution,
-                 Npts_elab
+                 filter,
         ):
-        voltage, current, time = extract_zero_frequency(
+        # voltage, current, time = extract_zero_frequency(
+        #     self.ft_voltage,
+        #     self.ft_current,
+        #     self.freq_axis,
+        #     filter,
+        #     Npts_elab,
+        #     time_resolution,
+        # )
+        impedance = dmfa(
             self.ft_voltage,
             self.ft_current,
-            self.freq_axis,
+            self.k_exc,
+            self.num_samples,
             filter,
-            Npts_elab,
-            time_resolution,
         )
-        impedance = extract_impedance(
-            self.ft_voltage,
-            self.ft_current,
-            self.freq_indexes,
-            filter,
-            Npts_elab
-        )
-        return impedance, voltage, current, time
+        return impedance #, voltage, current, time
 
     def visualize_dmfa_filtering(
             self,
@@ -86,7 +85,7 @@ class MultiFrequencyAnalysis:
             self.ft_current,
             self.freq_axis,
             self.frequencies,
-            self.freq_indexes,
+            self.k_exc,
         )
 
     def run_dmfa_with_error(
@@ -166,7 +165,7 @@ class MultiFrequencyAnalysis:
             self.ft_current,
             self.freq_axis,
             self.frequencies,
-            self.freq_indexes,
+            self.k_exc,
         )
 
     def visualise_peaks_phase(self):
