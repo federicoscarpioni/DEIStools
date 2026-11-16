@@ -74,11 +74,6 @@ class MultiFrequencyAnalysis:
 
 
     def search_freq_indexes(self, spectrum):
-        """Refine the bin indexes by locating the local spectral peak.
-
-        ``spectrum`` must be a *shifted spectrum* such as ``self.ft_current``,
-        not a time series -- the search indexes it with DFT bin numbers.
-        """
         self.freq_indexes, self.index_f0 = search_peaks_position(
             spectrum, self.freq_axis, self.frequencies, self.sampling_time)
         return self.freq_indexes
