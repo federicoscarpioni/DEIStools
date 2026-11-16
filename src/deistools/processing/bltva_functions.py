@@ -98,15 +98,15 @@ def solve_band(K, V_band):
 
 
 def fit_band(
-        V:np.ndarray, # input signal 
+        V:np.ndarray, # DFT of the response signal
         k_e:int, # bin index of the excited frequency
         K : np.ndarray, # regression matrix
-        k_w:np.ndarray, # bin band of the fitting
+        k_band:np.ndarray, # bin band of the fitting
     ):
     n_theta = K.shape[1]
     if n_theta >= k_band.size:
         raise ValueError(
-            f"band at bin {k_e}: {n_theta} unknowns for {k_w.size} equations."
+            f"band at bin {k_e}: {n_theta} unknowns for {k_band.size} equations."
         )
     V_band = V[k_band]
     theta, rank = solve_band(K, V_band)
@@ -117,21 +117,21 @@ def fit_band(
 
 
 def bltva(
-        V : np.ndarray,
-        U : np.ndarray, 
+        U : np.ndarray,
+        V : np.ndarray, 
         k_exc : np.ndarray,
         P : int, 
         halfband : int, 
-        N : int,
         Np : int, 
         Nq : int, 
         Na:int | None = None,
     ):
+    N = U.size
     order = max(Np,Nq)
     basis = legendre_basis(N, order)
     dft_basis = legendre_spectra(basis)
     if Na is None: Na = select_na(P, Np)
-    H_p = np.zeros((len(k_exc), Np + 1), dtype=complex)
+    G_p = np.zeros((len(k_exc), Np + 1), dtype=complex)
     res_abs = np.zeros(len(k_exc))
     res_rel = np.zeros(len(k_exc))
     rank = np.zeros(len(k_exc), dtype=int)
@@ -144,8 +144,8 @@ def bltva(
     return H_p, basis, res_abs, res_rel, rank
 
 def evaluate_transfer_function(
-        H_p:np.ndarray,
+        G_p:np.ndarray,
         b:np.ndarray,
     ):
-    Npp  = H_p.shape[1]
-    return H_p @ b[:, :Npp].T
+    Npp  = G_p.shape[1]
+    return G_p @ b[:, :Npp].T

@@ -18,6 +18,7 @@ from deistools.processing.frequency_band import get_band_bins
 def elaboration_frequency_axis(Npts_elab, measurement_time):
     return (np.arange(Npts_elab) - Npts_elab // 2) / float(measurement_time)
 
+
 def elaboration_time_axis(Npts_elab, measurement_time):
     return np.arange(Npts_elab) * (float(measurement_time) / Npts_elab)
 
@@ -26,6 +27,8 @@ def elaboration_time_axis(Npts_elab, measurement_time):
 #     lowest = min(indexes_multisine_freq)
 #     highest = max(indexes_multisine_freq)
 #     return 2 * min(lowest, n_samples - highest)
+def get_band_size(n_samples, fs, multisine_period, periods_per_sample):
+    return int(round(n_samples / (fs * multisine_period * periods_per_sample)))
 
 
 # def _check_elaboration_range(indexes_multisine_freq, Npts_elab, n_samples):
@@ -36,25 +39,18 @@ def elaboration_time_axis(Npts_elab, measurement_time):
 #             f"run past the edge of the spectrum at bin "
 #             f"{max(indexes_multisine_freq)} of {n_samples}. Use at most "
 #             f"{limit} (see max_elaboration_points).")
+    return np.fft.fftfreq(n_bins, d=1/n_bins) * fs / n_samples
 
 
 def dmfa(
-        ft_voltage : np.ndarray,
-        ft_current : np.ndarray,
-        ke : np.ndarray, #indexes_multisine_freq:list,
-        n_samples : int,
-        filter : np.ndarray,
+        U : np.ndarray,
+        V : np.ndarray,
+        k_exc : np.ndarray,
+        passband_filter : PassbandFilter,
+        fs : float,
+        multisine_period : float,
+        periods_per_sample : float,
 ):
-    n_bins = int(filter.size)
-    impedance = np.zeros((ke.size, n_bins),dtype='complex128') # Initialize empty array
-    for i in range(0, ke.size):
-        k_band = get_band_bins(ke[i], n_bins, n_samples)
-        voltage_filtered = n_bins * ifft(ft_voltage[k_band] * filter)
-        current_filtered = n_bins * ifft(ft_current[k_band] * filter)
-        impedance[i] = voltage_filtered / current_filtered
-    return impedance
-
-
 # def extract_impedance_with_error(
 #         ft_voltage,
 #         ft_current,
@@ -86,4 +82,13 @@ def dmfa(
 #         numerator = variance_voltage + np.abs(impedance[f]) ** 2 * variance_current
 #         variance[f] = numerator / (2 * N_prime * np.abs(current_filtered) ** 2)
 
-#     return impedance, variance
+#     return impedance, variance    n_samples = U.size
+    n_bins = get_band_size(n_samples, fs, multisine_period, periods_per_sample)
+    filter = passband_filter.evaluate(get_band_frequencies(n_bins, n_samples, fs))
+    G = np.zeros((k_exc.size, n_bins),dtype='complex128') # Initialize empty array
+    for i in range(0, k_exc.size):
+        k_band = get_band_bins(k_exc[i], n_bins, n_samples)
+        U_filt = n_bins * ifft(U[k_band] * filter)
+        V_filt = n_bins * ifft(V[k_band] * filter)
+        G[i] = V_filt / U_filt
+    return G

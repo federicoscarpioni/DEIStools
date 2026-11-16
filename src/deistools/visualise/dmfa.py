@@ -4,8 +4,9 @@ from matplotlib.widgets import Slider
 
 def visualize_dmfa_filtering(
         filter : np.ndarray,
-        ft_voltage : np.ndarray, 
-        ft_current : np.ndarray, 
+        band_offsets : np.ndarray,
+        U : np.ndarray,
+        V : np.ndarray, 
         freq_axis: np.ndarray,
         frequencies: np.ndarray,
         freq_indexes: np.ndarray,
@@ -18,30 +19,30 @@ def visualize_dmfa_filtering(
         visible_range = get_visible_range(slider_frequency.val)
         lineV, = axs[0].plot(
             freq_axis[visible_range], 
-            np.abs(ft_voltage)[visible_range], 
+            np.abs(V)[visible_range], 
             '-o',
             color = 'C0',
             alpha = 0.1,
             label='Original data',
         )
         lineV_filt, = axs[0].plot(
-                freq_axis[visible_range], 
-                np.abs(ft_voltage)[visible_range] * filter, 
+                freq_axis[visible_range],
+                np.abs(V)[visible_range] * filter,
                 '-o',
                 color = 'C0',
                 label='Filtered data',
             )
         axs[0].legend()
         lineI, = axs[1].plot(
-            freq_axis[visible_range], 
-            np.abs(ft_current)[visible_range], 
+            freq_axis[visible_range],
+            np.abs(U)[visible_range],
             '-o',
             color = 'C0',
             alpha = 0.1,
         )
         lineI_filt, = axs[1].plot(
                 freq_axis[visible_range], 
-                np.abs(ft_current)[visible_range] * filter, 
+                np.abs(U)[visible_range] * filter, 
                 '-o',
                 color = 'C0',
             )
@@ -72,28 +73,22 @@ def visualize_dmfa_filtering(
         return lineV, lineV_filt, lineI, lineI_filt, line_freq_V, line_freq_I, filter_V, filter_I, axfiltv, axfilti
         
     def get_visible_range(freq_val):
-        N_pts = filter.size
-
-        return range(
-            freq_indexes[freq_val]-N_pts//2, 
-            freq_indexes[freq_val]+N_pts//2,
-            1,
-        )
+        return freq_indexes[freq_val] + band_offsets
 
     def update_freq(val):
         visible_range = get_visible_range(val)
 
         lineV.set_xdata(freq_axis[visible_range])
-        lineV.set_ydata(np.abs(ft_voltage)[visible_range])
+        lineV.set_ydata(np.abs(V)[visible_range])
 
         lineV_filt.set_xdata(freq_axis[visible_range])
-        lineV_filt.set_ydata(np.abs(ft_voltage)[visible_range] * filter)
+        lineV_filt.set_ydata(np.abs(V)[visible_range] * filter)
 
         lineI.set_xdata(freq_axis[visible_range])
-        lineI.set_ydata(np.abs(ft_current)[visible_range])
+        lineI.set_ydata(np.abs(U)[visible_range])
 
         lineI_filt.set_xdata(freq_axis[visible_range])
-        lineI_filt.set_ydata(np.abs(ft_current)[visible_range] * filter)
+        lineI_filt.set_ydata(np.abs(U)[visible_range] * filter)
 
         filter_V.set_xdata(freq_axis[visible_range])
         filter_I.set_xdata(freq_axis[visible_range])
