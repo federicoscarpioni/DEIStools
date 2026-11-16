@@ -129,8 +129,8 @@ def visualise_peaks(
         ft_voltage : np.ndarray, 
         ft_current : np.ndarray, 
         freq_axis: np.ndarray,
-        frequencies: list[float],
-        freq_indexes: list[int],
+        frequencies: np.ndarray,
+        freq_indexes: np.ndarray,
     ):
 
     # Define auxiliary functions  
