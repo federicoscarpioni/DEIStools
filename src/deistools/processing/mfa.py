@@ -18,42 +18,42 @@ class EstimationResult:
 
 @dataclass
 class MultiFrequencyAnalysis:
-    voltage : np.ndarray 
-    current : np.ndarray 
+    excitation : np.ndarray 
+    response : np.ndarray 
     sampling_frequency : float
     frequencies : np.ndarray
     period: float
 
     def __post_init__(self) -> None:
-        self.num_samples = self.voltage.size
+        self.num_samples = self.excitation.size
         self.harmonics = self.frequencies * self.period
         self.sampling_time = 1/self.sampling_frequency
         self.k_exc = get_excited_bins(self.num_samples, self.frequencies, self.sampling_frequency)
     
     def compute_freq_axis(self) -> None:
-        self.freq_axis = fftfreq(self.voltage.size, self.sampling_time)
+        self.freq_axis = fftfreq(self.excitation.size, self.sampling_time)
 
     def compute_fft(self) -> None:
-        self.ft_voltage = fft(self.voltage) / self.num_samples
-        self.ft_current = fft(self.current) / self.num_samples
+        self.dft_excitation = fft(self.excitation) / self.num_samples
+        self.dft_response = fft(self.response) / self.num_samples
 
     def get_excited_freqs(self) -> np.ndarray:
         self.frequencies_exact = (self.k_exc * self.sampling_frequency) / self.num_samples
         return self.frequencies_exact
 
     def run_fft_eis(self):
-        return self.ft_voltage[self.k_exc] / self.ft_current[self.k_exc]
+        return self.dft_response[self.k_exc] / self.dft_excitation[self.k_exc]
     
     def run_stft_eis(self, periods_per_window):
-        impedance, voltage, current, time = stft_eis( 
-            self.voltage,
-            self.current,
+        frequency_response_function, excitation, response, time = stft_eis( 
+            self.excitation,
+            self.response,
             self.frequencies,
             self.sampling_frequency,
             self.period,
             periods_per_window,
         )
-        return impedance, voltage, current, time
+        return frequency_response_function, excitation, response, time
 
     def run_dmfa(self, 
                  filter,
@@ -66,14 +66,14 @@ class MultiFrequencyAnalysis:
         #     Npts_elab,
         #     time_resolution,
         # )
-        impedance = dmfa(
-            self.ft_voltage,
-            self.ft_current,
+        frequency_response_function = dmfa(
+            self.dft_excitation,
+            self.dft_response,
             self.k_exc,
             self.num_samples,
             filter,
         )
-        return impedance #, voltage, current, time
+        return frequency_response_function #, voltage, current, time
 
     def visualize_dmfa_filtering(
             self,
@@ -142,27 +142,27 @@ class MultiFrequencyAnalysis:
 
 
     def inspect_spectrum(self):
-        positive_range = range(self.ft_voltage.size//2, self.ft_voltage.size)
+        positive_range = range(0, self.num_samples//2)
         fig, axs = inspect_spectrum(
-            self.ft_voltage[positive_range], 
-            self.ft_current[positive_range], 
+            self.dft_excitation[positive_range], 
+            self.dft_response[positive_range], 
             self.freq_axis[positive_range],
         )
         return fig, axs
 
     def inspect_spectrum_phase(self):
-        positive_range = range(self.ft_voltage.size//2, self.ft_voltage.size)
+        positive_range = range(0, self.num_samples//2)
         fig, axs = inspect_spectrum_phase(
-            self.ft_voltage[positive_range], 
-            self.ft_current[positive_range], 
+            self.dft_excitation[positive_range], 
+            self.dft_response[positive_range], 
             self.freq_axis[positive_range],
         )
         return fig, axs
     
     def visualise_peaks(self):
         visualise_peaks(
-            self.ft_voltage,
-            self.ft_current,
+            self.dft_excitation, 
+            self.dft_response,
             self.freq_axis,
             self.frequencies,
             self.k_exc,
@@ -170,9 +170,9 @@ class MultiFrequencyAnalysis:
 
     def visualise_peaks_phase(self):
         visualise_peaks_phase(
-            self.ft_voltage,
-            self.ft_current,
+            self.dft_excitation, 
+            self.dft_response,
             self.freq_axis,
             self.frequencies,
-            self.freq_indexes,
+            self.k_exc,
         )
