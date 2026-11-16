@@ -156,9 +156,9 @@ def visualise_peaks(
         axs[0].set_ylabel('Voltage / V')
         axs[1].set_ylabel('Current / A')
         axs[1].set_xlabel('Frequency / Hz')
-        axs[0].set_title(f'Fourier Transform frequency {frequenies[0]} Hz')
-        line_freq_V = axs[0].axvline(frequenies[slider_frequency.val], color = 'green')
-        line_freq_I = axs[1].axvline(frequenies[slider_frequency.val], color = 'green')
+        axs[0].set_title(f'Fourier Transform frequency {frequencies[0]} Hz')
+        line_freq_V = axs[0].axvline(frequencies[slider_frequency.val], color = 'green')
+        line_freq_I = axs[1].axvline(frequencies[slider_frequency.val], color = 'green')
         return lineV, lineI, line_freq_V, line_freq_I
         
     def get_visible_range(freq_val, range_val):
