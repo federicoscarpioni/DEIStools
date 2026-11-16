@@ -1,22 +1,18 @@
 import numpy as np
 from numpy.fft import fft, fftshift, ifft, ifftshift, fftfreq
 
-
-
-def extract_zero_frequency(
-        ft_voltage, 
-        ft_current, 
-        freq_axis, 
-        filter,
-        Npts_elab,
-        time_resolution,
-    ):
-    index_f0 = np.where(freq_axis == 0)[0][0]
-    freq_range = np.linspace(index_f0 - int(Npts_elab/2),index_f0 + int(Npts_elab/2)-1, Npts_elab, dtype = 'int64') # !!! The -1 is important 
-    voltage = Npts_elab * ifft(ifftshift(ft_voltage[freq_range] * filter)).real
-    current = Npts_elab * ifft(ifftshift(ft_current[freq_range] * filter)).real
-    time = time_resolution * np.arange(Npts_elab)
-    return voltage, current, time
+# def extract_zero_frequency(
+#         ft_voltage : np.ndarray,
+#         ft_current : np.ndarray,
+#         filter : np.ndarray,
+#         n_bins : int,
+# ):
+#     index_f0 = np.where(freq_axis == 0)[0][0]
+    
+#     voltage = Npts_elab * ifft(ft_voltage[freq_range] * filter).real
+#     current = Npts_elab * ifft(ft_current[freq_range] * filter).real
+#     time = time_resolution * np.arange(Npts_elab)
+#     return voltage, current, time
 
 def elaboration_frequency_axis(Npts_elab, measurement_time):
     return (np.arange(Npts_elab) - Npts_elab // 2) / float(measurement_time)
