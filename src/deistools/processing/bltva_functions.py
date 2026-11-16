@@ -13,8 +13,19 @@ theta           least-squares solution                           θ (eq. 64)
 "Window" always refers to the time domain and "band" to the frequency domain.
 """
 import numpy as np
+from dataclasses import dataclass
 from deistools.processing.frequency_band import get_band_bins_halfwidth
 from numpy.polynomial.legendre import legvander
+
+
+@dataclass
+class BltvaResult:
+    frequency_response_function : np.ndarray
+    # time : np.ndarray
+    # excitation_drift : np.ndarray
+    # response_drift : np.ndarray
+    method_name : str = "BLTVA"
+
 
 def legendre_basis(N: int, order: int) -> np.ndarray:
     """
@@ -136,12 +147,12 @@ def bltva(
     res_rel = np.zeros(len(k_exc))
     rank = np.zeros(len(k_exc), dtype=int)
     for e, k_e in enumerate(k_exc):
-        bands_bin = get_band_bins_halfwidth(k_e, halfband, N)
-        centres = [k for k in k_exc if bands_bin[0] <= k <= bands_bin[-1] and k != k_e] # Removes other exited bins from the band
-        K, cmap = build_regressors(bands_bin, k_e, centres, dft_basis, Np, Nq, Na)
-        theta, res_abs[e], res_rel[e], rank[e] = fit_band(V, k_e, K, bands_bin)
-        H_p[e] = theta[cmap["target"]] / U[k_e]
-    return H_p, basis, res_abs, res_rel, rank
+        k_band = get_band_bins_halfwidth(k_e, halfband, N)
+        centres = [k for k in k_exc if k_band[0] <= k <= k_band[-1] and k != k_e] # Removes other exited bins from the band
+        K, cmap = build_regressors(k_e, k_band,centres, dft_basis, Np, Nq, Na)
+        theta, res_abs[e], res_rel[e], rank[e] = fit_band(V, k_e, K, k_band)
+        G_p[e] = theta[cmap["target"]] / U[k_e]
+    return G_p, basis, res_abs, res_rel, rank
 
 def evaluate_transfer_function(
         G_p:np.ndarray,

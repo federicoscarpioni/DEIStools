@@ -1,6 +1,16 @@
 import numpy as np
+from dataclasses import dataclass
 from numpy.fft import ifft
 from deistools.processing.frequency_band import get_band_bins
+from deistools.processing.passband_filters import PassbandFilter
+
+@dataclass
+class DmfaResult:
+    frequency_response_function : np.ndarray
+    # time : np.ndarray
+    # excitation_drift : np.ndarray
+    # response_drift : np.ndarray
+    method_name : str = "DMFA"
 
 
 def elaboration_frequency_axis(Npts_elab, measurement_time):
@@ -15,6 +25,7 @@ def get_band_size(n_samples, fs, multisine_period, periods_per_sample):
     return int(round(n_samples / (fs * multisine_period * periods_per_sample)))
 
 
+def get_band_frequencies(n_bins, n_samples, fs):
     return np.fft.fftfreq(n_bins, d=1/n_bins) * fs / n_samples
 
 
@@ -27,6 +38,7 @@ def dmfa(
         multisine_period : float,
         periods_per_sample : float,
 ):
+    n_samples = U.size
     n_bins = get_band_size(n_samples, fs, multisine_period, periods_per_sample)
     filter = passband_filter.evaluate(get_band_frequencies(n_bins, n_samples, fs))
     G = np.zeros((k_exc.size, n_bins),dtype='complex128') # Initialize empty array

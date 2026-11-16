@@ -1,6 +1,14 @@
 import numpy as np
-from numpy.fft import rfft
+from dataclasses import dataclass
+from numpy.fft import rfft 
 
+@dataclass
+class StftEisResult:
+    frequency_response_function : np.ndarray
+    time : np.ndarray
+    excitation_drift : np.ndarray
+    response_drift : np.ndarray
+    method_name : str = "STFT-EIS"
 
 def get_excited_bins(N, frequencies, fs)->np.ndarray:
     k_exc = (N * frequencies) / fs
