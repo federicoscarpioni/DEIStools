@@ -80,47 +80,6 @@ class MultiFrequencyAnalysis:
             self.k_exc,
         )
 
-    def run_dmfa_with_error(
-            self, 
-            filter, 
-            time_resolution,
-            Npts_elab,
-            voltage_variance,
-            current_variance
-        ):
-        voltage, current, time = extract_zero_frequency(
-            self.ft_voltage,
-            self.ft_current,
-            self.freq_axis,
-            filter,
-            Npts_elab,
-            time_resolution,
-        )
-        impedance, variance = extract_impedance_with_error(
-            self.ft_voltage,
-            self.ft_current,
-            voltage_variance,
-            current_variance,
-            self.freq_indexes,
-            filter,
-            Npts_elab
-        )
-        return impedance, variance, voltage, current, time
-
-    # def compute_freq_indexes(self, input_signal=None):
-    #     """Bin index of each excited frequency, delegating to stft_functions.
-
-    #     These were duplicated here until the module versions were corrected
-    #     (``ceil`` to ``round``, and a peak search that could stray onto a
-    #     neighbouring excited bin), at which point the two copies diverged.
-    #     One implementation only.
-
-    #     ``input_signal`` is accepted for backwards compatibility and ignored:
-    #     the frequency axis already determines the bins.
-    #     """
-    #     self.freq_indexes, self.index_f0 = compute_freq_indexes(
-    #         self.freq_axis, self.frequencies, self.sampling_time)
-    #     return self.freq_indexes
 
     def search_freq_indexes(self, spectrum):
         """Refine the bin indexes by locating the local spectral peak.
