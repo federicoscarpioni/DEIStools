@@ -1,5 +1,6 @@
 import numpy as np
-from numpy.fft import fft, fftshift, ifft, ifftshift, fftfreq
+from numpy.fft import ifft
+from deistools.processing.frequency_band import get_band_bins
 
 # def extract_zero_frequency(
 #         ft_voltage : np.ndarray,
@@ -17,46 +18,40 @@ from numpy.fft import fft, fftshift, ifft, ifftshift, fftfreq
 def elaboration_frequency_axis(Npts_elab, measurement_time):
     return (np.arange(Npts_elab) - Npts_elab // 2) / float(measurement_time)
 
-
 def elaboration_time_axis(Npts_elab, measurement_time):
     return np.arange(Npts_elab) * (float(measurement_time) / Npts_elab)
 
 
-def max_elaboration_points(indexes_multisine_freq, n_samples):
-    lowest = min(indexes_multisine_freq)
-    highest = max(indexes_multisine_freq)
-    return 2 * min(lowest, n_samples - highest)
+# def max_elaboration_points(indexes_multisine_freq, n_samples):
+#     lowest = min(indexes_multisine_freq)
+#     highest = max(indexes_multisine_freq)
+#     return 2 * min(lowest, n_samples - highest)
 
 
-def _check_elaboration_range(indexes_multisine_freq, Npts_elab, n_samples):
-    limit = max_elaboration_points(indexes_multisine_freq, n_samples)
-    if Npts_elab > limit:
-        raise ValueError(
-            f"Npts_elab={Npts_elab} does not fit: the extraction window would "
-            f"run past the edge of the spectrum at bin "
-            f"{max(indexes_multisine_freq)} of {n_samples}. Use at most "
-            f"{limit} (see max_elaboration_points).")
+# def _check_elaboration_range(indexes_multisine_freq, Npts_elab, n_samples):
+#     limit = max_elaboration_points(indexes_multisine_freq, n_samples)
+#     if Npts_elab > limit:
+#         raise ValueError(
+#             f"Npts_elab={Npts_elab} does not fit: the extraction window would "
+#             f"run past the edge of the spectrum at bin "
+#             f"{max(indexes_multisine_freq)} of {n_samples}. Use at most "
+#             f"{limit} (see max_elaboration_points).")
 
 
-def extract_impedance(
-        ft_voltage,
-        ft_current,
-        indexes_multisine_freq:list,
-        filter,
-        Npts_elab,
+def dmfa(
+        ft_voltage : np.ndarray,
+        ft_current : np.ndarray,
+        ke : np.ndarray, #indexes_multisine_freq:list,
+        n_samples : int,
+        filter : np.ndarray,
 ):
-    _check_elaboration_range(indexes_multisine_freq, Npts_elab, ft_voltage.size)
-    impedance = np.zeros((len(indexes_multisine_freq), Npts_elab),dtype='complex128')
-    # Compute impedance Z(t) for each frequency
-    for f in range(0, len(indexes_multisine_freq)):
-        if Npts_elab%2==0:
-            elaboration_rng = np.arange(indexes_multisine_freq[f] - int(Npts_elab/2),indexes_multisine_freq[f] + int(Npts_elab/2), 1)
-        else:
-            import math
-            elaboration_rng = np.arange(indexes_multisine_freq[f] - math.floor(Npts_elab/2),indexes_multisine_freq[f] + math.ceil(Npts_elab/2), 1)
-        voltage_filtered = Npts_elab * ifft(ifftshift(ft_voltage[elaboration_rng] * filter))
-        current_filtered = Npts_elab * ifft(ifftshift(ft_current[elaboration_rng] * filter))
-        impedance[f] = voltage_filtered / current_filtered
+    n_bins = int(filter.size)
+    impedance = np.zeros((ke.size, n_bins),dtype='complex128') # Initialize empty array
+    for i in range(0, ke.size):
+        k_band = get_band_bins(ke[i], n_bins, n_samples)
+        voltage_filtered = n_bins * ifft(ft_voltage[k_band] * filter)
+        current_filtered = n_bins * ifft(ft_current[k_band] * filter)
+        impedance[i] = voltage_filtered / current_filtered
     return impedance
 
 
