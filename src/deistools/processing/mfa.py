@@ -3,7 +3,7 @@ from numpy.fft import fft, fftfreq
 import numpy as np
 
 from deistools.visualise import inspect_spectrum,inspect_spectrum_phase, visualise_peaks, visualise_peaks_phase
-from deistools.processing.dmfa_functions import dmfa #, extract_zero_frequency
+from deistools.processing.dmfa_functions import dmfa, get_band_size #, extract_zero_frequency
 from deistools.visualise.dmfa import visualize_dmfa_filtering
 from deistools.processing.stft_functions import get_excited_bins, stft_eis
 from deistools.processing.peak_search import search_peaks_position
@@ -47,26 +47,34 @@ class MultiFrequencyAnalysis:
         )
         return frequency_response_function, excitation, response, time
 
-    def run_dmfa(self, 
-                 filter,
+    def run_dmfa(self,
+                 passband_filter,
+                 periods_per_sample,
         ):
         frequency_response_function = dmfa(
             self.dft_excitation,
             self.dft_response,
             self.k_exc,
-            self.num_samples,
-            filter,
+            passband_filter,
+            self.sampling_frequency,
+            self.period,
+            periods_per_sample,
         )
         return frequency_response_function #, voltage, current, time
 
     def visualize_dmfa_filtering(
             self,
-            filter,
+            passband_filter,
+            periods_per_sample,
         ):
+        n_bins = get_band_size(self.num_samples, self.sampling_frequency, self.period, periods_per_sample)
+        band_offsets = np.arange(-(n_bins // 2), n_bins - n_bins // 2)
+        filter_values = passband_filter.evaluate(band_offsets * self.sampling_frequency / self.num_samples)
         visualize_dmfa_filtering(
-            filter,
-            self.ft_voltage,
-            self.ft_current,
+            filter_values,
+            band_offsets,
+            self.dft_excitation,
+            self.dft_response,
             self.freq_axis,
             self.frequencies,
             self.k_exc,
