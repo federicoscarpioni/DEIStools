@@ -9,14 +9,6 @@ from deistools.processing.stft_functions import get_excited_bins, stft_eis
 from deistools.processing.peak_search import search_peaks_position
 
 @dataclass
-class EstimationResult:
-    impedance : np.ndarray
-    time : np.ndarray
-    voltage : np.ndarray
-    current : np.ndarray
-    method_name : str
-
-@dataclass
 class MultiFrequencyAnalysis:
     excitation : np.ndarray 
     response : np.ndarray 
