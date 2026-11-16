@@ -28,11 +28,11 @@ def create_fermi_dirac_fun(fr, fc, bw, n):
 
 @dataclass
 class FermiDiracFilter:
-    frequencies : np.array
+    frequencies : np.ndarray
     centered_frequency : float
     cutoff: float
     order : int
-    values : np.array = field(init=False) 
+    values : np.ndarray = field(init=False) 
 
     def __post_init__(self):
         self.values = create_fermi_dirac_fun(
