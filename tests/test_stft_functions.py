@@ -28,7 +28,7 @@ def test_stft_eis_stationary():
     assert v_mean.size == periods
     assert i_mean.size == periods
 
-def test_stft_eis_non_stationary():
+def test_stft_eis_slowly_varying():
     current_A, voltage_V, impedance_ohm, frequencies_Hz = non_stationary_r_rc(
         fs=sampling_frequency_Hz,
         multisine_period=multisine_period_s,
