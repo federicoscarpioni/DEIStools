@@ -72,7 +72,7 @@ def test_stft_eis_fast_varying():
     impedance_expected = impedance_ohm.reshape(frequencies_Hz.size, periods, L).mean(axis=-1)
     assert impedance_expected.shape == impedance_est.shape
     rel_err = np.max(np.abs(impedance_est / impedance_expected - 1))
-    assert rel_err > 1e-3 # Should not match
+    assert 1e-3 < rel_err < 1e-2 
     assert v_mean.size == periods
     assert i_mean.size == periods
 
