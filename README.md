@@ -1,11 +1,11 @@
 # DEIStools
 
-Tools for the estimation of instantaneous impedance from multi-frequency voltage and current signals. This experimental techniques is commonly called dynamic electrochemical impedance spectroscopy (DEIS).
+Tools for the estimation of instantaneous impedance from multi-frequency voltage and current signals. This experimental technique is commonly called dynamic electrochemical impedance spectroscopy (DEIS).
 This package is agnostic to the signal acquisition stage and can be used for any single input - single output (SISO) system identification. 
 The high-level API uses the object MultiFrequencyAnalysis that can call any of the three most used estimators: short-time Fourier transform EIS (STFT-EIS), dynamic multi-frequency analysis (DMFA), and best linear time-varying approximation (BLTVA). See examples below.
 
 
-**Note of version 0.2.0:** the package has been rewritten in almost all parts so it brakes old scripts. The core methods are tested with pytest, put it is still in development.
+**Note of version 0.2.0:** the package has been rewritten in almost all parts so it breaks old scripts. The core methods are tested with pytest, but it is still in development.
 
 
 ## Install
