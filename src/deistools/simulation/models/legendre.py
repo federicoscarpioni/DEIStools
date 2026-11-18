@@ -33,15 +33,8 @@ drift_coefficients : array_like, shape (Q+1,), real, optional
 """
 import numpy as np
 from ..engine import simulate as _simulate
-
-# The estimator's own basis, deliberately. Hallemans TIM 2021 after eq. (26):
-# on a finite record the continuous property (1/T)*int b_p dt = 0 does not
-# hold exactly, "therefore the mean values of the sampled and windowed b_p(t),
-# p >= 1 are subtracted". An oracle has to be built from the estimator's model
-# rather than a near neighbour of it; using the raw Legendre polynomials here
-# instead left an O(1/N) floor under every recovery test, which at N = 16000
-# showed up as a 5.9e-05 discrepancy against the block-oriented model.
-from deistools.processing.bltva import legendre_basis
+from numpy.polynomial.legendre import legvander
+from deistools.processing.bltva_functions import legendre_basis
 
 
 def legendre_impedance(f, t, T_window, impedance_coefficients):

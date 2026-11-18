@@ -48,7 +48,7 @@ from typing import Callable
 import numpy as np
 
 from ..engine import generate_multisine
-from deistools.processing.bltva import legendre_basis
+from .legendre import legendre_basis
 
 
 @dataclass

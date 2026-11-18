@@ -3,21 +3,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def inspect_spectrum(
-        ft_voltage : np.array, 
-        ft_current : np.array, 
-        freq_axis: np.array,
+        U : np.ndarray, 
+        V : np.ndarray, 
+        freq_axis: np.ndarray,
     ):
 
     # Define auxiliary functions  
     def plot_data(values:tuple):
         lineV, = axs[0].plot(
             freq_axis[int(values[0]):int(values[1])], 
-            np.abs(ft_voltage)[int(values[0]):int(values[1])], 
+            np.abs(V)[int(values[0]):int(values[1])], 
             '-o',
         )
         lineI, = axs[1].plot(
             freq_axis[int(values[0]):int(values[1])], 
-            np.abs(ft_current)[int(values[0]):int(values[1])], 
+            np.abs(U)[int(values[0]):int(values[1])], 
             '-o'
         )
         # Set log scale
@@ -32,9 +32,9 @@ def inspect_spectrum(
 
     def update(val):
         lineV.set_xdata(freq_axis[int(val[0]):int(val[1])])
-        lineV.set_ydata(np.abs(ft_voltage)[int(val[0]):int(val[1])])
+        lineV.set_ydata(np.abs(V)[int(val[0]):int(val[1])])
         lineI.set_xdata(freq_axis[int(val[0]):int(val[1])])
-        lineI.set_ydata(np.abs(ft_current)[int(val[0]):int(val[1])])
+        lineI.set_ydata(np.abs(U)[int(val[0]):int(val[1])])
         axs[0].autoscale_view()
         axs[0].relim()
         axs[1].autoscale_view()
@@ -66,21 +66,21 @@ def inspect_spectrum(
 #------------------------------------------------------------------------------#
 
 def inspect_spectrum_phase(
-        ft_voltage : np.array, 
-        ft_current : np.array, 
-        freq_axis: np.array,
+        U : np.ndarray, 
+        V : np.ndarray, 
+        freq_axis: np.ndarray,
     ):
 
     # Define auxiliary functions  
     def plot_data(values:tuple):
         lineV, = axs[0].plot(
             freq_axis[int(values[0]):int(values[1])], 
-            np.angle(ft_voltage)[int(values[0]):int(values[1])], 
+            np.angle(V)[int(values[0]):int(values[1])], 
             '-o',
         )
         lineI, = axs[1].plot(
             freq_axis[int(values[0]):int(values[1])], 
-            np.angle(ft_current)[int(values[0]):int(values[1])], 
+            np.angle(U)[int(values[0]):int(values[1])], 
             '-o'
         )
         # Set name of axis
@@ -92,9 +92,9 @@ def inspect_spectrum_phase(
 
     def update(val):
         lineV.set_xdata(freq_axis[int(val[0]):int(val[1])])
-        lineV.set_ydata(np.abs(ft_voltage)[int(val[0]):int(val[1])])
+        lineV.set_ydata(np.angle(V)[int(val[0]):int(val[1])])
         lineI.set_xdata(freq_axis[int(val[0]):int(val[1])])
-        lineI.set_ydata(np.abs(ft_current)[int(val[0]):int(val[1])])
+        lineI.set_ydata(np.angle(U)[int(val[0]):int(val[1])])
         axs[0].autoscale_view()
         axs[0].relim()
         axs[1].autoscale_view()
@@ -126,11 +126,11 @@ def inspect_spectrum_phase(
 #------------------------------------------------------------------------------#
 
 def visualise_peaks(
-        ft_voltage : np.array, 
-        ft_current : np.array, 
-        freq_axis: np.array,
-        frequenies: list[float],
-        freq_indexes: list[int],
+        U : np.ndarray, 
+        V : np.ndarray,
+        freq_axis: np.ndarray,
+        frequencies: np.ndarray,
+        freq_indexes: np.ndarray,
     ):
 
     # Define auxiliary functions  
@@ -141,12 +141,12 @@ def visualise_peaks(
         visible_range = get_visible_range(slider_frequency.val, slider_range.val)
         lineV, = axs[0].plot(
             freq_axis[visible_range], 
-            np.abs(ft_voltage)[visible_range], 
+            np.abs(V)[visible_range], 
             '-o',
         )
         lineI, = axs[1].plot(
             freq_axis[visible_range], 
-            np.abs(ft_current)[visible_range], 
+            np.abs(U)[visible_range], 
             '-o'
         )
         # Set log scale
@@ -156,9 +156,9 @@ def visualise_peaks(
         axs[0].set_ylabel('Voltage / V')
         axs[1].set_ylabel('Current / A')
         axs[1].set_xlabel('Frequency / Hz')
-        axs[0].set_title(f'Fourier Transform frequency {frequenies[0]} Hz')
-        line_freq_V = axs[0].axvline(frequenies[slider_frequency.val], color = 'green')
-        line_freq_I = axs[1].axvline(frequenies[slider_frequency.val], color = 'green')
+        axs[0].set_title(f'Fourier Transform frequency {frequencies[0]} Hz')
+        line_freq_V = axs[0].axvline(frequencies[slider_frequency.val], color = 'green')
+        line_freq_I = axs[1].axvline(frequencies[slider_frequency.val], color = 'green')
         return lineV, lineI, line_freq_V, line_freq_I
         
     def get_visible_range(freq_val, range_val):
@@ -171,12 +171,12 @@ def visualise_peaks(
     def update_freq(val):
         visible_range = get_visible_range(val, slider_range.val)
         lineV.set_xdata(freq_axis[visible_range])
-        lineV.set_ydata(np.abs(ft_voltage)[visible_range])
+        lineV.set_ydata(np.abs(V)[visible_range])
         lineI.set_xdata(freq_axis[visible_range])
-        lineI.set_ydata(np.abs(ft_current)[visible_range])
-        axs[0].set_title(f'Fouri(er Transform frequency {frequenies[val]} Hz')
-        line_freq_V.set_xdata([frequenies[val]])
-        line_freq_I.set_xdata([frequenies[val]])
+        lineI.set_ydata(np.abs(U)[visible_range])
+        axs[0].set_title(f'Fouri(er Transform frequency {frequencies[val]} Hz')
+        line_freq_V.set_xdata([frequencies[val]])
+        line_freq_I.set_xdata([frequencies[val]])
         axs[0].relim()
         axs[0].autoscale_view()
         axs[1].relim()
@@ -185,9 +185,9 @@ def visualise_peaks(
     def update_range(val):
         visible_range = get_visible_range(slider_frequency.val, val)
         lineV.set_xdata(freq_axis[visible_range])
-        lineV.set_ydata(np.abs(ft_voltage)[visible_range])
+        lineV.set_ydata(np.abs(V)[visible_range])
         lineI.set_xdata(freq_axis[visible_range])
-        lineI.set_ydata(np.abs(ft_current)[visible_range])
+        lineI.set_ydata(np.abs(U)[visible_range])
         axs[0].relim()
         axs[0].autoscale_view()
         axs[1].relim()
@@ -213,7 +213,7 @@ def visualise_peaks(
         ax=sliders_freq_ax,
         label="Frequency index",
         valmin=0,
-        valmax=len(frequenies)-1,
+        valmax=len(frequencies)-1,
         valinit=0,
         valstep = 1,
         )
@@ -229,11 +229,11 @@ def visualise_peaks(
 # -----------------------------------------------------------------------------#
 
 def visualise_peaks_phase(
-        ft_voltage : np.array, 
-        ft_current : np.array, 
-        freq_axis: np.array,
-        frequenies: list[float],
-        freq_indexes: list[int],
+        U : np.ndarray, 
+        V : np.ndarray,
+        freq_axis: np.ndarray,
+        frequencies: np.ndarray,
+        freq_indexes: np.ndarray,
     ):
 
     # Define auxiliary functions  
@@ -244,21 +244,21 @@ def visualise_peaks_phase(
         visible_range = get_visible_range(slider_frequency.val, slider_range.val)
         lineV, = axs[0].plot(
             freq_axis[visible_range], 
-            np.angle(ft_voltage)[visible_range], 
+            np.angle(V)[visible_range], 
             '-o',
         )
         lineI, = axs[1].plot(
             freq_axis[visible_range], 
-            np.angle(ft_current)[visible_range], 
+            np.angle(U)[visible_range], 
             '-o'
         )
         # Set name of axis
         axs[0].set_ylabel('Voltage / V')
         axs[1].set_ylabel('Current / A')
         axs[1].set_xlabel('Frequency / Hz')
-        axs[0].set_title(f'Fourier Transform frequency {frequenies[0]} Hz')
-        line_freq_V = axs[0].axvline(frequenies[slider_frequency.val], color = 'green')
-        line_freq_I = axs[1].axvline(frequenies[slider_frequency.val], color = 'green')
+        axs[0].set_title(f'Fourier Transform frequency {frequencies[0]} Hz')
+        line_freq_V = axs[0].axvline(frequencies[slider_frequency.val], color = 'green')
+        line_freq_I = axs[1].axvline(frequencies[slider_frequency.val], color = 'green')
         return lineV, lineI, line_freq_V, line_freq_I
         
     def get_visible_range(freq_val, range_val):
@@ -271,12 +271,12 @@ def visualise_peaks_phase(
     def update_freq(val):
         visible_range = get_visible_range(val, slider_range.val)
         lineV.set_xdata(freq_axis[visible_range])
-        lineV.set_ydata(np.angle(ft_voltage)[visible_range])
+        lineV.set_ydata(np.angle(V)[visible_range])
         lineI.set_xdata(freq_axis[visible_range])
-        lineI.set_ydata(np.angle(ft_current)[visible_range])
-        axs[0].set_title(f'Fouri(er Transform frequency {frequenies[val]} Hz')
-        line_freq_V.set_xdata([frequenies[val]])
-        line_freq_I.set_xdata([frequenies[val]])
+        lineI.set_ydata(np.angle(U)[visible_range])
+        axs[0].set_title(f'Fouri(er Transform frequency {frequencies[val]} Hz')
+        line_freq_V.set_xdata([frequencies[val]])
+        line_freq_I.set_xdata([frequencies[val]])
         axs[0].relim()
         axs[0].autoscale_view()
         axs[1].relim()
@@ -285,9 +285,9 @@ def visualise_peaks_phase(
     def update_range(val):
         visible_range = get_visible_range(slider_frequency.val, val)
         lineV.set_xdata(freq_axis[visible_range])
-        lineV.set_ydata(np.angle(ft_voltage)[visible_range])
+        lineV.set_ydata(np.angle(V)[visible_range])
         lineI.set_xdata(freq_axis[visible_range])
-        lineI.set_ydata(np.angle(ft_current)[visible_range])
+        lineI.set_ydata(np.angle(U)[visible_range])
         axs[0].relim()
         axs[0].autoscale_view()
         axs[1].relim()
@@ -313,7 +313,7 @@ def visualise_peaks_phase(
         ax=sliders_freq_ax,
         label="Frequency index",
         valmin=0,
-        valmax=len(frequenies)-1,
+        valmax=len(frequencies)-1,
         valinit=0,
         valstep = 1,
         )

@@ -2,12 +2,9 @@
 Standard additive drifts, for testing trend removal.
 
 A trend here is a slow voltage excursion **added to the measured response**:
-the disturbance that :mod:`deistools.processing.detrending` exists to remove,
+the disturbance that a trend-removal step exists to remove,
 and that the lowest excited tones have to be recovered from underneath. It is
-not part of the system. That distinction matters because the package also has
-a system-level voltage curve --
-:func:`~deistools.simulation.models.randles_diffusion.default_ocv` -- which
-drives the diffusion resistance and is therefore physics, not a disturbance.
+not part of the system.
 
 Three shapes are provided, and they are deliberately different in kind.
 Residue left by a least-squares Legendre fit of order ``q``, relative to the
@@ -77,10 +74,8 @@ On provenance
 
 :func:`polynomial_trend` has no single published parameter set. The *form* is
 the paper's -- BLTVA models the trend as a Legendre expansion, eq. (58) -- but
-the coefficients below are this package's, and the cubic that
-``examples/09_detrending.py`` used before this module existed was chosen by
-hand to be hard, not taken from anywhere. It is reproducible here
-(see :func:`polynomial_trend`) and labelled for what it is.
+the coefficients below are this package's, and :data:`HARD_CUBIC` was chosen
+by hand to be hard, not taken from anywhere. It is labelled for what it is.
 
 :func:`logit_trend` is built from scratch, with the Nernst relation as its
 justification rather than a citation.
@@ -95,8 +90,7 @@ __all__ = [
 ]
 
 
-#: Monomial coefficients of the cubic that ``examples/09_detrending.py``
-#: carried inline before this module existed, lowest order first, to be used
+#: Monomial coefficients of a hard test cubic, lowest order first, to be used
 #: with ``basis="monomial"`` and ``scale=48.0``. Chosen by hand to put a large
 #: excursion on the record; **not** from any paper.
 HARD_CUBIC = (0.0, 0.7, -1.1, 0.5)
@@ -171,7 +165,7 @@ def polynomial_trend(t, *, coefficients=(0.0, 0.5, 0.2, 0.1), basis="legendre",
 
     Examples
     --------
-    The cubic that example 09 used before this module existed::
+    The hand-picked hard cubic::
 
         polynomial_trend(t, coefficients=HARD_CUBIC, basis="monomial",
                          scale=48.0)
@@ -281,10 +275,7 @@ def logit_trend(t, *, thermal_voltage=0.025693, soc_start=0.05, soc_end=0.95,
     configurational entropy of a lattice gas, so it is the part of a real OCV
     curve that is there regardless of material. What it leaves out is
     everything material-specific: staging plateaus, phase transitions, and
-    the enthalpic terms. For a system-level curve with those features see
-    :func:`~deistools.simulation.models.randles_diffusion.default_ocv`, which
-    is a different object -- part of the system rather than a disturbance on
-    it.
+    the enthalpic terms.
 
     Why it belongs in this suite: it has **no finite derivative at the ends
     of its range**, so a polynomial fit cannot follow it near the limits
