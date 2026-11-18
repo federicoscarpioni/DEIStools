@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as np, pytest
 from numpy.fft import fft
 from deistools.processing.dmfa_functions import dmfa
 from deistools.processing.passband_filters import FermiDiracFilter
@@ -38,3 +38,32 @@ def test_dmfa():
         impedance_expected = np.tile(impedance_ohm[:, None], (1, periods))
         assert impedance_expected.shape == impedance_est.shape
         np.testing.assert_allclose(impedance_est,impedance_expected, rtol = 1e-12)
+
+@pytest.mark.parametrize('periods_per_sample', [1,2,5])
+def test_dmfa_time_array(periods_per_sample):
+        current_A, voltage_V, impedance_ohm, frequencies_Hz = stationary_r_rc(
+                fs=sampling_frequency_Hz,
+                multisine_period=multisine_period_s,
+                harmonics=harmonics,
+                periods=periods,
+        )
+        record_samples = int(voltage_V.shape[0])
+        ft_voltage = fft(voltage_V)/record_samples
+        ft_current = fft(current_A)/record_samples
+        filter = FermiDiracFilter(halfwidth=0.25, order=4)
+        excited_bins = get_excited_bins(
+                record_samples,
+                frequencies_Hz,
+                sampling_frequency_Hz,
+        )
+        impedance_est, time = dmfa(
+                U=ft_current,
+                V=ft_voltage,
+                k_exc=excited_bins,
+                passband_filter=filter,
+                fs=sampling_frequency_Hz,
+                multisine_period=multisine_period_s,
+                periods_per_sample=periods_per_sample,
+        )
+        assert time.size == record_samples/(periods_per_sample * multisine_period_s *sampling_frequency_Hz)
+
