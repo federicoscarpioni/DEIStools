@@ -66,6 +66,8 @@ def test_dmfa_time_array(periods_per_sample):
                 periods_per_sample=periods_per_sample,
         )
         assert time.size == record_samples/(periods_per_sample * multisine_period_s *sampling_frequency_Hz)
+        expected_spacing = periods_per_sample * multisine_period_s
+        np.testing.assert_allclose(time, np.arange(time.size) * expected_spacing)
 
 def test_dmfa_slowly_varying():
         current_A, voltage_V, impedance_ohm, frequencies_Hz = non_stationary_r_rc(
