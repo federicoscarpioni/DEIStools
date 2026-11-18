@@ -47,5 +47,5 @@ def dmfa(
         U_filt = n_bins * ifft(U[k_band] * filter)
         V_filt = n_bins * ifft(V[k_band] * filter)
         G[i] = V_filt / U_filt
-    time = np.arange(n_bins) * n_samples / (n_bins * fs)
+    time = np.arange(n_bins) * periods_per_sample * n_samples / (n_bins * fs)
     return G, time
