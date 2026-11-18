@@ -2,7 +2,7 @@ import numpy as np
 from numpy.fft import fft
 from deistools.processing.bltva_functions import bltva, evaluate_transfer_function
 from deistools.processing.stft_functions import get_excited_bins
-from synthetic_records import stationary_r_rc, legendre_oracle
+from synthetic_records import stationary_r_rc, legendre_oracle, non_stationary_r_rc
 
 sampling_frequency_Hz = 20
 multisine_period_s = 1
@@ -67,3 +67,51 @@ def test_bltva_time_varying():
                 Nq=Nq,
         )
         np.testing.assert_allclose(G_p, G, rtol=1e-11, atol=1e-11 * np.abs(G[:, 0]).max())
+
+def test_bltva_slowly_varying():
+        current_A, voltage_V, impedance_ohm, frequencies_Hz = non_stationary_r_rc(
+                fs=sampling_frequency_Hz,
+                multisine_period=multisine_period_s,
+                harmonics=harmonics,
+                periods=periods,
+        )
+        record_samples = voltage_V.size
+        G_p, basis, res_abs, res_rel, rank = bltva(
+                U=fft(current_A) / record_samples,
+                V=fft(voltage_V) / record_samples,
+                k_exc=harmonics * periods,
+                P=periods,
+                halfband=25,
+                Np=2,
+                Nq=1,
+        )
+        impedance_est = evaluate_transfer_function(G_p, basis)
+        assert impedance_ohm.shape == impedance_est.shape
+        # Z(t) is not a polynomial in t (R2 sits in the denominator), so a
+        # second-order Legendre fit cannot reach machine precision
+        rel_err = np.max(np.abs(impedance_est / impedance_ohm - 1))
+        assert 1e-7 < rel_err < 1e-5
+
+def test_bltva_fast_varying():
+        current_A, voltage_V, impedance_ohm, frequencies_Hz = non_stationary_r_rc(
+                fs=sampling_frequency_Hz,
+                multisine_period=multisine_period_s,
+                harmonics=harmonics,
+                periods=periods,
+                R1rate=0.1,
+                R2rate=0.1,
+        )
+        record_samples = voltage_V.size
+        G_p, basis, res_abs, res_rel, rank = bltva(
+                U=fft(current_A) / record_samples,
+                V=fft(voltage_V) / record_samples,
+                k_exc=harmonics * periods,
+                P=periods,
+                halfband=25,
+                Np=2,
+                Nq=1,
+        )
+        impedance_est = evaluate_transfer_function(G_p, basis)
+        assert impedance_ohm.shape == impedance_est.shape
+        rel_err = np.max(np.abs(impedance_est / impedance_ohm - 1))
+        assert 1e-4 < rel_err < 1e-2 # far more than 10x the slowly varying case: the curvature of Z(t) grows with the rate
