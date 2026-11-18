@@ -51,7 +51,7 @@ class MultiFrequencyAnalysis:
                  passband_filter,
                  periods_per_sample,
         ):
-        frequency_response_function = dmfa(
+        frequency_response_function, time = dmfa(
             self.dft_excitation,
             self.dft_response,
             self.k_exc,
@@ -60,7 +60,7 @@ class MultiFrequencyAnalysis:
             self.period,
             periods_per_sample,
         )
-        return frequency_response_function #, voltage, current, time
+        return frequency_response_function, time
 
     def visualize_dmfa_filtering(
             self,

@@ -26,7 +26,7 @@ def test_dmfa():
                 frequencies_Hz,
                 sampling_frequency_Hz,
         )
-        impedance_est = dmfa(
+        impedance_est, time = dmfa(
                 U=ft_current,
                 V=ft_voltage,
                 k_exc=excited_bins,
