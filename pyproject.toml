@@ -1,6 +1,6 @@
 [project]
 name = "deistools"
-version = "0.1.0"
+version = "0.2.0"
 description = "Impedance estimation for slowly time-varying electrochemical systems."
 authors = [
     {name = "Federico Scarpioni", email = "federicoscarpioni@gmail.com"},
