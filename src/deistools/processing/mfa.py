@@ -81,12 +81,6 @@ class MultiFrequencyAnalysis:
         )
 
 
-    def search_freq_indexes(self, spectrum):
-        self.freq_indexes, self.index_f0 = search_peaks_position(
-            spectrum, self.freq_axis, self.frequencies, self.sampling_time)
-        return self.freq_indexes
-
-
     def inspect_spectrum(self):
         positive_range = range(0, self.num_samples//2)
         fig, axs = inspect_spectrum(
