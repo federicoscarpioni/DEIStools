@@ -50,3 +50,12 @@ def get_baseline_mean(
     return Baseline(intercept=intercept, slope=slope)
 
 
+def get_avarage_spline(
+        signal: np.ndarray, 
+        samples_per_period: int, 
+        fs: float,
+    ) -> CubicSpline :
+    mean, centres = get_signal_mean(signal, samples_per_period, fs)
+    if mean.size < 2:
+        raise ValueError(f"A spline baseline needs at least 2 whole periods, got {mean.size}.")
+    return CubicSpline(centres, mean)
