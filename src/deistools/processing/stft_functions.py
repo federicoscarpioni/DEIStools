@@ -1,6 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 from numpy.fft import rfft 
+from deistools.processing.detrending import get_baseline_mean
 
 @dataclass
 class StftEisResult:
@@ -34,13 +35,25 @@ def stft_eis(
         fs,
         multisine_period,
         periods_per_window,
+        detrending = False,
     )->tuple[np.ndarray,np.ndarray,np.ndarray,np.ndarray]:
 
     L = int(round(periods_per_window * multisine_period * fs))          # samples per window, represents the frequency axis
     M = u.size // L                       # whole windows only, represents the time direction
     u = u[:M * L].reshape(M, L)           # one window per row
     v = v[:M * L].reshape(M, L)
-    G, u_drift, v_drift = fft_eis_2d(u, v, get_excited_bins(L, frequencies, fs))
+    if detrending:
+        samples_per_period = int(round(multisine_period * fs))
+        window_time = np.arange(L) / fs
+        u_detrended = np.empty((M, L))
+        v_detrended = np.empty((M, L))
+        for m in range(M):
+            u_detrended[m] = u[m] - get_baseline_mean(u[m], samples_per_period, fs).evaluate(window_time)
+            v_detrended[m] = v[m] - get_baseline_mean(v[m], samples_per_period, fs).evaluate(window_time)
+        G, _, _ = fft_eis_2d(u_detrended, v_detrended, get_excited_bins(L, frequencies, fs))
+        u_drift, v_drift = u.mean(axis=-1), v.mean(axis=-1)
+    else:
+        G, u_drift, v_drift = fft_eis_2d(u, v, get_excited_bins(L, frequencies, fs))
     G = G.T # output the matrix with size (n_freq, n_time)
     time = (np.arange(M) + 0.5) * L / fs        # window centres
     return G, u_drift, v_drift, time

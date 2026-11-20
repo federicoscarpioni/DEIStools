@@ -36,7 +36,7 @@ class MultiFrequencyAnalysis:
     def run_fft_eis(self):
         return self.dft_response[self.k_exc] / self.dft_excitation[self.k_exc]
     
-    def run_stft_eis(self, periods_per_window):
+    def run_stft_eis(self, periods_per_window, detrending = False):
         frequency_response_function, excitation, response, time = stft_eis( 
             self.excitation,
             self.response,
@@ -44,6 +44,7 @@ class MultiFrequencyAnalysis:
             self.sampling_frequency,
             self.period,
             periods_per_window,
+            detrending,
         )
         return frequency_response_function, excitation, response, time
 
